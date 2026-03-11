@@ -1,0 +1,8 @@
+# Build and tool artifacts at root level
+.dart_tool/
+.idea/
+.claude/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.iml
