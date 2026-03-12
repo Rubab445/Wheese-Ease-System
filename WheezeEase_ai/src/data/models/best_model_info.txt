@@ -1,2 +1,0 @@
-Best Model: random_forest
-Test Accuracy: 0.8300
