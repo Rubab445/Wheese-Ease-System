@@ -1,8 +1,3 @@
-# Environment variables - DO NOT COMMIT
-.env
-.env.local
-.env.*.local
-
 # Build and tool artifacts at root level
 .dart_tool/
 .idea/
