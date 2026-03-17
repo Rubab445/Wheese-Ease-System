@@ -11,3 +11,31 @@ build/
 .flutter-plugins
 .flutter-plugins-dependencies
 *.iml
+
+# Large model files - regenerate by running steps 1-6
+data/model_nn.h5
+data/model_rf.pkl
+data/model_lr.pkl
+data/processed_data.pkl
+data/scaler.pkl
+data/best_model_name.txt
+
+# Dataset files - too large for GitHub
+data/*.csv
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# TensorFlow/Keras cache
+*.h5
+*.keras
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints/
+
+# PNG charts - regenerate by running steps
+data/*.png
