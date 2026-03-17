@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import '../utils/patient_profile.dart';
 
 class OnboardingScreen extends StatefulWidget {
   final VoidCallback onComplete;
@@ -24,6 +25,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _primaryMedController = TextEditingController(text: 'Salbutamol');
   final _secondaryMedController = TextEditingController(text: 'Fluticasone');
   final _triggersController = TextEditingController(text: 'Dust, Pollen');
+
+  // New fields for Step 2 questions
+  bool _smoking = false;
+  String _activityLevel = 'Moderate';
+  bool _familyHistory = false;
 
   final Set<String> _selectedConditions = {'Asthma', 'Dust Allergy'};
 
@@ -376,7 +382,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Your medications',
+          'Your medications & health',
           style: GoogleFonts.playfairDisplay(
             fontSize: 21,
             fontWeight: FontWeight.w800,
@@ -385,7 +391,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         ),
         const SizedBox(height: 5),
         Text(
-          'Helps track your inhaler & schedule',
+          'Helps personalize your risk assessment',
           style: GoogleFonts.nunito(fontSize: 12, color: AppColors.textMuted),
         ),
         const SizedBox(height: 14),
@@ -397,7 +403,40 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         const SizedBox(height: 14),
         _buildLabel('KNOWN TRIGGERS'),
         _buildTextField(_triggersController, 'e.g. Dust, Pollen, Cold air'),
-        const SizedBox(height: 20),
+        const SizedBox(height: 18),
+
+        // Question 1: Do you smoke?
+        _buildLabel('DO YOU SMOKE?'),
+        _buildToggleChipRow(
+          options: const ['No', 'Yes'],
+          selectedValue: _smoking ? 'Yes' : 'No',
+          onChanged: (value) {
+            setState(() => _smoking = value == 'Yes');
+          },
+        ),
+        const SizedBox(height: 16),
+
+        // Question 2: Physical activity level
+        _buildLabel('PHYSICAL ACTIVITY LEVEL'),
+        _buildToggleChipRow(
+          options: const ['Low', 'Moderate', 'High'],
+          selectedValue: _activityLevel,
+          onChanged: (value) {
+            setState(() => _activityLevel = value);
+          },
+        ),
+        const SizedBox(height: 16),
+
+        // Question 3: Family history of asthma
+        _buildLabel('FAMILY HISTORY OF ASTHMA?'),
+        _buildToggleChipRow(
+          options: const ['No', 'Yes'],
+          selectedValue: _familyHistory ? 'Yes' : 'No',
+          onChanged: (value) {
+            setState(() => _familyHistory = value == 'Yes');
+          },
+        ),
+        const SizedBox(height: 24),
         Row(
           children: [
             OutlinedButton(
@@ -492,9 +531,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
         ),
         const SizedBox(height: 20),
-        _buildGreenButton('Start Monitoring 🚀', widget.onComplete),
+        _buildGreenButton('Start Monitoring 🚀', _onStartMonitoring),
       ],
     );
+  }
+
+  void _onStartMonitoring() {
+    // Save all data to PatientProfile
+    PatientProfile.name = _nameController.text;
+    PatientProfile.age = int.tryParse(_ageController.text) ?? 28;
+    PatientProfile.gender = _gender;
+    PatientProfile.smoking = _smoking;
+    PatientProfile.familyHistory = _familyHistory;
+    PatientProfile.activityLevel = _activityLevel;
+    PatientProfile.conditions = _selectedConditions;
+    PatientProfile.triggers = _triggersController.text;
+
+    // Build the clinical profile
+    PatientProfile.save();
+
+    // Complete onboarding
+    widget.onComplete();
   }
 
   Widget _buildLabel(String text) {
@@ -551,6 +608,45 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           borderSide: const BorderSide(color: AppColors.blue, width: 2),
         ),
       ),
+    );
+  }
+
+  Widget _buildToggleChipRow({
+    required List<String> options,
+    required String selectedValue,
+    required Function(String) onChanged,
+  }) {
+    return Row(
+      children: options.map((option) {
+        final isSelected = selectedValue == option;
+        return Expanded(
+          child: GestureDetector(
+            onTap: () => onChanged(option),
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isSelected ? AppColors.blue : AppColors.border,
+                  width: 2,
+                ),
+                color: isSelected ? AppColors.blueDim : AppColors.surface,
+              ),
+              child: Center(
+                child: Text(
+                  option,
+                  style: GoogleFonts.nunito(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: isSelected ? AppColors.blue : AppColors.textMuted,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 

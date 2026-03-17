@@ -59,27 +59,66 @@ for f in new_features:
     print(f"   + {f}")
 
 symptom_score = (
-    real_df['Wheezing'].astype(int)            * 0.15 +
-    real_df['ShortnessOfBreath'].astype(int)   * 0.12 +
-    real_df['ChestTightness'].astype(int)      * 0.12 +
-    real_df['Coughing'].astype(int)            * 0.08 +
-    real_df['NighttimeSymptoms'].astype(int)   * 0.08 +
+    real_df['Wheezing'].astype(int)            * 0.20 +
+    real_df['ShortnessOfBreath'].astype(int)   * 0.15 +
+    real_df['ChestTightness'].astype(int)      * 0.15 +
+    real_df['Coughing'].astype(int)            * 0.10 +
+    real_df['NighttimeSymptoms'].astype(int)   * 0.10 +
     real_df['ExerciseInduced'].astype(int)     * 0.08 +
-    (real_df['PollutionExposure'] / 10)        * 0.08 +
-    real_df['Diagnosis'].astype(int)           * 0.10 +
-    real_df['Smoking'].astype(int)             * 0.05 +
-    real_df['FamilyHistoryAsthma'].astype(int) * 0.05 +
-    real_df['HayFever'].astype(int)            * 0.04 +
-    (1 - real_df['LungFunctionFEV1'] / 4.0)   * 0.05
+    (real_df['PollutionExposure'] / 10)        * 0.07 +
+    real_df['Diagnosis'].astype(int)           * 0.05 +
+    real_df['Smoking'].astype(int)             * 0.04 +
+    real_df['FamilyHistoryAsthma'].astype(int) * 0.03 +
+    real_df['HayFever'].astype(int)            * 0.02 +
+    (1 - real_df['LungFunctionFEV1'] / 4.0)   * 0.01
 ).clip(0, 1)
 
 def score_to_label(score):
-    if score < 0.3:   return 'low'
-    elif score < 0.7: return 'medium'
-    else:             return 'high'
+    if score < 0.25:    return 'low'
+    elif score < 0.55:  return 'medium'
+    else:               return 'high'
 
+# Apply score-based labels first
 mapped_df['risk_score'] = symptom_score
 mapped_df['risk_label'] = symptom_score.apply(score_to_label)
+
+# ── Clinical override rules ──
+# Force HIGH if patient has truly dangerous combination
+high_risk_mask = (
+    # Severe breathing + wheezing + high inhaler use
+    ((real_df['Wheezing'] == 1) &
+     (real_df['ShortnessOfBreath'] == 1) &
+     (real_df['NighttimeSymptoms'] == 1)) |
+
+    # Very low lung function + any wheezing
+    ((real_df['LungFunctionFEV1'] < 1.5) &
+     (real_df['Wheezing'] == 1)) |
+
+    # Diagnosed asthma + multiple severe symptoms
+    ((real_df['Diagnosis'] == 1) &
+     (real_df['Wheezing'] == 1) &
+     (real_df['ShortnessOfBreath'] == 1) &
+     (real_df['ChestTightness'] == 1)) |
+
+    # Exercise induced + wheezing + nighttime symptoms
+    ((real_df['ExerciseInduced'] == 1) &
+     (real_df['Wheezing'] == 1) &
+     (real_df['NighttimeSymptoms'] == 1) &
+     (real_df['Diagnosis'] == 1))
+)
+
+# Force LOW if patient has truly safe combination
+low_risk_mask = (
+    (real_df['Wheezing'] == 0) &
+    (real_df['ShortnessOfBreath'] == 0) &
+    (real_df['ChestTightness'] == 0) &
+    (real_df['NighttimeSymptoms'] == 0) &
+    (real_df['LungFunctionFEV1'] > 3.0) &
+    (real_df['Diagnosis'] == 0)
+)
+
+mapped_df.loc[high_risk_mask, 'risk_label'] = 'high'
+mapped_df.loc[low_risk_mask,  'risk_label'] = 'low'
 
 print("\n--- Adding new features to synthetic dataset ---")
 n = len(synthetic_df)

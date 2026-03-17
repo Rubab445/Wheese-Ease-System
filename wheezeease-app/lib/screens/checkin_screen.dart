@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import '../services/api_service.dart';
 import '../models/prediction_result.dart';
+import '../utils/patient_profile.dart';
 
 class CheckinScreen extends StatefulWidget {
   final VoidCallback onComplete;
@@ -69,6 +70,11 @@ class _CheckinScreenState extends State<CheckinScreen> {
     final wheezing = _symptoms[1]['selected'] ? 1 : 0;
     final breathingDifficulty = _symptoms[2]['selected'] ? 1 : 0;
 
+    // Map intensity to breathing difficulty level (1=Mild, 2=Moderate, 3=Severe)
+    int breathingLevel = 1; // default
+    if (_intensity == 'mod') breathingLevel = 2;
+    if (_intensity == 'sev') breathingLevel = 3;
+
     // Store patient data
     final patientData = {
       'wheezing': wheezing,
@@ -90,25 +96,45 @@ class _CheckinScreenState extends State<CheckinScreen> {
       'dust_exposure': 0.5,
     };
 
-    // Call API with this data
+    // Call API with patient data - use PatientProfile for clinical values
     final result = await ApiService.predict(
+      // Symptoms from check-in form
       wheezing: wheezing,
       coughing: coughing,
       chestTightness: 0,
-      inhalerUsage: _inhalerCount,
-      breathingDifficulty: breathingDifficulty,
-      medicationAdherence: 1,
-      pastAttacks: 0,
-      lungFunctionFev1: 0.8,
-      lungFunctionFvc: 1.0,
-      bmi: 24.0,
-      smoking: 0,
-      physicalActivity: 3.0,
-      familyHistoryAsthma: 0,
-      historyOfAllergies: 0,
-      hayFever: 0,
-      eczema: 0,
-      dustExposure: 0.5,
+      inhalerUsage: _inhalerCount.clamp(0, 5),
+      breathingDifficulty: breathingLevel,
+      medicationAdherence: PatientProfile.getClinicalValue(
+        'medication_adherence',
+        1,
+      ),
+      pastAttacks: PatientProfile.getClinicalValue('past_attacks', 2),
+      // Clinical values - estimated automatically from profile
+      lungFunctionFev1: PatientProfile.getClinicalValue(
+        'lung_function_fev1',
+        2.5,
+      ),
+      lungFunctionFvc: PatientProfile.getClinicalValue(
+        'lung_function_fvc',
+        3.5,
+      ),
+      bmi: PatientProfile.getClinicalValue('bmi', 24.0),
+      smoking: PatientProfile.getClinicalValue('smoking', 0),
+      physicalActivity: PatientProfile.getClinicalValue(
+        'physical_activity',
+        5.0,
+      ),
+      familyHistoryAsthma: PatientProfile.getClinicalValue(
+        'family_history_asthma',
+        0,
+      ),
+      historyOfAllergies: PatientProfile.getClinicalValue(
+        'history_of_allergies',
+        0,
+      ),
+      hayFever: PatientProfile.getClinicalValue('hay_fever', 0),
+      eczema: PatientProfile.getClinicalValue('eczema', 0),
+      dustExposure: PatientProfile.getClinicalValue('dust_exposure', 3.0),
     );
 
     if (mounted) {
@@ -540,16 +566,13 @@ class _CheckinScreenState extends State<CheckinScreen> {
     final riskLevel = _predictionResult.riskLevel;
     final advice = _predictionResult.advice;
     final reasons = _predictionResult.reasons;
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(22),
       child: Column(
         children: [
           const SizedBox(height: 36),
-          Text(
-            _predictionResult.icon,
-            style: const TextStyle(fontSize: 66),
-          ),
+          Text(_predictionResult.icon, style: const TextStyle(fontSize: 66)),
           const SizedBox(height: 14),
           Text(
             'Check-In Complete!',
@@ -585,11 +608,9 @@ class _CheckinScreenState extends State<CheckinScreen> {
                   text: riskLevel == 'HIGH'
                       ? 'Stay indoors if possible.'
                       : riskLevel == 'MEDIUM'
-                          ? 'Monitor your symptoms closely.'
-                          : 'Keep your routine.',
-                  style: GoogleFonts.nunito(
-                    fontWeight: FontWeight.w500,
-                  ),
+                      ? 'Monitor your symptoms closely.'
+                      : 'Keep your routine.',
+                  style: GoogleFonts.nunito(fontWeight: FontWeight.w500),
                 ),
               ],
             ),
