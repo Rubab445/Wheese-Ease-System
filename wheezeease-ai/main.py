@@ -300,7 +300,60 @@ async def quick_predict(
             detail=f"Quick predict error: {str(e)}"
         )
 
+# ── Login Models ──
+class LoginRequest(BaseModel):
+    identifier: str  # email or phone
+    password:   str
 
+# ── Demo doctor accounts (replace with database later) ──
+DOCTORS = {
+    "doctor@wheezeease.com": {
+        "password": "doctor123",
+        "name":     "Dr. A. Rahman",
+        "id":       1,
+        "role":     "Pulmonologist"
+    },
+    "admin@wheezeease.com": {
+        "password": "admin123",
+        "name":     "Dr. Sara Ali",
+        "id":       2,
+        "role":     "General Physician"
+    },
+    "test@test.com": {
+        "password": "test123",
+        "name":     "Dr. Test User",
+        "id":       3,
+        "role":     "Pulmonologist"
+    }
+}
+
+# ── Login endpoint ──
+@app.post("/api/login", tags=["Auth"])
+async def login(request: LoginRequest):
+    """
+    Login endpoint for WheezeEase web and mobile apps.
+    Accepts email + password, returns token and user info.
+    """
+    # Check if doctor exists
+    doctor = DOCTORS.get(request.identifier.lower().strip())
+
+    # Validate credentials
+    if not doctor or doctor["password"] != request.password:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid credentials. Please check your email and password."
+        )
+
+    # Return success response
+    return {
+        "token": f"token_{doctor['id']}_{request.identifier}",
+        "user": {
+            "id":   doctor["id"],
+            "name": doctor["name"],
+            "email": request.identifier,
+            "role": doctor["role"]
+        }
+    }
 # RUN SERVER
 
 if __name__ == "__main__":
