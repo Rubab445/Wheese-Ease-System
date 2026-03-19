@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
-import '../utils/patient_profile.dart';
 
 class OnboardingScreen extends StatefulWidget {
   final VoidCallback onComplete;
@@ -19,20 +18,16 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
   int _currentStep = 0;
-  final _nameController = TextEditingController(text: 'Sara Ahmed');
-  final _ageController = TextEditingController(text: '28');
-  String _gender = 'Female';
-  final _primaryMedController = TextEditingController(text: 'Salbutamol');
-  final _secondaryMedController = TextEditingController(text: 'Fluticasone');
-  final _triggersController = TextEditingController(text: 'Dust, Pollen');
 
-  // New fields for Step 2 questions
-  bool _smoking = false;
-  String _activityLevel = 'Moderate';
-  bool _familyHistory = false;
+  // ── Step 0 controllers ──
+  final _nameController     = TextEditingController(text: 'Sara Ahmed');
+  final _ageController      = TextEditingController(text: '28');
+  final _heightController   = TextEditingController(text: '165');
+  final _weightController   = TextEditingController(text: '68');
+  String _gender            = 'Female';
 
+  // ── Step 1 ──
   final Set<String> _selectedConditions = {'Asthma', 'Dust Allergy'};
-
   final List<Map<String, String>> _conditions = [
     {'icon': '😮‍💨', 'label': 'Asthma'},
     {'icon': '🤧', 'label': 'Seasonal Allergy'},
@@ -42,14 +37,48 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     {'icon': '🍤', 'label': 'Food Allergy'},
   ];
 
+  // ── Step 2 controllers ──
+  final _primaryMedController   = TextEditingController(text: 'Salbutamol');
+  final _secondaryMedController = TextEditingController(text: 'Fluticasone');
+  final _triggersController     = TextEditingController(text: 'Dust, Pollen');
+  bool   _smoking        = false;
+  bool   _familyHistory  = false;
+  String _activityLevel  = 'Moderate';
+
   @override
   void dispose() {
     _nameController.dispose();
     _ageController.dispose();
+    _heightController.dispose();
+    _weightController.dispose();
     _primaryMedController.dispose();
     _secondaryMedController.dispose();
     _triggersController.dispose();
     super.dispose();
+  }
+
+  // ── BMI calculation ──
+  double _calculateBMI() {
+    final height = double.tryParse(_heightController.text) ?? 165;
+    final weight = double.tryParse(_weightController.text) ?? 68;
+    if (height <= 0) return 24.0;
+    return weight / ((height / 100) * (height / 100));
+  }
+
+  Color _bmiColor() {
+    final bmi = _calculateBMI();
+    if (bmi < 18.5) return const Color(0xFF3a8eff);
+    if (bmi < 25.0) return const Color(0xFF22c87a);
+    if (bmi < 30.0) return const Color(0xFFf5a623);
+    return const Color(0xFFff4d6d);
+  }
+
+  String _bmiLabel() {
+    final bmi = _calculateBMI();
+    if (bmi < 18.5) return '— Underweight';
+    if (bmi < 25.0) return '— Normal';
+    if (bmi < 30.0) return '— Overweight';
+    return '— Obese';
   }
 
   void _goToStep(int step) {
@@ -75,7 +104,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Logo
+              // ── Logo ──
               Row(
                 children: [
                   Container(
@@ -117,7 +146,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Title
+              // ── Title ──
               Center(
                 child: Column(
                   children: [
@@ -145,31 +174,31 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Step dots
+              // ── Step dots ──
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(4, (i) {
                   final isActive = i == _currentStep;
-                  final isDone = i < _currentStep;
+                  final isDone   = i < _currentStep;
                   return AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
                     margin: const EdgeInsets.symmetric(horizontal: 4),
-                    width: isActive ? 24 : 8,
+                    width:  isActive ? 24 : 8,
                     height: 8,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(4),
                       color: isActive
                           ? AppColors.blue
                           : isDone
-                          ? AppColors.green
-                          : AppColors.border,
+                              ? AppColors.green
+                              : AppColors.border,
                     ),
                   );
                 }),
               ),
               const SizedBox(height: 22),
 
-              // Steps
+              // ── Steps ──
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 400),
                 child: _buildStep(_currentStep),
@@ -183,19 +212,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Widget _buildStep(int step) {
     switch (step) {
-      case 0:
-        return _buildStep0();
-      case 1:
-        return _buildStep1();
-      case 2:
-        return _buildStep2();
-      case 3:
-        return _buildStep3();
-      default:
-        return _buildStep0();
+      case 0:  return _buildStep0();
+      case 1:  return _buildStep1();
+      case 2:  return _buildStep2();
+      case 3:  return _buildStep3();
+      default: return _buildStep0();
     }
   }
 
+  // ══════════════════════════════════════════
+  // STEP 0 — Personal Info (with height/weight/BMI)
+  // ══════════════════════════════════════════
   Widget _buildStep0() {
     return Column(
       key: const ValueKey(0),
@@ -215,9 +242,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           style: GoogleFonts.nunito(fontSize: 12, color: AppColors.textMuted),
         ),
         const SizedBox(height: 14),
+
+        // Name
         _buildLabel('YOUR FULL NAME'),
         _buildTextField(_nameController, 'e.g. Sara Ahmed'),
         const SizedBox(height: 14),
+
+        // Age + Gender
         Row(
           children: [
             Expanded(
@@ -256,9 +287,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         color: AppColors.text,
                       ),
                       items: ['Female', 'Male', 'Other']
-                          .map(
-                            (g) => DropdownMenuItem(value: g, child: Text(g)),
-                          )
+                          .map((g) => DropdownMenuItem(
+                                value: g,
+                                child: Text(g),
+                              ))
                           .toList(),
                       onChanged: (v) => setState(() => _gender = v!),
                     ),
@@ -268,12 +300,85 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
           ],
         ),
+        const SizedBox(height: 14),
+
+        // Height + Weight
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLabel('HEIGHT (CM)'),
+                  _buildTextField(
+                    _heightController,
+                    'e.g. 165',
+                    keyboardType: TextInputType.number,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLabel('WEIGHT (KG)'),
+                  _buildTextField(
+                    _weightController,
+                    'e.g. 68',
+                    keyboardType: TextInputType.number,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        // Live BMI display
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: _bmiColor().withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: _bmiColor().withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            children: [
+              Text(
+                'BMI: ${_calculateBMI().toStringAsFixed(1)}',
+                style: GoogleFonts.nunito(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: _bmiColor(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                _bmiLabel(),
+                style: GoogleFonts.nunito(
+                  fontSize: 12,
+                  color: _bmiColor(),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+
         const SizedBox(height: 20),
         _buildGradientButton('Continue →', () => _goToStep(1)),
       ],
     );
   }
 
+  // ══════════════════════════════════════════
+  // STEP 1 — Conditions (unchanged)
+  // ══════════════════════════════════════════
   Widget _buildStep1() {
     return Column(
       key: const ValueKey(1),
@@ -348,10 +453,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             OutlinedButton(
               onPressed: () => _goToStep(0),
               style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
@@ -376,13 +478,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
+  // ══════════════════════════════════════════
+  // STEP 2 — Medications + New health questions
+  // ══════════════════════════════════════════
   Widget _buildStep2() {
     return Column(
       key: const ValueKey(2),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Your medications & health',
+          'Your medications',
           style: GoogleFonts.playfairDisplay(
             fontSize: 21,
             fontWeight: FontWeight.w800,
@@ -391,61 +496,99 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         ),
         const SizedBox(height: 5),
         Text(
-          'Helps personalize your risk assessment',
+          'Helps track your inhaler & schedule',
           style: GoogleFonts.nunito(fontSize: 12, color: AppColors.textMuted),
         ),
         const SizedBox(height: 14),
+
+        // Primary medication
         _buildLabel('PRIMARY MEDICATION'),
         _buildTextField(_primaryMedController, 'e.g. Salbutamol'),
         const SizedBox(height: 14),
+
+        // Secondary medication
         _buildLabel('SECONDARY (OPTIONAL)'),
         _buildTextField(_secondaryMedController, 'e.g. Fluticasone'),
         const SizedBox(height: 14),
+
+        // Known triggers
         _buildLabel('KNOWN TRIGGERS'),
         _buildTextField(_triggersController, 'e.g. Dust, Pollen, Cold air'),
-        const SizedBox(height: 18),
+        const SizedBox(height: 20),
 
-        // Question 1: Do you smoke?
+        // ── Do you smoke? ──
         _buildLabel('DO YOU SMOKE?'),
-        _buildToggleChipRow(
-          options: const ['No', 'Yes'],
-          selectedValue: _smoking ? 'Yes' : 'No',
-          onChanged: (value) {
-            setState(() => _smoking = value == 'Yes');
-          },
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            _buildToggleChip(
+              label: 'No',
+              selected: !_smoking,
+              onTap: () => setState(() => _smoking = false),
+            ),
+            const SizedBox(width: 10),
+            _buildToggleChip(
+              label: 'Yes',
+              selected: _smoking,
+              onTap: () => setState(() => _smoking = true),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
 
-        // Question 2: Physical activity level
+        // ── Physical activity ──
         _buildLabel('PHYSICAL ACTIVITY LEVEL'),
-        _buildToggleChipRow(
-          options: const ['Low', 'Moderate', 'High'],
-          selectedValue: _activityLevel,
-          onChanged: (value) {
-            setState(() => _activityLevel = value);
-          },
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            _buildToggleChip(
+              label: 'Low',
+              selected: _activityLevel == 'Low',
+              onTap: () => setState(() => _activityLevel = 'Low'),
+            ),
+            const SizedBox(width: 8),
+            _buildToggleChip(
+              label: 'Moderate',
+              selected: _activityLevel == 'Moderate',
+              onTap: () => setState(() => _activityLevel = 'Moderate'),
+            ),
+            const SizedBox(width: 8),
+            _buildToggleChip(
+              label: 'High',
+              selected: _activityLevel == 'High',
+              onTap: () => setState(() => _activityLevel = 'High'),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
 
-        // Question 3: Family history of asthma
+        // ── Family history ──
         _buildLabel('FAMILY HISTORY OF ASTHMA?'),
-        _buildToggleChipRow(
-          options: const ['No', 'Yes'],
-          selectedValue: _familyHistory ? 'Yes' : 'No',
-          onChanged: (value) {
-            setState(() => _familyHistory = value == 'Yes');
-          },
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            _buildToggleChip(
+              label: 'No',
+              selected: !_familyHistory,
+              onTap: () => setState(() => _familyHistory = false),
+            ),
+            const SizedBox(width: 10),
+            _buildToggleChip(
+              label: 'Yes',
+              selected: _familyHistory,
+              onTap: () => setState(() => _familyHistory = true),
+            ),
+          ],
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
+
+        // Navigation buttons
         Row(
           children: [
             OutlinedButton(
               onPressed: () => _goToStep(1),
               style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
@@ -470,6 +613,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
+  // ══════════════════════════════════════════
+  // STEP 3 — Success screen
+  // ══════════════════════════════════════════
   Widget _buildStep3() {
     final firstName = _nameController.text.split(' ').first;
     return Column(
@@ -531,29 +677,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
         ),
         const SizedBox(height: 20),
-        _buildGreenButton('Start Monitoring 🚀', _onStartMonitoring),
+        _buildGreenButton('Start Monitoring 🚀', widget.onComplete),
       ],
     );
   }
 
-  void _onStartMonitoring() {
-    // Save all data to PatientProfile
-    PatientProfile.name = _nameController.text;
-    PatientProfile.age = int.tryParse(_ageController.text) ?? 28;
-    PatientProfile.gender = _gender;
-    PatientProfile.smoking = _smoking;
-    PatientProfile.familyHistory = _familyHistory;
-    PatientProfile.activityLevel = _activityLevel;
-    PatientProfile.conditions = _selectedConditions;
-    PatientProfile.triggers = _triggersController.text;
-
-    // Build the clinical profile
-    PatientProfile.save();
-
-    // Complete onboarding
-    widget.onComplete();
-  }
-
+  // ══════════════════════════════════════════
+  // REUSABLE WIDGETS
+  // ══════════════════════════════════════════
   Widget _buildLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 5),
@@ -573,10 +704,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     TextEditingController controller,
     String hint, {
     TextInputType? keyboardType,
+    Function(String)? onChanged,
   }) {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
+      onChanged: onChanged,
       style: GoogleFonts.nunito(
         fontSize: 15,
         fontWeight: FontWeight.w600,
@@ -589,10 +722,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           fontWeight: FontWeight.w600,
           color: AppColors.textDim,
         ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 13,
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
         filled: true,
         fillColor: AppColors.surface,
         border: OutlineInputBorder(
@@ -611,42 +741,33 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  Widget _buildToggleChipRow({
-    required List<String> options,
-    required String selectedValue,
-    required Function(String) onChanged,
+  Widget _buildToggleChip({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
   }) {
-    return Row(
-      children: options.map((option) {
-        final isSelected = selectedValue == option;
-        return Expanded(
-          child: GestureDetector(
-            onTap: () => onChanged(option),
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: isSelected ? AppColors.blue : AppColors.border,
-                  width: 2,
-                ),
-                color: isSelected ? AppColors.blueDim : AppColors.surface,
-              ),
-              child: Center(
-                child: Text(
-                  option,
-                  style: GoogleFonts.nunito(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: isSelected ? AppColors.blue : AppColors.textMuted,
-                  ),
-                ),
-              ),
-            ),
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected ? AppColors.blue : AppColors.border,
+            width: 2,
           ),
-        );
-      }).toList(),
+          color: selected ? AppColors.blueDim : AppColors.surface,
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.nunito(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: selected ? AppColors.blue : AppColors.textMuted,
+          ),
+        ),
+      ),
     );
   }
 
