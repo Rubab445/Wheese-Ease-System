@@ -1,263 +1,381 @@
 import pickle
 import numpy as np
 import tensorflow as tf
-
-# Suppress TensorFlow warnings
+from datetime import datetime
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-# 7.1 LOAD BOTH MODELS + SCALER
-with open('data/model_nn.h5', 'rb') as f:
-    pass  # just checking
+from dotenv import load_dotenv
+load_dotenv()
 
-nn_model = tf.keras.models.load_model('data/model_nn.h5', compile=False)
+# LOAD MODELS
+_BASE = os.path.dirname(os.path.abspath(__file__))
+_DATA = os.path.join(_BASE, 'data')
 
-with open('data/model_rf.pkl', 'rb') as f:
+nn_model = tf.keras.models.load_model(
+    os.path.join(_DATA, 'model_nn.h5'), compile=False
+)
+
+with open(os.path.join(_DATA, 'model_rf.pkl'), 'rb') as f:
     rf_model = pickle.load(f)
 
-with open('data/scaler.pkl', 'rb') as f:
+with open(os.path.join(_DATA, 'scaler.pkl'), 'rb') as f:
     scaler = pickle.load(f)
 
-with open('data/processed_data.pkl', 'rb') as f:
+with open(os.path.join(_DATA, 'processed_data.pkl'), 'rb') as f:
     meta = pickle.load(f)
     feature_columns = meta['feature_columns']
 
-# 7.2 FEATURE ENGINEERING
+# FEATURE ENGINEERING
 def engineer_features(data: dict) -> np.ndarray:
-    """Applies same feature engineering as step2_preprocess.py"""
-
     env_risk_index = (
         data['AQI']          * 0.40 +
         data['pollen_count'] * 0.30 +
         data['humidity']     * 0.20 +
         data['temperature']  * 0.10
     )
-
     symptom_severity = (
         data['wheezing'] +
         data['coughing'] +
         data['chest_tightness'] +
         data['breathing_difficulty']
     )
-
     pollution_combo = data['PM2_5'] * 0.6 + data['NO2'] * 0.4
     inhaler_overuse = 1 if data['inhaler_usage'] >= 3 else 0
 
-    features = [
-        # Environmental
+    return np.array([[
         data['AQI'], data['pollen_count'], data['humidity'],
         data['temperature'], data['PM2_5'], data['NO2'],
-        data['dust_exposure'],
-        # Core symptoms
-        data['wheezing'], data['coughing'], data['chest_tightness'],
-        data['inhaler_usage'], data['breathing_difficulty'],
-        data['medication_adherence'], data['past_attacks'],
-        # Clinical features
-        data['lung_function_fev1'], data['lung_function_fvc'],
-        data['bmi'], data['smoking'], data['physical_activity'],
-        data['family_history_asthma'], data['history_of_allergies'],
-        data['hay_fever'], data['eczema'],
-        # Engineered
-        env_risk_index, symptom_severity, pollution_combo, inhaler_overuse
-    ]
+        data['dust_exposure'], data['wheezing'], data['coughing'],
+        data['chest_tightness'], data['inhaler_usage'],
+        data['breathing_difficulty'], data['medication_adherence'],
+        data['past_attacks'], data['lung_function_fev1'],
+        data['lung_function_fvc'], data['bmi'], data['smoking'],
+        data['physical_activity'], data['family_history_asthma'],
+        data['history_of_allergies'], data['hay_fever'],
+        data['eczema'], env_risk_index, symptom_severity,
+        pollution_combo, inhaler_overuse
+    ]])
 
-    return np.array([features])
-
-# 7.3 GET TOP REASONS FROM RANDOM FOREST
-def get_top_reasons(data: dict, features_scaled: np.ndarray) -> list:
+# PLAIN ENGLISH REASONS
+def get_plain_reasons(data: dict) -> list:
     """
-    Uses Random Forest feature importance + patient values
-    to explain WHY the risk level was assigned.
+    Returns reasons in plain language that any patient can understand.
+    No medical jargon — FEV1, PM2.5, NO2 all explained simply.
     """
     importances = rf_model.feature_importances_
-    reasons     = []
+    reasons = []
 
-    # Check each important feature and generate human-readable reason
-    feature_checks = {
-        'lung_function_fev1': (
-            data.get('lung_function_fev1', 3),
-            lambda v: v < 2.0,
-            f"Low lung function (FEV1: {data.get('lung_function_fev1', '?')}L) — reduced breathing capacity"
-        ),
-        'lung_function_fvc': (
-            data.get('lung_function_fvc', 4),
-            lambda v: v < 3.0,
-            f"Low lung capacity (FVC: {data.get('lung_function_fvc', '?')}L)"
-        ),
-        'AQI': (
-            data.get('AQI', 50),
-            lambda v: v > 100,
-            f"Poor air quality (AQI: {data.get('AQI', '?')}) — breathing hazard"
-        ),
-        'wheezing': (
-            data.get('wheezing', 0),
-            lambda v: v == 1,
-            "Wheezing detected — active airway inflammation"
-        ),
-        'smoking': (
-            data.get('smoking', 0),
-            lambda v: v == 1,
-            "Smoking history — damages airways significantly"
-        ),
-        'breathing_difficulty': (
-            data.get('breathing_difficulty', 1),
-            lambda v: v >= 2,
-            f"Breathing difficulty level {data.get('breathing_difficulty', '?')} — moderate to severe"
-        ),
-        'PM2_5': (
-            data.get('PM2_5', 10),
-            lambda v: v > 55,
-            f"High PM2.5 ({data.get('PM2_5', '?')} μg/m³) — fine particles in air"
-        ),
-        'dust_exposure': (
-            data.get('dust_exposure', 0),
-            lambda v: v > 5,
-            f"High dust exposure ({data.get('dust_exposure', '?')}/10) — major trigger"
-        ),
-        'family_history_asthma': (
-            data.get('family_history_asthma', 0),
-            lambda v: v == 1,
-            "Family history of asthma — genetic risk factor present"
-        ),
-        'hay_fever': (
-            data.get('hay_fever', 0),
-            lambda v: v == 1,
-            "Hay fever present — linked to asthma attacks"
-        ),
-        'eczema': (
-            data.get('eczema', 0),
-            lambda v: v == 1,
-            "Eczema present — part of atopic triad with asthma"
-        ),
-        'inhaler_usage': (
-            data.get('inhaler_usage', 0),
-            lambda v: v >= 3,
-            f"High inhaler usage ({data.get('inhaler_usage', '?')} times) — uncontrolled symptoms"
-        ),
-        'medication_adherence': (
-            data.get('medication_adherence', 1),
-            lambda v: v == 0,
-            "Medication not taken — significantly increases risk"
-        ),
-        'bmi': (
-            data.get('bmi', 22),
-            lambda v: v > 30,
-            f"High BMI ({data.get('bmi', '?')}) — obesity increases asthma severity"
-        ),
-        'pollen_count': (
-            data.get('pollen_count', 0),
-            lambda v: v > 100,
-            f"High pollen count ({data.get('pollen_count', '?')}) — allergy trigger"
-        ),
-    }
+    checks = [
+        ("lung_function_fev1",
+         lambda v: v < 2.0,
+         "Your lungs are working at reduced capacity right now — breathing takes more effort than normal"),
 
-    # Sort by feature importance
-    sorted_features = sorted(
-        feature_checks.items(),
+        ("lung_function_fev1",
+         lambda v: 2.0 <= v < 2.5,
+         "Your lung capacity is slightly below normal — your airways may be partially narrowed"),
+
+        ("AQI",
+         lambda v: v > 150,
+         f"The air outside is unhealthy today (pollution level: {data.get('AQI')}) — breathing outdoor air will irritate your airways"),
+
+        ("AQI",
+         lambda v: 100 < v <= 150,
+         f"Air quality in your area is moderate today (level: {data.get('AQI')}) — sensitive people like you should be cautious"),
+
+        ("wheezing",
+         lambda v: v == 1,
+         "You are wheezing — this means your airways are narrowed and inflamed right now"),
+
+        ("chest_tightness",
+         lambda v: v == 1,
+         "You have chest tightness — your airways are under stress and may be struggling to move air properly"),
+
+        ("breathing_difficulty",
+         lambda v: v == 3,
+         "You are having severe difficulty breathing — this is a serious warning sign that needs immediate attention"),
+
+        ("breathing_difficulty",
+         lambda v: v == 2,
+         "You are having moderate breathing difficulty — your airways are not working at full capacity"),
+
+        ("smoking",
+         lambda v: v == 1,
+         "Smoking significantly damages your airways over time — this is making your asthma much harder to control"),
+
+        ("PM2_5",
+         lambda v: v > 55,
+         f"The air contains tiny invisible particles (dust and pollution) that get deep into your lungs and trigger inflammation"),
+
+        ("dust_exposure",
+         lambda v: v > 5,
+         f"You have been exposed to high levels of dust today ({data.get('dust_exposure')}/10) — dust is one of the strongest asthma triggers"),
+
+        ("family_history_asthma",
+         lambda v: v == 1,
+         "Asthma runs in your family — this means your airways are naturally more sensitive than average"),
+
+        ("hay_fever",
+         lambda v: v == 1,
+         "You have hay fever — this and asthma affect the same airways, and when one flares up the other often follows"),
+
+        ("eczema",
+         lambda v: v == 1,
+         "You have eczema — this is connected to asthma through the same overactive immune response in your body"),
+
+        ("medication_adherence",
+         lambda v: v == 0,
+         "You have not taken your medication today — skipping medication leaves your airways unprotected and dramatically increases your risk"),
+
+        ("bmi",
+         lambda v: v > 30,
+         f"Your weight (BMI: {data.get('bmi', 0):.1f}) puts extra pressure on your lungs — losing weight would significantly improve your breathing"),
+
+        ("inhaler_usage",
+         lambda v: v >= 3,
+         f"You have used your inhaler {data.get('inhaler_usage')} times today — this level of usage suggests your asthma is not well controlled right now"),
+
+        ("pollen_count",
+         lambda v: v > 100,
+         f"Pollen levels are high today ({data.get('pollen_count')}) — pollen is a major trigger that causes airways to swell and narrow"),
+
+        ("humidity",
+         lambda v: v > 80,
+         f"Humidity is very high today ({data.get('humidity')}%) — moist air makes airways more irritated and prone to spasms"),
+
+        ("past_attacks",
+         lambda v: v > 4,
+         f"You have had {data.get('past_attacks')} asthma attacks in the past — this history means your airways are more reactive than average"),
+    ]
+
+    sorted_checks = sorted(
+        checks,
         key=lambda x: importances[feature_columns.index(x[0])]
         if x[0] in feature_columns else 0,
         reverse=True
     )
 
-    # Collect triggered reasons
-    for feat_name, (value, condition, reason) in sorted_features:
-        if condition(value):
+    seen_features = set()
+    for feat, condition, reason in sorted_checks:
+        if feat in seen_features:
+            continue
+        val = data.get(feat, 0)
+        if condition(val):
             reasons.append(reason)
-        if len(reasons) >= 4:  # top 4 reasons max
+            seen_features.add(feat)
+        if len(reasons) >= 4:
             break
 
-    if not reasons:
-        reasons.append("All indicators within normal range")
+    return reasons if reasons else ["All your health indicators are within safe range right now"]
 
-    return reasons
 
-# 7.4 MAIN PREDICTION FUNCTION
+# PERSONALIZED RECOMMENDATIONS
+def get_personalized_advice(data: dict, risk_level: str) -> dict:
+    """
+    Generates specific, actionable advice based on what
+    actually caused the risk — not generic instructions.
+    """
+    hour = datetime.now().hour
+    time_of_day = (
+        "morning"   if 5  <= hour < 12 else
+        "afternoon" if 12 <= hour < 17 else
+        "evening"   if 17 <= hour < 21 else
+        "night"
+    )
+
+    aqi          = data.get('AQI', 50)
+    pm25         = data.get('PM2_5', 15)
+    humidity     = data.get('humidity', 60)
+    pollen       = data.get('pollen_count', 30)
+    wheezing     = data.get('wheezing', 0)
+    chest        = data.get('chest_tightness', 0)
+    breathing    = data.get('breathing_difficulty', 1)
+    inhaler      = data.get('inhaler_usage', 0)
+    medication   = data.get('medication_adherence', 1)
+    smoking      = data.get('smoking', 0)
+    dust         = data.get('dust_exposure', 0)
+
+    # Determine what is driving the risk
+    env_driven     = aqi > 100 or pm25 > 55 or pollen > 100
+    symptom_driven = wheezing == 1 or chest == 1 or breathing >= 2
+    both_driven    = env_driven and symptom_driven
+
+    # Build specific recommendations
+    recommendations = []
+
+    # ── Medication ──
+    if medication == 0:
+        recommendations.append(
+            f"Take your preventer inhaler right now — skipping it today has left your airways unprotected"
+        )
+    elif inhaler >= 3:
+        recommendations.append(
+            f"You have used your rescue inhaler {inhaler} times today — contact Dr. Rahman as this suggests your condition needs review"
+        )
+
+    # ── Active symptoms ──
+    if breathing == 3 or (wheezing == 1 and chest == 1):
+        recommendations.append(
+            "Use your rescue inhaler (blue one) immediately — take 2 puffs now and sit upright to help your breathing"
+        )
+    elif wheezing == 1 or chest == 1:
+        recommendations.append(
+            "Keep your rescue inhaler within reach — use it if your breathing gets worse in the next hour"
+        )
+
+    # ── Environmental advice ──
+    if both_driven:
+        recommendations.append(
+            f"Stay indoors completely today — you have active symptoms AND the air quality is poor. This is a dangerous combination"
+        )
+    elif env_driven:
+        if time_of_day == "morning":
+            recommendations.append(
+                "Air quality is poor this morning — delay any outdoor activity until the afternoon when pollution levels typically drop"
+            )
+        elif time_of_day == "afternoon":
+            recommendations.append(
+                "Air quality is at its worst right now in the afternoon — stay indoors and keep windows closed until evening"
+            )
+        else:
+            recommendations.append(
+                f"Air pollution is elevated this {time_of_day} — avoid going outside and keep your home well ventilated"
+            )
+
+    # ── Pollen specific ──
+    if pollen > 100:
+        recommendations.append(
+            "Pollen count is high today — keep windows and doors closed, shower after any outdoor exposure, and wear sunglasses outside"
+        )
+
+    # ── Humidity specific ──
+    if humidity > 80:
+        recommendations.append(
+            "High humidity is making the air heavier and harder to breathe — use an air conditioner or dehumidifier if you have one"
+        )
+
+    # ── Dust specific ──
+    if dust > 7:
+        recommendations.append(
+            "You have been exposed to significant dust today — wear an N95 mask if you need to go outside, and rinse your nose with saline"
+        )
+
+    # ── Smoking ──
+    if smoking == 1:
+        recommendations.append(
+            "Do not smoke today — with your current risk level, smoking will make your airways significantly worse within minutes"
+        )
+
+    # ── Night time specific ──
+    if time_of_day == "night" and risk_level in ["HIGH", "MEDIUM"]:
+        recommendations.append(
+            "Keep your inhaler on your bedside table tonight — asthma symptoms often worsen between midnight and 4am"
+        )
+
+    # ── High risk emergency ──
+    if risk_level == "HIGH":
+        recommendations.append(
+            "If your breathing gets significantly worse or you cannot speak in full sentences — go to the emergency room immediately or call for help"
+        )
+
+    # Limit to 4 most relevant
+    return recommendations[:4]
+
+
+# PLAIN ENGLISH ALERTS
+def get_plain_alerts(data: dict) -> list:
+    """Environmental alerts in plain language."""
+    alerts = []
+
+    if data.get('AQI', 0) > 150:
+        alerts.append(f"Air outside is unhealthy right now — pollution at dangerous levels")
+    elif data.get('AQI', 0) > 100:
+        alerts.append(f"Air quality is poor today — avoid unnecessary outdoor exposure")
+
+    if data.get('pollen_count', 0) > 100:
+        alerts.append(f"High pollen in the air today — keep windows closed")
+
+    if data.get('humidity', 0) > 80:
+        alerts.append(f"Air is very humid — this makes breathing harder for asthma patients")
+
+    if data.get('PM2_5', 0) > 55:
+        alerts.append(f"Invisible harmful particles in the air today — wear a mask outdoors")
+
+    if data.get('dust_exposure', 0) > 7:
+        alerts.append(f"High dust levels detected — a major trigger for asthma attacks")
+
+    if data.get('inhaler_usage', 0) >= 3:
+        alerts.append(f"You have used your inhaler {data.get('inhaler_usage')} times today — this is more than normal")
+
+    if data.get('medication_adherence', 1) == 0:
+        alerts.append("Medication not taken today — your airways are currently unprotected")
+
+    return alerts
+
+
+# MAIN PREDICTION FUNCTION
 def predict_risk(patient_data: dict) -> dict:
     """
-    Main prediction function for your Flutter app.
-
-    Required keys:
-        AQI, pollen_count, humidity, temperature, PM2_5, NO2,
-        dust_exposure, wheezing, coughing, chest_tightness,
-        inhaler_usage, breathing_difficulty, medication_adherence,
-        past_attacks, lung_function_fev1, lung_function_fvc,
-        bmi, smoking, physical_activity, family_history_asthma,
-        history_of_allergies, hay_fever, eczema
+    Main prediction function.
+    Returns plain English results that any patient can understand.
     """
-
-    # Engineer features
     features_raw    = engineer_features(patient_data)
     features_scaled = scaler.transform(features_raw)
 
-    #  Neural Network prediction (primary)
-    nn_proba   = nn_model.predict(features_scaled, verbose=0)[0]
+    # Neural Network — primary
+    nn_proba = nn_model.predict(features_scaled, verbose=0)[0]
 
-    # Apply threshold adjustment for medical safety
-    if nn_proba[2] >= 0.25:      # High risk
-        prediction = 2
-    elif nn_proba[0] >= 0.45:    # Low risk
-        prediction = 0
-    else:                         # Medium risk
-        prediction = 1
+    if nn_proba[2] >= 0.25:   prediction = 2
+    elif nn_proba[0] >= 0.45: prediction = 0
+    else:                      prediction = 1
 
-    #  Random Forest safety check 
+    # Random Forest safety check
     rf_pred = rf_model.predict(features_scaled)[0]
     if rf_pred == 2 and prediction != 2:
-        # If RF says High but NN doesn't — flag as High for safety
         prediction = 2
 
-    #  Labels and messaging 
-    label_map  = {0: 'LOW',    1: 'MEDIUM',   2: 'HIGH'}
-    icon_map   = {0: '✅',     1: '⚠️',       2: '🚨'}
-    color_map  = {0: 'green',  1: 'orange',   2: 'red'}
-    advice_map = {
-        0: 'Conditions are safe. Continue normal medication routine. Stay hydrated.',
-        1: 'Limit outdoor exposure. Keep inhaler accessible. Monitor symptoms closely.',
-        2: 'URGENT: Avoid all outdoor activity. Use rescue inhaler. Contact your doctor immediately.'
+    label_map = {0: 'LOW',    1: 'MEDIUM',   2: 'HIGH'}
+    icon_map  = {0: '✅',     1: '⚠️',       2: '🚨'}
+    color_map = {0: 'green',  1: 'orange',   2: 'red'}
+
+    # Plain English main message
+    main_message_map = {
+        0: "You are safe right now. Your breathing conditions look good today.",
+        1: "Your risk is moderate. Take some precautions to stay safe.",
+        2: "Your risk is high. Take action now to protect your breathing."
     }
 
-    risk_level = label_map[prediction]
-    confidence = float(nn_proba[prediction])
-
-    # Get reasons from Random Forest
-    reasons = get_top_reasons(patient_data, features_scaled)
-
-    # Environmental alerts 
-    alerts = []
-    if patient_data.get('AQI', 0) > 150:
-        alerts.append(f"AQI {patient_data['AQI']} — air quality is unhealthy")
-    if patient_data.get('pollen_count', 0) > 100:
-        alerts.append(f"High pollen ({patient_data['pollen_count']}) — allergy risk")
-    if patient_data.get('humidity', 0) > 80:
-        alerts.append(f"High humidity ({patient_data['humidity']}%) — airway irritation")
-    if patient_data.get('PM2_5', 0) > 75:
-        alerts.append(f"PM2.5 elevated ({patient_data['PM2_5']}) — dangerous particles")
-    if patient_data.get('dust_exposure', 0) > 7:
-        alerts.append(f"Very high dust exposure ({patient_data['dust_exposure']}/10)")
+    risk_level   = label_map[prediction]
+    confidence   = float(nn_proba[prediction])
+    reasons      = get_plain_reasons(patient_data)
+    advice       = get_personalized_advice(patient_data, risk_level)
+    alerts       = get_plain_alerts(patient_data)
+    main_message = main_message_map[prediction]
 
     return {
         'risk_level':    risk_level,
         'icon':          icon_map[prediction],
         'color':         color_map[prediction],
+        'main_message':  main_message,
         'confidence':    round(confidence, 3),
         'probabilities': {
             'low':    round(float(nn_proba[0]), 3),
             'medium': round(float(nn_proba[1]), 3),
             'high':   round(float(nn_proba[2]), 3),
         },
-        'advice':        advice_map[prediction],
-        'reasons':       reasons,       # ← from Random Forest
+        'reasons':       reasons,
+        'advice':        advice,
         'alerts':        alerts,
         'models_used':   'Neural Network (primary) + Random Forest (safety + explanation)'
     }
 
-# 7.5 DEMO
-if __name__ == '__main__':
-    print("=" * 55)
-    print("STEP 7: COMBINED PREDICTION ENGINE DEMO")
-    print("=" * 55)
 
-    # High risk patient
+# DEMO
+if __name__ == '__main__':
+    print("=" * 60)
+    print("STEP 7: PLAIN ENGLISH PREDICTION DEMO")
+    print("=" * 60)
+
     patient_A = {
         'AQI': 185, 'pollen_count': 140, 'humidity': 88,
         'temperature': 8, 'PM2_5': 95, 'NO2': 130,
@@ -271,7 +389,6 @@ if __name__ == '__main__':
         'hay_fever': 1, 'eczema': 1
     }
 
-    # Low risk patient
     patient_B = {
         'AQI': 40, 'pollen_count': 15, 'humidity': 45,
         'temperature': 24, 'PM2_5': 10, 'NO2': 25,
@@ -289,23 +406,24 @@ if __name__ == '__main__':
                            ('Patient B (Low Risk)',  patient_B)]:
         result = predict_risk(patient)
 
-        print(f"\n{'─' * 50}")
+        print(f"\n{'─' * 55}")
         print(f"  {result['icon']}  {name}")
-        print(f"{'─' * 50}")
+        print(f"{'─' * 55}")
         print(f"  Risk Level   : {result['risk_level']}")
+        print(f"  Message      : {result['main_message']}")
         print(f"  Confidence   : {result['confidence']:.1%}")
-        print(f"  Probabilities:")
-        print(f"    Low    → {result['probabilities']['low']:.1%}")
-        print(f"    Medium → {result['probabilities']['medium']:.1%}")
-        print(f"    High   → {result['probabilities']['high']:.1%}")
-        print(f"\n  Advice: {result['advice']}")
-        print(f"\n  Why this risk level (from Random Forest):")
+
+        print(f"\n  Why is your risk {result['risk_level']}?")
         for i, reason in enumerate(result['reasons'], 1):
             print(f"    {i}. {reason}")
+
+        print(f"\n  What you should do now:")
+        for i, tip in enumerate(result['advice'], 1):
+            print(f"    {i}. {tip}")
+
         if result['alerts']:
-            print(f"\n  Environmental Alerts:")
+            print(f"\n  Current alerts:")
             for alert in result['alerts']:
                 print(f"    • {alert}")
-        print(f"\n  Models: {result['models_used']}")
 
-    print("\n Combined prediction engine working!")
+    print("\n Plain English prediction engine working!")

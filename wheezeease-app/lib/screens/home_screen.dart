@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import '../services/api_service.dart';
 import '../models/prediction_result.dart';
+import '../screens/trip_risk_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String userName;
@@ -53,7 +54,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadInitialData();
-    // Refresh every 30 seconds
     _timer = Timer.periodic(const Duration(seconds: 30), (_) {
       _loadInitialData();
     });
@@ -62,13 +62,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadInitialData() async {
     if (!mounted) return;
 
-    // Fetch environment data
     final env = await ApiService.getEnvironment();
     if (env != null && mounted) {
       setState(() => _environment = env);
     }
 
-    // Quick prediction with patient data from check-in
     final prediction = await ApiService.quickPredict(
       patientData: widget.patientData,
     );
@@ -107,7 +105,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
+          // ── Header ──
           Container(
             padding: EdgeInsets.only(
               top: MediaQuery.of(context).padding.top + 18,
@@ -201,7 +199,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: LinearProgressIndicator(
                           value: risk / 100,
                           minHeight: 7,
-                          backgroundColor: Colors.white.withValues(alpha: 0.15),
+                          backgroundColor:
+                              Colors.white.withValues(alpha: 0.15),
                           valueColor: AlwaysStoppedAnimation(
                             Colors.white.withValues(alpha: 0.9),
                           ),
@@ -214,7 +213,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // Env strip
+          // ── Env strip ──
           SizedBox(
             height: 80,
             child: _loading || _environment == null
@@ -233,9 +232,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 : ListView(
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: 8,
-                    ),
+                        horizontal: 18, vertical: 8),
                     children: [
                       _envChip(
                         '🌡️',
@@ -277,12 +274,84 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
           ),
 
-          // Check-in banner
+          // ══════════════════════════════════════════════════
+          // TRIP SAFETY CARD — new feature
+          // ══════════════════════════════════════════════════
+          GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const TripRiskScreen(),
+              ),
+            ),
+            child: Container(
+              margin: const EdgeInsets.fromLTRB(18, 4, 18, 14),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: AppColors.bluePurple,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.blue.withValues(alpha: 0.25),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Center(
+                      child: Text('🗺️',
+                          style: TextStyle(fontSize: 22)),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Planning to go somewhere?',
+                          style: GoogleFonts.nunito(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Text(
+                          'Check if the air is safe at your destination',
+                          style: GoogleFonts.nunito(
+                            fontSize: 11,
+                            color: Colors.white.withValues(alpha: 0.8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    color: Colors.white.withValues(alpha: 0.7),
+                    size: 16,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // ── Check-in banner ──
           GestureDetector(
             onTap: widget.onCheckinTap,
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 18),
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 18, vertical: 16),
               decoration: BoxDecoration(
                 gradient: AppColors.greenGradient,
                 borderRadius: BorderRadius.circular(20),
@@ -323,16 +392,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text(
                     '›',
                     style: GoogleFonts.nunito(
-                      fontSize: 20,
-                      color: Colors.white70,
-                    ),
+                        fontSize: 20, color: Colors.white70),
                   ),
                 ],
               ),
             ),
           ),
 
-          // Alerts
+          // ── Alerts ──
           Padding(
             padding: const EdgeInsets.fromLTRB(18, 18, 18, 10),
             child: Row(
@@ -359,12 +426,13 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           if (_prediction?.alerts.isNotEmpty ?? false)
             ..._prediction!.alerts.asMap().entries.map(
-              (entry) => _buildPredictionAlertCard(entry.value, entry.key),
+              (entry) =>
+                  _buildPredictionAlertCard(entry.value, entry.key),
             )
           else
             ..._alerts.map((a) => _buildAlertCard(a)),
 
-          // Quick stats
+          // ── Quick stats ──
           Padding(
             padding: const EdgeInsets.fromLTRB(18, 16, 18, 0),
             child: GridView.count(
@@ -375,20 +443,18 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisSpacing: 10,
               childAspectRatio: 1.3,
               children: [
-                _quickStat('💨', '4x', 'Inhaler used today', AppColors.red),
-                _quickStat('📅', '7', 'Days tracked', AppColors.blue),
-                _quickStat('🏆', 'Mon', 'Best day this week', AppColors.green),
                 _quickStat(
-                  '🩺',
-                  'Mar 18',
-                  'Next appointment',
-                  AppColors.purple,
-                ),
+                    '💨', '4x', 'Inhaler used today', AppColors.red),
+                _quickStat('📅', '7', 'Days tracked', AppColors.blue),
+                _quickStat(
+                    '🏆', 'Mon', 'Best day this week', AppColors.green),
+                _quickStat(
+                    '🩺', 'Mar 18', 'Next appointment', AppColors.purple),
               ],
             ),
           ),
 
-          // AI Recommendations
+          // ── AI Recommendations ──
           if (_prediction != null)
             Padding(
               padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
@@ -421,12 +487,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Recommendation
                         Container(
                           width: double.infinity,
                           decoration: BoxDecoration(
                             border: Border(
-                              left: BorderSide(color: _riskColor, width: 4),
+                              left: BorderSide(
+                                  color: _riskColor, width: 4),
                             ),
                           ),
                           padding: const EdgeInsets.only(left: 10),
@@ -439,17 +505,21 @@ class _HomeScreenState extends State<HomeScreen> {
                                     width: 34,
                                     height: 34,
                                     decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(10),
-                                      color: _riskColor.withValues(alpha: 0.2),
+                                      borderRadius:
+                                          BorderRadius.circular(10),
+                                      color: _riskColor
+                                          .withValues(alpha: 0.2),
                                     ),
                                     child: Center(
                                       child: Text(
                                         _prediction!.riskLevel == 'LOW'
                                             ? '✅'
-                                            : _prediction!.riskLevel == 'MEDIUM'
+                                            : _prediction!.riskLevel ==
+                                                    'MEDIUM'
                                                 ? '⚠️'
                                                 : '🚨',
-                                        style: const TextStyle(fontSize: 18),
+                                        style: const TextStyle(
+                                            fontSize: 18),
                                       ),
                                     ),
                                   ),
@@ -496,10 +566,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         if (_prediction!.reasons.isNotEmpty) ...[
                           const SizedBox(height: 14),
-                          Divider(
-                            color: AppColors.border,
-                            height: 1,
-                          ),
+                          Divider(color: AppColors.border, height: 1),
                           const SizedBox(height: 10),
                           Text(
                             'Why This Risk Level:',
@@ -512,7 +579,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           const SizedBox(height: 8),
                           ..._prediction!.reasons.asMap().entries.map(
                             (entry) => Padding(
-                              padding: const EdgeInsets.only(bottom: 6),
+                              padding:
+                                  const EdgeInsets.only(bottom: 6),
                               child: Row(
                                 crossAxisAlignment:
                                     CrossAxisAlignment.start,
@@ -548,7 +616,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-          // Doctor advice
+          // ── Doctor advice ──
           Padding(
             padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
             child: Column(
@@ -584,7 +652,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         width: double.infinity,
                         decoration: BoxDecoration(
                           border: Border(
-                            left: BorderSide(color: AppColors.blue, width: 4),
+                            left: BorderSide(
+                                color: AppColors.blue, width: 4),
                           ),
                         ),
                         padding: const EdgeInsets.only(left: 10),
@@ -597,7 +666,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                   width: 34,
                                   height: 34,
                                   decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(10),
+                                    borderRadius:
+                                        BorderRadius.circular(10),
                                     gradient: const LinearGradient(
                                       colors: [
                                         Color(0xFF1A4A7A),
@@ -618,7 +688,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                                 const SizedBox(width: 10),
                                 Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       'Dr. A. Rahman',
@@ -663,7 +734,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _envChip(String icon, String value, String label, Color valueColor) {
+  // ── Env chip ──
+  Widget _envChip(
+      String icon, String value, String label, Color valueColor) {
     return Container(
       margin: const EdgeInsets.only(right: 10),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
@@ -706,6 +779,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // ── Alert cards ──
   Widget _buildAlertCard(Map<String, dynamic> alert) {
     return Dismissible(
       key: UniqueKey(),
@@ -778,7 +852,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _quickStat(String icon, String value, String label, Color color) {
+  Widget _quickStat(
+      String icon, String value, String label, Color color) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -852,8 +927,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 _prediction!.riskLevel == 'HIGH'
                     ? '⚠️'
                     : _prediction!.riskLevel == 'MEDIUM'
-                    ? '⚡'
-                    : '✓',
+                        ? '⚡'
+                        : '✓',
                 style: const TextStyle(fontSize: 17),
               ),
             ),

@@ -1,11 +1,14 @@
+
+# Run: uvicorn main:app --reload --host 0.0.0.0 --port 8000
+from dotenv import load_dotenv
+load_dotenv()                    
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 import os
 import sys
-from dotenv import load_dotenv
-load_dotenv()
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
@@ -13,6 +16,7 @@ from step8_live_api import (
     predict_with_live_data,
     get_weather,
     get_aqi,
+    get_environment,   
     CITY_COORDS
 )
 
@@ -60,6 +64,7 @@ class PredictionResponse(BaseModel):
     risk_level:    str
     icon:          str
     color:         str
+    main_message:  str       
     confidence:    float
     probabilities: dict
     advice:        str
@@ -89,7 +94,6 @@ DOCTORS = {
         "role":     "Pulmonologist"
     }
 }
-
 # ENDPOINTS
 
 @app.get("/", tags=["Root"])
@@ -134,15 +138,13 @@ async def get_supported_cities():
 async def get_environment_data(city: str = "Gujrat"):
     """
     Fetch live weather + air quality for a Pakistan city.
+    Uses OpenWeatherMap for both — no WAQI needed.
     """
     try:
         weather = get_weather(city)
         aqi     = get_aqi(city)
 
-        print(f"DEBUG weather: {weather}")
-        print(f"DEBUG aqi: {aqi}")
-
-        aqi_value = int(aqi.get("aqi", 50))
+        aqi_value = aqi.get("aqi", 50)
 
         if aqi_value > 150:   aqi_category = "Unhealthy"
         elif aqi_value > 100: aqi_category = "Moderate"
@@ -151,21 +153,18 @@ async def get_environment_data(city: str = "Gujrat"):
 
         return {
             "city":         city,
-            "temperature":  float(weather.get("temperature", 22.0)),
-            "humidity":     float(weather.get("humidity", 60.0)),
-            "description":  str(weather.get("description", "Unknown")).title(),
+            "temperature":  weather.get("temperature", 22.0),
+            "humidity":     weather.get("humidity", 60.0),
+            "description":  weather.get("description", "Unknown").title(),
             "aqi":          aqi_value,
             "aqi_category": aqi_category,
-            "pm25":         float(aqi.get("pm25", 15.0)),
-            "no2":          float(aqi.get("no2",  25.0)),
-            "pm10":         float(aqi.get("pm10", 20.0)),
-            "pollen_count": int(aqi.get("pollen_estimate", 30)),
+            "pm25":         aqi.get("pm25", 15.0),
+            "no2":          aqi.get("no2",  25.0),
+            "pm10":         aqi.get("pm10", 20.0),
+            "pollen_count": aqi.get("pollen_estimate", 30),
         }
 
     except Exception as e:
-        print(f"Environment endpoint error: {e}")
-        import traceback
-        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -206,6 +205,7 @@ async def predict(request: PredictionRequest):
             "risk_level":    result["risk_level"],
             "icon":          result["icon"],
             "color":         result["color"],
+            "main_message":  result["main_message"],   # ← add this
             "confidence":    result["confidence"],
             "probabilities": result["probabilities"],
             "advice":        result["advice"],
@@ -214,6 +214,7 @@ async def predict(request: PredictionRequest):
             "environment":   result["environment"],
             "models_used":   result["models_used"],
         }
+        
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -301,7 +302,110 @@ async def login(request: LoginRequest):
         }
     }
 
+@app.get("/trip-risk", tags=["Prediction"])
+async def trip_risk(
+    destination:           str,
+    # Patient profile passed as query params
+    wheezing:              int   = 0,
+    coughing:              int   = 0,
+    chest_tightness:       int   = 0,
+    inhaler_usage:         int   = 0,
+    breathing_difficulty:  int   = 1,
+    medication_adherence:  int   = 1,
+    past_attacks:          int   = 0,
+    lung_function_fev1:    float = 2.5,
+    lung_function_fvc:     float = 3.8,
+    bmi:                   float = 24.0,
+    smoking:               int   = 0,
+    physical_activity:     float = 5.0,
+    family_history_asthma: int   = 0,
+    history_of_allergies:  int   = 0,
+    hay_fever:             int   = 0,
+    eczema:                int   = 0,
+    dust_exposure:         float = 3.0
+):
+    """
+    Checks if it is safe for the patient to travel
+    to a destination city based on live air quality there.
+    """
+    try:
+        patient_data = {
+            "wheezing": wheezing, "coughing": coughing,
+            "chest_tightness": chest_tightness,
+            "inhaler_usage": inhaler_usage,
+            "breathing_difficulty": breathing_difficulty,
+            "medication_adherence": medication_adherence,
+            "past_attacks": past_attacks,
+            "lung_function_fev1": lung_function_fev1,
+            "lung_function_fvc": lung_function_fvc,
+            "bmi": bmi, "smoking": smoking,
+            "physical_activity": physical_activity,
+            "family_history_asthma": family_history_asthma,
+            "history_of_allergies": history_of_allergies,
+            "hay_fever": hay_fever, "eczema": eczema,
+            "dust_exposure": dust_exposure,
+        }
 
+        # Fetch env data for destination
+        env = get_environment(destination, destination)
+
+        # Run prediction using destination environment
+        full_data = {**env, **patient_data}
+        result = predict_with_live_data(
+            weather_city=destination,
+            patient_symptoms=patient_data,
+            aqi_city=destination
+        )
+
+        # Generate trip-specific advice
+        aqi = env.get("AQI", 50)
+        if result["risk_level"] == "HIGH":
+            trip_verdict   = "NOT RECOMMENDED"
+            trip_verdict_color = "red"
+            trip_advice    = (
+                f"Travelling to {destination} today is risky for you. "
+                f"Air quality there is poor (AQI: {aqi}). "
+                "If you must go, take your rescue inhaler, wear an N95 mask, "
+                "and avoid spending time outdoors."
+            )
+        elif result["risk_level"] == "MEDIUM":
+            trip_verdict   = "PROCEED WITH CAUTION"
+            trip_verdict_color = "orange"
+            trip_advice    = (
+                f"Travelling to {destination} is possible but take precautions. "
+                f"Air quality there is moderate (AQI: {aqi}). "
+                "Carry your inhaler, limit outdoor exposure, "
+                "and take your medication before leaving."
+            )
+        else:
+            trip_verdict   = "SAFE TO TRAVEL"
+            trip_verdict_color = "green"
+            trip_advice    = (
+                f"Conditions in {destination} look good for you today (AQI: {aqi}). "
+                "Continue your normal medication routine and enjoy your trip."
+            )
+
+        return {
+            "destination":       destination,
+            "trip_verdict":      trip_verdict,
+            "trip_verdict_color": trip_verdict_color,
+            "trip_advice":       trip_advice,
+            "risk_level":        result["risk_level"],
+            "confidence":        result["confidence"],
+            "reasons":           result["reasons"],
+            "alerts":            result["alerts"],
+            "destination_environment": {
+                "AQI":         env["AQI"],
+                "temperature": env["temperature"],
+                "humidity":    env["humidity"],
+                "PM2_5":       env["PM2_5"],
+                "NO2":         env["NO2"],
+            }
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
 # RUN
 if __name__ == "__main__":
     import uvicorn
