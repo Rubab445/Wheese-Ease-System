@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class PredictionResult {
   final String riskLevel; // LOW, MEDIUM, HIGH, UNCERTAIN
-  final String icon;      // ✅, ⚠️, 🚨
+  final String icon;      // icon string from API
   final double confidence;
   final String advice;
   final List<String> reasons;
@@ -22,7 +22,7 @@ class PredictionResult {
   factory PredictionResult.fromJson(Map<String, dynamic> json) {
     return PredictionResult(
       riskLevel: json['risk_level'] ?? 'UNCERTAIN',
-      icon: json['icon'] ?? '❓',
+      icon: json['icon'] ?? '',
       confidence: (json['confidence'] ?? 0.0).toDouble(),
       advice: json['advice'] ?? '',
       reasons: List<String>.from(json['reasons'] ?? []),
@@ -57,4 +57,17 @@ class PredictionResult {
 
   String get confidencePercentage =>
       '${(confidence * 100).toStringAsFixed(0)}%';
+
+  IconData get riskIconData {
+    switch (riskLevel) {
+      case 'LOW':
+        return Icons.check_circle_outline;
+      case 'MEDIUM':
+        return Icons.warning_amber_rounded;
+      case 'HIGH':
+        return Icons.error_outline;
+      default:
+        return Icons.help_outline;
+    }
+  }
 }

@@ -75,17 +75,17 @@ class _TripRiskScreenState extends State<TripRiskScreen> {
   }
 
   LinearGradient _verdictGradient(String? verdict) {
-    if (verdict == null) return AppColors.bluePurple;
-    if (verdict == 'NOT RECOMMENDED')    return AppColors.redOrangeGradient;
+    if (verdict == null) return AppColors.primaryGradient;
+    if (verdict == 'NOT RECOMMENDED')    return AppColors.redGradient;
     if (verdict == 'PROCEED WITH CAUTION') return AppColors.orangeGradient;
     return AppColors.greenGradient;
   }
 
-  String _verdictIcon(String? verdict) {
-    if (verdict == null) return '🗺️';
-    if (verdict == 'NOT RECOMMENDED')    return '🚨';
-    if (verdict == 'PROCEED WITH CAUTION') return '⚠️';
-    return '✅';
+  IconData _verdictIconData(String? verdict) {
+    if (verdict == null) return Icons.map_outlined;
+    if (verdict == 'NOT RECOMMENDED')    return Icons.error_outline;
+    if (verdict == 'PROCEED WITH CAUTION') return Icons.warning_amber_rounded;
+    return Icons.check_circle_outline;
   }
 
   @override
@@ -96,14 +96,24 @@ class _TripRiskScreenState extends State<TripRiskScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = isDark ? AppColors.primaryDark : AppColors.primary;
+    final surface = isDark ? AppColors.surfaceDark : AppColors.surface;
+    final surface3 = isDark ? AppColors.surface2Dark : AppColors.surface3;
+    final bg = isDark ? AppColors.bgDark : AppColors.bg;
+    final text = isDark ? AppColors.textDark : AppColors.text;
+    final textMuted = isDark ? AppColors.textMutedDark : AppColors.textMuted;
+    final textDim = isDark ? AppColors.textDimDark : AppColors.textDim;
+    final border = isDark ? AppColors.borderDark : AppColors.border;
+
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: bg,
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
+        backgroundColor: surface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: AppColors.text, size: 18),
+          icon: Icon(Icons.arrow_back_ios_new_rounded,
+              color: text, size: 18),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -111,12 +121,12 @@ class _TripRiskScreenState extends State<TripRiskScreen> {
           style: GoogleFonts.playfairDisplay(
             fontSize: 18,
             fontWeight: FontWeight.w800,
-            color: AppColors.text,
+            color: text,
           ),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: AppColors.border),
+          child: Container(height: 1, color: border),
         ),
       ),
       body: SingleChildScrollView(
@@ -130,13 +140,15 @@ class _TripRiskScreenState extends State<TripRiskScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                gradient: AppColors.bluePurple,
+                gradient: isDark
+                    ? AppColors.primaryGradientDark
+                    : AppColors.primaryGradient,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('🗺️', style: TextStyle(fontSize: 32)),
+                  const Icon(Icons.map_outlined, color: Colors.white, size: 32),
                   const SizedBox(height: 10),
                   Text(
                     'Planning a trip?',
@@ -166,7 +178,7 @@ class _TripRiskScreenState extends State<TripRiskScreen> {
               style: GoogleFonts.nunito(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: AppColors.textMuted,
+                color: textMuted,
                 letterSpacing: 0.7,
               ),
             ),
@@ -176,26 +188,26 @@ class _TripRiskScreenState extends State<TripRiskScreen> {
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: surface,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.border, width: 2),
+                      border: Border.all(color: border, width: 2),
                     ),
                     child: TextField(
                       controller: _controller,
                       style: GoogleFonts.nunito(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.text,
+                        color: text,
                       ),
                       decoration: InputDecoration(
                         hintText: 'e.g. Lahore, Karachi...',
                         hintStyle: GoogleFonts.nunito(
                           fontSize: 15,
-                          color: AppColors.textDim,
+                          color: textDim,
                         ),
-                        prefixIcon: const Icon(
+                        prefixIcon: Icon(
                           Icons.location_on_outlined,
-                          color: AppColors.blue,
+                          color: primary,
                           size: 20,
                         ),
                         border: InputBorder.none,
@@ -219,9 +231,11 @@ class _TripRiskScreenState extends State<TripRiskScreen> {
                     height: 52,
                     decoration: BoxDecoration(
                       gradient: _loading
-                          ? const LinearGradient(
-                              colors: [AppColors.textDim, AppColors.textDim])
-                          : AppColors.bluePurple,
+                          ? LinearGradient(
+                              colors: [textDim, textDim])
+                          : (isDark
+                              ? AppColors.primaryGradientDark
+                              : AppColors.primaryGradient),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Center(
@@ -252,7 +266,7 @@ class _TripRiskScreenState extends State<TripRiskScreen> {
               style: GoogleFonts.nunito(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: AppColors.textMuted,
+                color: textMuted,
                 letterSpacing: 0.7,
               ),
             ),
@@ -270,16 +284,16 @@ class _TripRiskScreenState extends State<TripRiskScreen> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: surface,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppColors.border, width: 1.5),
+                      border: Border.all(color: border, width: 1.5),
                     ),
                     child: Text(
                       city,
                       style: GoogleFonts.nunito(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.textMuted,
+                        color: textMuted,
                       ),
                     ),
                   ),
@@ -300,7 +314,7 @@ class _TripRiskScreenState extends State<TripRiskScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Text('❌', style: TextStyle(fontSize: 18)),
+                    const Icon(Icons.cancel_outlined, color: AppColors.red, size: 18),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -332,9 +346,10 @@ class _TripRiskScreenState extends State<TripRiskScreen> {
                   children: [
                     Row(
                       children: [
-                        Text(
-                          _verdictIcon(_result!['trip_verdict'] as String?),
-                          style: const TextStyle(fontSize: 28),
+                        Icon(
+                          _verdictIconData(_result!['trip_verdict'] as String?),
+                          color: Colors.white,
+                          size: 28,
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -383,9 +398,9 @@ class _TripRiskScreenState extends State<TripRiskScreen> {
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: surface,
                   borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: border),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -395,13 +410,13 @@ class _TripRiskScreenState extends State<TripRiskScreen> {
                       style: GoogleFonts.nunito(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.textMuted,
+                        color: textMuted,
                         letterSpacing: 0.7,
                       ),
                     ),
                     const SizedBox(height: 14),
                     _buildEnvGrid(_result!['destination_environment']
-                        as Map<String, dynamic>),
+                        as Map<String, dynamic>, surface3, border, text, textDim, primary),
                   ],
                 ),
               ),
@@ -412,9 +427,9 @@ class _TripRiskScreenState extends State<TripRiskScreen> {
                 Container(
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: surface,
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(color: border),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -424,7 +439,7 @@ class _TripRiskScreenState extends State<TripRiskScreen> {
                         style: GoogleFonts.nunito(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.textMuted,
+                          color: textMuted,
                           letterSpacing: 0.7,
                         ),
                       ),
@@ -450,7 +465,7 @@ class _TripRiskScreenState extends State<TripRiskScreen> {
                                   r.toString(),
                                   style: GoogleFonts.nunito(
                                     fontSize: 13,
-                                    color: AppColors.text,
+                                    color: text,
                                     height: 1.5,
                                   ),
                                 ),
@@ -494,15 +509,15 @@ class _TripRiskScreenState extends State<TripRiskScreen> {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('⚠️',
-                                  style: TextStyle(fontSize: 14)),
+                              const Icon(Icons.warning_amber_rounded,
+                                  color: AppColors.yellow, size: 16),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   a.toString(),
                                   style: GoogleFonts.nunito(
                                     fontSize: 13,
-                                    color: AppColors.text,
+                                    color: text,
                                     height: 1.5,
                                   ),
                                 ),
@@ -521,10 +536,10 @@ class _TripRiskScreenState extends State<TripRiskScreen> {
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: AppColors.blueDim,
+                  color: primary.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(
-                      color: AppColors.blue.withValues(alpha: 0.2)),
+                      color: primary.withValues(alpha: 0.2)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -534,7 +549,7 @@ class _TripRiskScreenState extends State<TripRiskScreen> {
                       style: GoogleFonts.nunito(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.blue,
+                        color: primary,
                         letterSpacing: 0.7,
                       ),
                     ),
@@ -549,15 +564,15 @@ class _TripRiskScreenState extends State<TripRiskScreen> {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('💡',
-                                style: TextStyle(fontSize: 14)),
+                            Icon(Icons.lightbulb_outline,
+                                color: primary, size: 16),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 tip,
                                 style: GoogleFonts.nunito(
                                   fontSize: 13,
-                                  color: AppColors.text,
+                                  color: text,
                                   height: 1.5,
                                 ),
                               ),
@@ -579,14 +594,14 @@ class _TripRiskScreenState extends State<TripRiskScreen> {
   }
 
   // ── Environment grid ──
-  Widget _buildEnvGrid(Map<String, dynamic> env) {
+  Widget _buildEnvGrid(Map<String, dynamic> env, Color surface3, Color border, Color text, Color textDim, Color primary) {
     final items = [
-      {'icon': '🌡️', 'label': 'Temp',    'value': '${env['temperature']}°C'},
-      {'icon': '💧', 'label': 'Humidity', 'value': '${env['humidity']}%'},
-      {'icon': '🌫️', 'label': 'AQI',      'value': '${env['AQI']}'},
-      {'icon': '🏭', 'label': 'PM2.5',    'value': '${env['PM2_5']} μg'},
-      {'icon': '🚗', 'label': 'NO2',      'value': '${env['NO2']} μg'},
-      {'icon': '🌸', 'label': 'Pollen',   'value': '${env['pollen_count'] ?? '--'}'},
+      {'icon': Icons.thermostat_outlined,    'label': 'Temp',    'value': '${env['temperature']}°C'},
+      {'icon': Icons.water_drop_outlined,    'label': 'Humidity', 'value': '${env['humidity']}%'},
+      {'icon': Icons.cloud_outlined,         'label': 'AQI',      'value': '${env['AQI']}'},
+      {'icon': Icons.factory_outlined,       'label': 'PM2.5',    'value': '${env['PM2_5']} μg'},
+      {'icon': Icons.directions_car_outlined,'label': 'NO2',      'value': '${env['NO2']} μg'},
+      {'icon': Icons.local_florist_outlined, 'label': 'Pollen',   'value': '${env['pollen_count'] ?? '--'}'},
     ];
 
     return GridView.count(
@@ -595,35 +610,35 @@ class _TripRiskScreenState extends State<TripRiskScreen> {
       physics: const NeverScrollableScrollPhysics(),
       crossAxisSpacing: 10,
       mainAxisSpacing: 10,
-      childAspectRatio: 1.3,
+      childAspectRatio: 1.15,
       children: items.map((item) {
         return Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: AppColors.surface3,
+            color: surface3,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: border),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(item['icon']!,
-                  style: const TextStyle(fontSize: 18)),
+              Icon(item['icon'] as IconData,
+                  color: primary, size: 18),
               const SizedBox(height: 4),
               Text(
-                item['value']!,
+                item['value'] as String,
                 style: GoogleFonts.nunito(
                   fontSize: 13,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.text,
+                  color: text,
                 ),
               ),
               Text(
-                item['label']!,
+                item['label'] as String,
                 style: GoogleFonts.nunito(
                   fontSize: 9,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textDim,
+                  color: textDim,
                   letterSpacing: 0.5,
                 ),
               ),

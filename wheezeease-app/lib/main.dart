@@ -38,29 +38,39 @@ class WheezeEaseApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'WheezeEase',
-      theme: AppTheme.theme,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
       debugShowCheckedModeBanner: false,
       home: const AppShell(),
       builder: (context, child) {
-        if (!isDesktopOrWeb) return child!;
+        if (!WheezeEaseApp.isDesktopOrWeb) return child!;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         return Container(
-          color: const Color(0xFFCCDDF5),
+          color: isDark ? const Color(0xFF0A1812) : const Color(0xFFCCDDF5),
           child: Center(
             child: Container(
               width: 390,
               height: 844,
               clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
-                color: AppColors.bg,
+                color: AppColors.bgColor(context),
                 borderRadius: BorderRadius.circular(48),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF143C8C).withValues(alpha: 0.28),
+                    color:
+                        (isDark
+                                ? const Color(0xFF00D4B4)
+                                : const Color(0xFF143C8C))
+                            .withValues(alpha: 0.28),
                     blurRadius: 80,
                     offset: const Offset(0, 30),
                   ),
                 ],
-                border: Border.all(color: const Color(0xFF1A2840), width: 12),
+                border: Border.all(
+                  color: AppColors.textColor(context),
+                  width: 12,
+                ),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(36),
@@ -118,12 +128,12 @@ class _AppShellState extends State<AppShell> {
   };
 
   final List<Map<String, dynamic>> _tabs = [
-    {'icon': '🏠', 'label': 'Home'},
-    {'icon': '📋', 'label': 'Check-In'},
-    {'icon': '📈', 'label': 'History'},
-    {'icon': '💊', 'label': 'Meds'},
-    {'icon': '🩺', 'label': 'Doctor'},
-    {'icon': '👤', 'label': 'Profile'},
+    {'icon': Icons.home_rounded, 'label': 'Home'},
+    {'icon': Icons.add_circle_outline, 'label': 'Check-In'},
+    {'icon': Icons.show_chart_rounded, 'label': 'History'},
+    {'icon': Icons.medication_outlined, 'label': 'Meds'},
+    {'icon': Icons.medical_services_outlined, 'label': 'Doctor'},
+    {'icon': Icons.person_outline_rounded, 'label': 'Profile'},
   ];
 
   void _onOnboardingComplete() {
@@ -142,7 +152,7 @@ class _AppShellState extends State<AppShell> {
     setState(() => _flow = AppFlow.main);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Welcome! ${doctor.name} is now your doctor 🎉'),
+        content: Text('Welcome! ${doctor.name} is now your doctor'),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -164,7 +174,7 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: AppColors.bgColor(context),
       body: Stack(
         children: [
           _buildCurrentFlow(),
@@ -260,99 +270,116 @@ class _AppShellState extends State<AppShell> {
   }
 
   Widget _buildBottomNav() {
-    return Container(
-      height: 80,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: Border(top: BorderSide(color: AppColors.border)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.blue.withValues(alpha: 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final surface = isDark ? AppColors.surfaceDark : AppColors.surface;
+        final primary = isDark ? AppColors.primaryDark : AppColors.primary;
+        final border = isDark ? AppColors.borderDark : AppColors.border;
+        final textMuted = isDark
+            ? AppColors.textMutedDark
+            : AppColors.textMuted;
+
+        return Container(
+          height: 80,
+          decoration: BoxDecoration(
+            color: surface,
+            border: Border(top: BorderSide(color: border)),
+            boxShadow: [
+              BoxShadow(
+                color: primary.withValues(alpha: 0.08),
+                blurRadius: 20,
+                offset: const Offset(0, -4),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: List.generate(_tabs.length, (i) {
-            final isActive = i == _currentTab;
-            final tab = _tabs[i];
-            return GestureDetector(
-              onTap: () => setState(() => _currentTab = i),
-              behavior: HitTestBehavior.opaque,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  color: isActive ? AppColors.blueDim : Colors.transparent,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Stack(
-                      clipBehavior: Clip.none,
+          child: SafeArea(
+            top: false,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: List.generate(_tabs.length, (i) {
+                final isActive = i == _currentTab;
+                final tab = _tabs[i];
+                return GestureDetector(
+                  onTap: () => setState(() => _currentTab = i),
+                  behavior: HitTestBehavior.opaque,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      color: isActive
+                          ? primary.withOpacity(0.12)
+                          : Colors.transparent,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        AnimatedScale(
-                          scale: isActive ? 1.15 : 1.0,
-                          duration: const Duration(milliseconds: 200),
-                          child: Text(
-                            tab['icon'] as String,
-                            style: const TextStyle(fontSize: 20),
-                          ),
-                        ),
-                        if (i == 3)
-                          Positioned(
-                            top: -4,
-                            right: -8,
-                            child: Container(
-                              width: 15,
-                              height: 15,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: AppColors.red,
-                                border: Border.all(
-                                  color: AppColors.surface,
-                                  width: 2,
-                                ),
+                        Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            AnimatedScale(
+                              scale: isActive ? 1.15 : 1.0,
+                              duration: const Duration(milliseconds: 200),
+                              child: Icon(
+                                tab['icon'] as IconData,
+                                size: 24,
+                                color: isActive ? primary : textMuted,
                               ),
-                              child: Center(
-                                child: Text(
-                                  '1',
-                                  style: GoogleFonts.nunito(
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
+                            ),
+                            if (i == 3)
+                              Positioned(
+                                top: -4,
+                                right: -8,
+                                child: Container(
+                                  width: 15,
+                                  height: 15,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: AppColors.red,
+                                    border: Border.all(
+                                      color: surface,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      '1',
+                                      style: GoogleFonts.nunito(
+                                        fontSize: 8,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          tab['label'] as String,
+                          style: GoogleFonts.nunito(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            color: isActive
+                                ? primary
+                                : AppColors.textDimColor(context),
+                            letterSpacing: 0.2,
                           ),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 3),
-                    Text(
-                      tab['label'] as String,
-                      style: GoogleFonts.nunito(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w700,
-                        color: isActive ? AppColors.blue : AppColors.textDim,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }),
-        ),
-      ),
+                  ),
+                );
+              }),
+            ),
+          ),
+        );
+      },
     );
   }
 }

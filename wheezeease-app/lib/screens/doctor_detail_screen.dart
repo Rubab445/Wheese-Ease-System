@@ -15,6 +15,13 @@ class DoctorDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = isDark ? AppColors.primaryDark : AppColors.primary;
+    final surface = isDark ? AppColors.surfaceDark : AppColors.surface;
+    final text = isDark ? AppColors.textDark : AppColors.text;
+    final textMuted = isDark ? AppColors.textMutedDark : AppColors.textMuted;
+    final border = isDark ? AppColors.borderDark : AppColors.border;
+
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -27,9 +34,11 @@ class DoctorDetailScreen extends StatelessWidget {
               right: 22,
               bottom: 28,
             ),
-            decoration: const BoxDecoration(
-              gradient: AppColors.darkGradient,
-              borderRadius: BorderRadius.only(
+            decoration: BoxDecoration(
+              gradient: isDark
+                  ? AppColors.primaryGradientDark
+                  : AppColors.primaryGradient,
+              borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(34),
                 bottomRight: Radius.circular(34),
               ),
@@ -57,7 +66,7 @@ class DoctorDetailScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                const Text('🩺', style: TextStyle(fontSize: 34)),
+                const Icon(Icons.medical_services_outlined, color: Colors.white, size: 34),
               ],
             ),
           ),
@@ -67,12 +76,12 @@ class DoctorDetailScreen extends StatelessWidget {
             margin: const EdgeInsets.fromLTRB(18, 16, 18, 0),
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: surface,
               borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: border),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.14),
+                  color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.08),
                   blurRadius: 40,
                   offset: const Offset(0, 8),
                 ),
@@ -87,11 +96,13 @@ class DoctorDetailScreen extends StatelessWidget {
                       height: 60,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(18),
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF1A4A7A), Color(0xFF3A8EFF)],
+                        gradient: LinearGradient(
+                          colors: isDark
+                              ? [const Color(0xFF1A5C48), AppColors.primaryMidDark]
+                              : [const Color(0xFF1A4A7A), const Color(0xFF3A8EFF)],
                         ),
                         border: Border.all(
-                          color: AppColors.blue.withValues(alpha: 0.3),
+                          color: primary.withValues(alpha: 0.3),
                           width: 3,
                         ),
                       ),
@@ -115,22 +126,22 @@ class DoctorDetailScreen extends StatelessWidget {
                           style: GoogleFonts.playfairDisplay(
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.text,
+                            color: text,
                           ),
                         ),
                         Text(
                           'Pulmonologist · FCPS',
                           style: GoogleFonts.nunito(
                             fontSize: 12,
-                            color: AppColors.textMuted,
+                            color: textMuted,
                           ),
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          '🏥 Gujranwala General Hospital',
+                          'Gujranwala General Hospital',
                           style: GoogleFonts.nunito(
                             fontSize: 12,
-                            color: AppColors.blue,
+                            color: primary,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -141,26 +152,11 @@ class DoctorDetailScreen extends StatelessWidget {
                 const SizedBox(height: 14),
                 Row(
                   children: [
-                    _statCard(
-                      'Experience',
-                      '14 yrs',
-                      AppColors.greenDim,
-                      AppColors.green,
-                    ),
+                    _statCard('Experience', '14 yrs', AppColors.greenDim, AppColors.green, text, textMuted),
                     const SizedBox(width: 8),
-                    _statCard(
-                      'Last Visit',
-                      'Feb 18',
-                      AppColors.blueDim,
-                      AppColors.blue,
-                    ),
+                    _statCard('Last Visit', 'Feb 18', AppColors.blueDim, AppColors.blue, text, textMuted),
                     const SizedBox(width: 8),
-                    _statCard(
-                      'Next Visit',
-                      'Mar 18',
-                      AppColors.purpleDim,
-                      AppColors.purple,
-                    ),
+                    _statCard('Next Visit', 'Mar 18', AppColors.purpleDim, primary, text, textMuted),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -172,34 +168,13 @@ class DoctorDetailScreen extends StatelessWidget {
                   mainAxisSpacing: 8,
                   childAspectRatio: 3.2,
                   children: [
-                    _actionBtn(
-                      context,
-                      '💬 Message',
-                      AppColors.blueDim,
-                      AppColors.blue,
-                      onMessageTap,
-                    ),
-                    _actionBtn(
-                      context,
-                      '📅 Book Visit',
-                      AppColors.greenDim,
-                      AppColors.green,
-                      () => _showToast(context, '📅 Appointment request sent!'),
-                    ),
-                    _actionBtn(
-                      context,
-                      '📞 Call Now',
-                      AppColors.redDim,
-                      AppColors.red,
-                      () => _showToast(context, '📞 Calling Dr. Rahman...'),
-                    ),
-                    _actionBtn(
-                      context,
-                      '📋 Share Report',
-                      AppColors.yellowDim,
-                      AppColors.yellow,
-                      () => _showToast(context, '📋 Sharing health report...'),
-                    ),
+                    _actionBtn(context, 'Message', AppColors.blueDim, AppColors.blue, onMessageTap),
+                    _actionBtn(context, 'Book Visit', AppColors.greenDim, AppColors.green,
+                        () => _showToast(context, 'Appointment request sent!')),
+                    _actionBtn(context, 'Call Now', AppColors.redDim, AppColors.red,
+                        () => _showToast(context, 'Calling Dr. Rahman...')),
+                    _actionBtn(context, 'Share Report', AppColors.yellowDim, AppColors.yellow,
+                        () => _showToast(context, 'Sharing health report...')),
                   ],
                 ),
               ],
@@ -214,32 +189,26 @@ class DoctorDetailScreen extends StatelessWidget {
               style: GoogleFonts.nunito(
                 fontSize: 14,
                 fontWeight: FontWeight.w800,
-                color: AppColors.text,
+                color: text,
               ),
             ),
           ),
-          _adviceCard(
-            'Today · 7:22 AM',
-            'Carry your rescue inhaler at all times. AQI is above 150 — wear an N95 mask if you must go outside. Take corticosteroid as scheduled.',
-            AppColors.blue,
-          ),
-          _adviceCard(
-            'March 05 · 2:10 PM',
-            'Good progress this week! Risk scores are improving. Continue current medication. Reduce inhaler use if possible.',
-            AppColors.green,
-          ),
-          _adviceCard(
-            'March 01 · 9:45 AM',
-            'Pollen season starting. Start Cetirizine daily. Avoid morning outdoor walks 6–10 AM when pollen peaks.',
-            AppColors.purple,
-          ),
+          _adviceCard('Today · 7:22 AM',
+              'Carry your rescue inhaler at all times. AQI is above 150 — wear an N95 mask if you must go outside. Take corticosteroid as scheduled.',
+              AppColors.blue, surface, border, text, textMuted, isDark),
+          _adviceCard('March 05 · 2:10 PM',
+              'Good progress this week! Risk scores are improving. Continue current medication. Reduce inhaler use if possible.',
+              AppColors.green, surface, border, text, textMuted, isDark),
+          _adviceCard('March 01 · 9:45 AM',
+              'Pollen season starting. Start Cetirizine daily. Avoid morning outdoor walks 6–10 AM when pollen peaks.',
+              primary, surface, border, text, textMuted, isDark),
           const SizedBox(height: 100),
         ],
       ),
     );
   }
 
-  Widget _statCard(String label, String value, Color bg, Color borderColor) {
+  Widget _statCard(String label, String value, Color bg, Color borderColor, Color text, Color muted) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(10),
@@ -254,7 +223,7 @@ class DoctorDetailScreen extends StatelessWidget {
               label,
               style: GoogleFonts.nunito(
                 fontSize: 10,
-                color: AppColors.textMuted,
+                color: muted,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -263,7 +232,7 @@ class DoctorDetailScreen extends StatelessWidget {
               style: GoogleFonts.playfairDisplay(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
-                color: AppColors.text,
+                color: text,
               ),
             ),
           ],
@@ -302,17 +271,18 @@ class DoctorDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _adviceCard(String date, String text, Color borderColor) {
+  Widget _adviceCard(String date, String text, Color borderColor,
+      Color surface, Color border, Color textColor, Color muted, bool isDark) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 18, vertical: 5),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
+            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.05),
             blurRadius: 24,
             offset: const Offset(0, 4),
           ),
@@ -330,7 +300,7 @@ class DoctorDetailScreen extends StatelessWidget {
               date,
               style: GoogleFonts.nunito(
                 fontSize: 10,
-                color: AppColors.textMuted,
+                color: muted,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -339,7 +309,7 @@ class DoctorDetailScreen extends StatelessWidget {
               text,
               style: GoogleFonts.nunito(
                 fontSize: 13,
-                color: AppColors.text,
+                color: textColor,
                 height: 1.7,
               ),
             ),

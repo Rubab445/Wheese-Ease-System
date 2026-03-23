@@ -447,7 +447,7 @@ def predict_with_live_data(weather_city: str,
     # Merge with patient symptoms
     full_data = {**env, **patient_symptoms}
 
-    print(f"\n🤖 Running AI prediction...")
+    print(f"\n Running AI prediction...")
 
     # Feature Engineering
     env_risk_index = (

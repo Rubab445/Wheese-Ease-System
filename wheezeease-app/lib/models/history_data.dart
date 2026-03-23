@@ -24,7 +24,7 @@ class HistoryDay {
       risk: 18,
       inhaler: 1,
       aqi: 72,
-      symptoms: 'Mild cough · Felt 😊',
+      symptoms: 'Mild cough · Felt Good',
       color: AppColors.green,
     ),
     HistoryDay(
@@ -32,7 +32,7 @@ class HistoryDay {
       risk: 32,
       inhaler: 2,
       aqi: 95,
-      symptoms: 'Coughing (Mild) · Felt 🙂',
+      symptoms: 'Coughing (Mild) · Felt OK',
       color: AppColors.yellow,
     ),
     HistoryDay(
@@ -40,7 +40,7 @@ class HistoryDay {
       risk: 45,
       inhaler: 2,
       aqi: 110,
-      symptoms: 'Wheezing, Coughing (Mod) · Felt 😐',
+      symptoms: 'Wheezing, Coughing (Mod) · Felt Neutral',
       color: AppColors.yellow,
     ),
     HistoryDay(
@@ -48,7 +48,7 @@ class HistoryDay {
       risk: 62,
       inhaler: 3,
       aqi: 138,
-      symptoms: 'Wheezing, Shortness of breath (Severe) · Felt 😟',
+      symptoms: 'Wheezing, Shortness of breath (Severe) · Felt Concerned',
       color: AppColors.red,
     ),
     HistoryDay(
@@ -56,7 +56,7 @@ class HistoryDay {
       risk: 55,
       inhaler: 2,
       aqi: 120,
-      symptoms: 'Wheezing (Moderate) · Felt 😐',
+      symptoms: 'Wheezing (Moderate) · Felt Neutral',
       color: AppColors.yellow,
     ),
     HistoryDay(
@@ -64,7 +64,7 @@ class HistoryDay {
       risk: 48,
       inhaler: 0,
       aqi: 88,
-      symptoms: 'None reported · Felt 🙂',
+      symptoms: 'None reported · Felt OK',
       color: AppColors.yellow,
     ),
     HistoryDay(
