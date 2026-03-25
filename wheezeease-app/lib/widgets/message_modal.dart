@@ -73,10 +73,20 @@ class _MessageModalState extends State<MessageModal> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = isDark ? AppColors.primaryDark : AppColors.primary;
+    final surface = isDark ? AppColors.surfaceDark : AppColors.surface;
+    final surface2 = isDark ? AppColors.surface2Dark : AppColors.surface2;
+    final surface3 = isDark ? AppColors.surface2Dark : AppColors.surface3;
+    final text = isDark ? AppColors.textDark : AppColors.text;
+    final textMuted = isDark ? AppColors.textMutedDark : AppColors.textMuted;
+    final textDim = isDark ? AppColors.textDimDark : AppColors.textDim;
+    final border = isDark ? AppColors.borderDark : AppColors.border;
+
     return GestureDetector(
       onTap: widget.onClose,
       child: Container(
-        color: Colors.black.withValues(alpha: 0.4),
+        color: Colors.black.withValues(alpha: isDark ? 0.6 : 0.4),
         child: Align(
           alignment: Alignment.bottomCenter,
           child: GestureDetector(
@@ -85,11 +95,12 @@ class _MessageModalState extends State<MessageModal> {
               margin: const EdgeInsets.all(14),
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: surface,
                 borderRadius: BorderRadius.circular(26),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
+                    color:
+                        Colors.black.withValues(alpha: isDark ? 0.4 : 0.2),
                     blurRadius: 40,
                     offset: const Offset(0, -8),
                   ),
@@ -106,17 +117,15 @@ class _MessageModalState extends State<MessageModal> {
                         style: GoogleFonts.playfairDisplay(
                           fontSize: 17,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.text,
+                          color: text,
                         ),
                       ),
                       GestureDetector(
                         onTap: widget.onClose,
-                        child: Text(
-                          '✕',
-                          style: GoogleFonts.nunito(
-                            fontSize: 19,
-                            color: AppColors.textMuted,
-                          ),
+                        child: Icon(
+                          Icons.close,
+                          size: 19,
+                          color: textMuted,
                         ),
                       ),
                     ],
@@ -128,7 +137,8 @@ class _MessageModalState extends State<MessageModal> {
                       controller: _scrollController,
                       shrinkWrap: true,
                       itemCount: _messages.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 9),
+                      separatorBuilder: (_, __) =>
+                          const SizedBox(height: 9),
                       itemBuilder: (context, i) {
                         final msg = _messages[i];
                         final isOut = msg['type'] == 'out';
@@ -146,21 +156,21 @@ class _MessageModalState extends State<MessageModal> {
                               vertical: 9,
                             ),
                             decoration: BoxDecoration(
-                              color: isOut
-                                  ? AppColors.blue
-                                  : AppColors.surface3,
+                              color: isOut ? primary : surface3,
                               borderRadius: BorderRadius.only(
                                 topLeft: const Radius.circular(17),
                                 topRight: const Radius.circular(17),
-                                bottomLeft: Radius.circular(isOut ? 17 : 4),
-                                bottomRight: Radius.circular(isOut ? 4 : 17),
+                                bottomLeft:
+                                    Radius.circular(isOut ? 17 : 4),
+                                bottomRight:
+                                    Radius.circular(isOut ? 4 : 17),
                               ),
                             ),
                             child: Text(
                               msg['text']!,
                               style: GoogleFonts.nunito(
                                 fontSize: 13,
-                                color: isOut ? Colors.white : AppColors.text,
+                                color: isOut ? Colors.white : text,
                                 height: 1.5,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -179,16 +189,16 @@ class _MessageModalState extends State<MessageModal> {
                           onSubmitted: (_) => _send(),
                           style: GoogleFonts.nunito(
                             fontSize: 14,
-                            color: AppColors.text,
+                            color: text,
                           ),
                           decoration: InputDecoration(
                             hintText: 'Type a message...',
                             hintStyle: GoogleFonts.nunito(
                               fontSize: 14,
-                              color: AppColors.textDim,
+                              color: textDim,
                             ),
                             filled: true,
-                            fillColor: AppColors.surface2,
+                            fillColor: surface2,
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 15,
                               vertical: 11,
@@ -196,21 +206,21 @@ class _MessageModalState extends State<MessageModal> {
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(15),
                               borderSide: BorderSide(
-                                color: AppColors.border,
+                                color: border,
                                 width: 2,
                               ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(15),
                               borderSide: BorderSide(
-                                color: AppColors.border,
+                                color: border,
                                 width: 2,
                               ),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(15),
-                              borderSide: const BorderSide(
-                                color: AppColors.blue,
+                              borderSide: BorderSide(
+                                color: primary,
                                 width: 2,
                               ),
                             ),
@@ -225,15 +235,13 @@ class _MessageModalState extends State<MessageModal> {
                           height: 44,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(13),
-                            color: AppColors.blue,
+                            color: primary,
                           ),
                           child: const Center(
-                            child: Text(
-                              '➤',
-                              style: TextStyle(
-                                fontSize: 17,
-                                color: Colors.white,
-                              ),
+                            child: Icon(
+                              Icons.send_rounded,
+                              color: Colors.white,
+                              size: 17,
                             ),
                           ),
                         ),

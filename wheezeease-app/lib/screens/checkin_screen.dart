@@ -31,30 +31,51 @@ class _CheckinScreenState extends State<CheckinScreen> {
   );
 
   final List<Map<String, dynamic>> _symptoms = [
-    {'emoji': '😤', 'name': 'Coughing', 'sub': 'Dry or wet', 'selected': false},
     {
-      'emoji': '😮‍💨',
+      'icon': Icons.volume_up_outlined,
+      'name': 'Coughing',
+      'sub': 'Dry or wet',
+      'selected': false,
+    },
+    {
+      'icon': Icons.air_rounded,
       'name': 'Wheezing',
       'sub': 'Whistling breath',
       'selected': true,
     },
     {
-      'emoji': '😫',
+      'icon': Icons.emergency_outlined,
       'name': 'Shortness',
       'sub': 'Hard to breathe',
       'selected': true,
     },
-    {'emoji': '😴', 'name': 'Fatigue', 'sub': 'Low energy', 'selected': false},
     {
-      'emoji': '🤧',
+      'icon': Icons.battery_1_bar_rounded,
+      'name': 'Fatigue',
+      'sub': 'Low energy',
+      'selected': false,
+    },
+    {
+      'icon': Icons.water_drop_outlined,
       'name': 'Runny Nose',
       'sub': 'Nasal congestion',
       'selected': false,
     },
-    {'emoji': '😶', 'name': 'None', 'sub': 'Feeling fine!', 'selected': false},
+    {
+      'icon': Icons.check_circle_outline,
+      'name': 'None',
+      'sub': 'Feeling fine!',
+      'selected': false,
+    },
   ];
 
-  final List<String> _moods = ['😄', '🙂', '😐', '😟', '😰'];
+  final List<IconData> _moodIcons = [
+    Icons.sentiment_very_satisfied_outlined,
+    Icons.sentiment_satisfied_outlined,
+    Icons.sentiment_neutral_outlined,
+    Icons.sentiment_dissatisfied_outlined,
+    Icons.sentiment_very_dissatisfied_outlined,
+  ];
 
   @override
   void dispose() {
@@ -174,8 +195,10 @@ class _CheckinScreenState extends State<CheckinScreen> {
             right: 22,
             bottom: 32,
           ),
-          decoration: const BoxDecoration(
-            gradient: AppColors.greenGradient,
+          decoration: BoxDecoration(
+            gradient: Theme.of(context).brightness == Brightness.dark
+                ? AppColors.primaryGradientDark
+                : AppColors.primaryGradient,
             borderRadius: BorderRadius.only(
               bottomLeft: Radius.circular(34),
               bottomRight: Radius.circular(34),
@@ -204,7 +227,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
                   ),
                 ],
               ),
-              const Text('📋', style: TextStyle(fontSize: 34)),
+              const Icon(Icons.assignment_outlined, color: Colors.white, size: 34),
             ],
           ),
         ),
@@ -228,7 +251,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
               style: GoogleFonts.nunito(
                 fontSize: 14,
                 fontWeight: FontWeight.w800,
-                color: AppColors.text,
+                color: AppColors.textColor(context),
               ),
             ),
           ),
@@ -260,15 +283,23 @@ class _CheckinScreenState extends State<CheckinScreen> {
                   duration: const Duration(milliseconds: 200),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: selected ? AppColors.blueDim : AppColors.surface,
+                    color: selected
+                        ? AppColors.primaryColor(context).withOpacity(0.12)
+                        : AppColors.surfaceColor(context),
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: selected ? AppColors.blue : AppColors.border,
+                      color: selected
+                          ? AppColors.primaryColor(context)
+                          : AppColors.borderColor(context),
                       width: 2,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
+                        color: Colors.black.withValues(
+                          alpha: Theme.of(context).brightness == Brightness.dark
+                              ? 0.15
+                              : 0.08,
+                        ),
                         blurRadius: 24,
                         offset: const Offset(0, 4),
                       ),
@@ -277,9 +308,12 @@ class _CheckinScreenState extends State<CheckinScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        s['emoji'] as String,
-                        style: const TextStyle(fontSize: 32),
+                      Icon(
+                        s['icon'] as IconData,
+                        size: 28,
+                        color: selected
+                            ? AppColors.primaryColor(context)
+                            : AppColors.textMutedColor(context),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -287,14 +321,16 @@ class _CheckinScreenState extends State<CheckinScreen> {
                         style: GoogleFonts.nunito(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
-                          color: selected ? AppColors.blue : AppColors.text,
+                          color: selected
+                              ? AppColors.primaryColor(context)
+                              : AppColors.textColor(context),
                         ),
                       ),
                       Text(
                         s['sub'] as String,
                         style: GoogleFonts.nunito(
                           fontSize: 10,
-                          color: AppColors.textMuted,
+                          color: AppColors.textMutedColor(context),
                         ),
                       ),
                     ],
@@ -312,7 +348,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
               style: GoogleFonts.nunito(
                 fontSize: 14,
                 fontWeight: FontWeight.w800,
-                color: AppColors.text,
+                color: AppColors.textColor(context),
               ),
             ),
           ),
@@ -321,21 +357,24 @@ class _CheckinScreenState extends State<CheckinScreen> {
             child: Row(
               children: [
                 _intensityBtn(
-                  '😌\nMild',
+                  Icons.sentiment_satisfied_outlined,
+                  'Mild',
                   'mild',
                   AppColors.green,
                   AppColors.greenDim,
                 ),
                 const SizedBox(width: 8),
                 _intensityBtn(
-                  '😐\nModerate',
+                  Icons.sentiment_neutral_outlined,
+                  'Moderate',
                   'mod',
                   AppColors.yellow,
                   AppColors.yellowDim,
                 ),
                 const SizedBox(width: 8),
                 _intensityBtn(
-                  '😣\nSevere',
+                  Icons.sentiment_very_dissatisfied_outlined,
+                  'Severe',
                   'sev',
                   AppColors.red,
                   AppColors.redDim,
@@ -352,7 +391,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
               style: GoogleFonts.nunito(
                 fontSize: 14,
                 fontWeight: FontWeight.w800,
-                color: AppColors.text,
+                color: AppColors.textColor(context),
               ),
             ),
           ),
@@ -360,9 +399,9 @@ class _CheckinScreenState extends State<CheckinScreen> {
             margin: const EdgeInsets.symmetric(horizontal: 18),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: AppColors.surfaceColor(context),
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: AppColors.borderColor(context)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.08),
@@ -373,7 +412,19 @@ class _CheckinScreenState extends State<CheckinScreen> {
             ),
             child: Row(
               children: [
-                const Text('💨', style: TextStyle(fontSize: 30)),
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryColor(context).withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.air_rounded,
+                    color: AppColors.primaryColor(context),
+                    size: 22,
+                  ),
+                ),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
@@ -384,14 +435,14 @@ class _CheckinScreenState extends State<CheckinScreen> {
                         style: GoogleFonts.nunito(
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.text,
+                          color: AppColors.textColor(context),
                         ),
                       ),
                       Text(
                         'Times used today',
                         style: GoogleFonts.nunito(
                           fontSize: 11,
-                          color: AppColors.textMuted,
+                          color: AppColors.textMutedColor(context),
                         ),
                       ),
                     ],
@@ -409,7 +460,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
                   style: GoogleFonts.playfairDisplay(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.text,
+                    color: AppColors.textColor(context),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -431,7 +482,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
               style: GoogleFonts.nunito(
                 fontSize: 14,
                 fontWeight: FontWeight.w800,
-                color: AppColors.text,
+                color: AppColors.textColor(context),
               ),
             ),
           ),
@@ -439,6 +490,11 @@ class _CheckinScreenState extends State<CheckinScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(5, (i) {
               final selected = i == _selectedMood;
+              final moodColor = i <= 1
+                  ? AppColors.green
+                  : i == 2
+                  ? AppColors.yellow
+                  : AppColors.red;
               return GestureDetector(
                 onTap: () => setState(() => _selectedMood = i),
                 child: AnimatedContainer(
@@ -448,16 +504,21 @@ class _CheckinScreenState extends State<CheckinScreen> {
                   height: selected ? 56 : 50,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: selected ? AppColors.blueDim : AppColors.surface,
+                    color: selected
+                        ? moodColor.withOpacity(0.12)
+                        : AppColors.surfaceColor(context),
                     border: Border.all(
-                      color: selected ? AppColors.blue : AppColors.border,
+                      color: selected
+                          ? moodColor
+                          : AppColors.borderColor(context),
                       width: 2,
                     ),
                   ),
                   child: Center(
-                    child: Text(
-                      _moods[i],
-                      style: TextStyle(fontSize: selected ? 27 : 25),
+                    child: Icon(
+                      _moodIcons[i],
+                      color: moodColor,
+                      size: selected ? 28 : 24,
                     ),
                   ),
                 ),
@@ -476,7 +537,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
                   style: GoogleFonts.nunito(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.text,
+                    color: AppColors.textColor(context),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -485,30 +546,30 @@ class _CheckinScreenState extends State<CheckinScreen> {
                   maxLines: 3,
                   style: GoogleFonts.nunito(
                     fontSize: 13,
-                    color: AppColors.text,
+                    color: AppColors.textColor(context),
                     height: 1.6,
                   ),
                   decoration: InputDecoration(
                     hintText: 'e.g. Worse after going outside...',
                     hintStyle: GoogleFonts.nunito(
                       fontSize: 13,
-                      color: AppColors.textDim,
+                      color: AppColors.textDimColor(context),
                     ),
                     filled: true,
-                    fillColor: AppColors.surface,
+                    fillColor: AppColors.surfaceColor(context),
                     contentPadding: const EdgeInsets.all(14),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: AppColors.border, width: 2),
+                      borderSide: BorderSide(color: AppColors.borderColor(context), width: 2),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: AppColors.border, width: 2),
+                      borderSide: BorderSide(color: AppColors.borderColor(context), width: 2),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(
-                        color: AppColors.blue,
+                      borderSide: BorderSide(
+                        color: AppColors.primaryColor(context),
                         width: 2,
                       ),
                     ),
@@ -544,13 +605,20 @@ class _CheckinScreenState extends State<CheckinScreen> {
                             strokeWidth: 2,
                           ),
                         )
-                      : Text(
-                          'Submit Check-In ✓',
-                          style: GoogleFonts.nunito(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
+                      : Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Submit Check-In',
+                              style: GoogleFonts.nunito(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            const Icon(Icons.check_circle_outline, color: Colors.white, size: 18),
+                          ],
                         ),
                 ),
               ),
@@ -572,14 +640,14 @@ class _CheckinScreenState extends State<CheckinScreen> {
       child: Column(
         children: [
           const SizedBox(height: 36),
-          Text(_predictionResult.icon, style: const TextStyle(fontSize: 66)),
+          Icon(_predictionResult.riskIconData, color: _predictionResult.riskColor, size: 66),
           const SizedBox(height: 14),
           Text(
             'Check-In Complete!',
             style: GoogleFonts.playfairDisplay(
               fontSize: 24,
               fontWeight: FontWeight.w800,
-              color: AppColors.text,
+              color: AppColors.textColor(context),
             ),
           ),
           const SizedBox(height: 10),
@@ -588,7 +656,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
             text: TextSpan(
               style: GoogleFonts.nunito(
                 fontSize: 13,
-                color: AppColors.textMuted,
+                color: AppColors.textMutedColor(context),
                 height: 1.7,
               ),
               children: [
@@ -627,21 +695,27 @@ class _CheckinScreenState extends State<CheckinScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '⚡ AI RECOMMENDATIONS',
-                  style: GoogleFonts.nunito(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: riskColor,
-                    letterSpacing: 0.5,
-                  ),
+                Row(
+                  children: [
+                    Icon(Icons.auto_awesome, color: riskColor, size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      'AI RECOMMENDATIONS',
+                      style: GoogleFonts.nunito(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: riskColor,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 7),
                 Text(
                   advice,
                   style: GoogleFonts.nunito(
                     fontSize: 13,
-                    color: AppColors.text,
+                    color: AppColors.textColor(context),
                     height: 1.8,
                     fontWeight: FontWeight.w600,
                   ),
@@ -664,7 +738,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
                         '• $reason',
                         style: GoogleFonts.nunito(
                           fontSize: 12,
-                          color: AppColors.text,
+                          color: AppColors.textColor(context),
                           height: 1.5,
                         ),
                       ),
@@ -682,7 +756,9 @@ class _CheckinScreenState extends State<CheckinScreen> {
               padding: const EdgeInsets.symmetric(vertical: 16),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(18),
-                gradient: AppColors.bluePurple,
+                gradient: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.primaryGradientDark
+                    : AppColors.primaryGradient,
               ),
               child: Center(
                 child: Text(
@@ -702,6 +778,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
   }
 
   Widget _intensityBtn(
+    IconData icon,
     String label,
     String value,
     Color activeColor,
@@ -713,25 +790,39 @@ class _CheckinScreenState extends State<CheckinScreen> {
         onTap: () => setState(() => _intensity = value),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 11),
+          padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(13),
-            color: isActive ? activeBg : AppColors.surface,
+            color: isActive ? activeBg : AppColors.surfaceColor(context),
             border: Border.all(
-              color: isActive ? activeColor : AppColors.border,
+              color: isActive ? activeColor : AppColors.borderColor(context),
               width: 2,
             ),
           ),
           child: Center(
-            child: Text(
-              label,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.nunito(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: isActive ? activeColor : AppColors.textMuted,
-                height: 1.4,
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  color: isActive
+                      ? activeColor
+                      : AppColors.textMutedColor(context),
+                  size: 20,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.nunito(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: isActive
+                        ? activeColor
+                        : AppColors.textMutedColor(context),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -747,8 +838,8 @@ class _CheckinScreenState extends State<CheckinScreen> {
         height: 34,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: AppColors.surface2,
-          border: Border.all(color: AppColors.border, width: 2),
+          color: AppColors.surface2Color(context),
+          border: Border.all(color: AppColors.borderColor(context), width: 2),
         ),
         child: Center(
           child: Text(
@@ -756,7 +847,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
             style: GoogleFonts.nunito(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: AppColors.text,
+              color: AppColors.textColor(context),
             ),
           ),
         ),

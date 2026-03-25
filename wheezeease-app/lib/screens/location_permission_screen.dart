@@ -44,7 +44,7 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
       'Accessing GPS…',
       'Obtaining coordinates…',
       'Resolving address…',
-      'Location confirmed ✓',
+      'Location confirmed',
     ];
     for (int i = 0; i < steps.length; i++) {
       await Future.delayed(const Duration(milliseconds: 600));
@@ -56,13 +56,27 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = isDark ? AppColors.primaryDark : AppColors.primary;
+    final surface = isDark ? AppColors.surfaceDark : AppColors.surface;
+    final text = isDark ? AppColors.textDark : AppColors.text;
+    final textMuted = isDark ? AppColors.textMutedDark : AppColors.textMuted;
+    final border = isDark ? AppColors.borderDark : AppColors.border;
+    final bg = isDark ? AppColors.bgDark : AppColors.bg;
+
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFE8F4FF), Color(0xFFF0E8FF)],
-        ),
+      decoration: BoxDecoration(
+        gradient: isDark
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [AppColors.bgDark, const Color(0xFF0D2920)],
+              )
+            : const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFFE8F4FF), Color(0xFFF0E8FF)],
+              ),
       ),
       child: SafeArea(
         child: SingleChildScrollView(
@@ -83,8 +97,8 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
                     shape: BoxShape.circle,
                     gradient: LinearGradient(
                       colors: [
-                        AppColors.blue.withValues(alpha: 0.13),
-                        AppColors.purple.withValues(alpha: 0.13),
+                        primary.withValues(alpha: 0.13),
+                        primary.withValues(alpha: 0.08),
                       ],
                     ),
                   ),
@@ -94,17 +108,20 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
                       height: 72,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        gradient: AppColors.bluePurple,
+                        gradient: isDark
+                            ? AppColors.primaryGradientDark
+                            : AppColors.primaryGradient,
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.blue.withValues(alpha: 0.38),
+                            color: primary.withValues(alpha: 0.38),
                             blurRadius: 28,
                             offset: const Offset(0, 8),
                           ),
                         ],
                       ),
                       child: const Center(
-                        child: Text('📍', style: TextStyle(fontSize: 34)),
+                        child: Icon(Icons.location_on_outlined,
+                            color: Colors.white, size: 34),
                       ),
                     ),
                   ),
@@ -118,7 +135,7 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
                 style: GoogleFonts.playfairDisplay(
                   fontSize: 26,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.text,
+                  color: text,
                 ),
               ),
               const SizedBox(height: 10),
@@ -127,7 +144,7 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
                 textAlign: TextAlign.center,
                 style: GoogleFonts.nunito(
                   fontSize: 13,
-                  color: AppColors.textMuted,
+                  color: textMuted,
                   height: 1.75,
                 ),
               ),
@@ -140,42 +157,61 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
                   vertical: 18,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: surface,
                   borderRadius: BorderRadius.circular(22),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
+                      color: Colors.black
+                          .withValues(alpha: isDark ? 0.2 : 0.08),
                       blurRadius: 24,
                       offset: const Offset(0, 4),
                     ),
                   ],
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: border),
                 ),
                 child: Column(
                   children: [
                     _buildPermRow(
-                      '🌫️',
-                      AppColors.blueDim,
+                      Icons.cloud_outlined,
+                      primary.withOpacity(0.12),
                       'Live Air Quality Index',
                       'We fetch real-time AQI data for your exact neighbourhood to detect dangerous pollution levels.',
+                      primary,
+                      text,
+                      textMuted,
+                      border,
                     ),
                     _buildPermRow(
-                      '🌸',
+                      Icons.local_florist_outlined,
                       AppColors.greenDim,
                       'Pollen & Allergen Tracking',
                       'Localised pollen forecasts so we can warn you on high-risk days before you step outside.',
+                      primary,
+                      text,
+                      textMuted,
+                      border,
                     ),
                     _buildPermRow(
-                      '🏥',
+                      Icons.local_hospital_outlined,
                       AppColors.yellowDim,
                       'Find Doctors Near You',
                       "We'll show you registered WheezeEase doctors in your area so you can pick one to monitor your health.",
+                      primary,
+                      text,
+                      textMuted,
+                      border,
                     ),
                     _buildPermRow(
-                      '🔒',
-                      AppColors.purpleDim,
+                      Icons.lock_outlined,
+                      isDark
+                          ? primary.withOpacity(0.15)
+                          : AppColors.purpleDim,
                       'Your Privacy is Protected',
                       'Location is only used for environmental data. It is never shared with third parties.',
+                      primary,
+                      text,
+                      textMuted,
+                      border,
                       showBorder: false,
                     ),
                   ],
@@ -188,11 +224,12 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: surface,
                     borderRadius: BorderRadius.circular(18),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
+                        color: Colors.black
+                            .withValues(alpha: isDark ? 0.2 : 0.08),
                         blurRadius: 24,
                         offset: const Offset(0, 4),
                       ),
@@ -205,7 +242,7 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
                         height: 36,
                         child: CircularProgressIndicator(
                           strokeWidth: 3,
-                          color: AppColors.blue,
+                          color: primary,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -214,7 +251,7 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
                         style: GoogleFonts.nunito(
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.text,
+                          color: text,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -222,7 +259,7 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
                         _statusText,
                         style: GoogleFonts.nunito(
                           fontSize: 12,
-                          color: AppColors.textMuted,
+                          color: textMuted,
                         ),
                       ),
                     ],
@@ -237,24 +274,34 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
                     padding: const EdgeInsets.symmetric(vertical: 17),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(18),
-                      gradient: AppColors.bluePurple,
+                      gradient: isDark
+                          ? AppColors.primaryGradientDark
+                          : AppColors.primaryGradient,
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.blue.withValues(alpha: 0.35),
+                          color: primary.withValues(alpha: 0.35),
                           blurRadius: 28,
                           offset: const Offset(0, 8),
                         ),
                       ],
                     ),
                     child: Center(
-                      child: Text(
-                        '📍  Allow Location Access',
-                        style: GoogleFonts.nunito(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          letterSpacing: 0.3,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.location_on_outlined,
+                              color: Colors.white, size: 18),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Allow Location Access',
+                            style: GoogleFonts.nunito(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -269,7 +316,7 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
                         'Not now — enter manually',
                         style: GoogleFonts.nunito(
                           fontSize: 13,
-                          color: AppColors.textMuted,
+                          color: textMuted,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -285,17 +332,21 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
   }
 
   Widget _buildPermRow(
-    String icon,
+    IconData icon,
     Color bgColor,
     String title,
-    String subtitle, {
+    String subtitle,
+    Color iconColor,
+    Color textColor,
+    Color mutedColor,
+    Color borderColor, {
     bool showBorder = true,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
         border: showBorder
-            ? Border(bottom: BorderSide(color: AppColors.border))
+            ? Border(bottom: BorderSide(color: borderColor))
             : null,
       ),
       child: Row(
@@ -309,7 +360,7 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
               color: bgColor,
             ),
             child: Center(
-              child: Text(icon, style: const TextStyle(fontSize: 17)),
+              child: Icon(icon, size: 17, color: iconColor),
             ),
           ),
           const SizedBox(width: 12),
@@ -322,7 +373,7 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
                   style: GoogleFonts.nunito(
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.text,
+                    color: textColor,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -330,7 +381,7 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
                   subtitle,
                   style: GoogleFonts.nunito(
                     fontSize: 11,
-                    color: AppColors.textMuted,
+                    color: mutedColor,
                     height: 1.5,
                   ),
                 ),

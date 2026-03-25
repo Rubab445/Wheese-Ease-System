@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
@@ -22,37 +23,21 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   double _riskVal = 0;
   late Timer _timer;
+  late AnimationController _arcController;
   PredictionResult? _prediction;
   Map<String, dynamic>? _environment;
   bool _loading = true;
 
-  final List<Map<String, dynamic>> _alerts = [
-    {
-      'icon': '🚨',
-      'bg': AppColors.redDim,
-      'text': 'AQI is Unhealthy (158). Avoid outdoor activity.',
-      'time': 'Just now · Air Quality',
-    },
-    {
-      'icon': '🌸',
-      'bg': AppColors.yellowDim,
-      'text': 'Pollen count very high. Take antihistamine now.',
-      'time': '10 min ago · Pollen',
-    },
-    {
-      'icon': '💊',
-      'bg': AppColors.blueDim,
-      'text': 'Reminder: Fluticasone due in 30 minutes.',
-      'time': '1h ago · Medication',
-    },
-  ];
-
   @override
   void initState() {
     super.initState();
+    _arcController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
     _loadInitialData();
     _timer = Timer.periodic(const Duration(seconds: 30), (_) {
       _loadInitialData();
@@ -77,12 +62,14 @@ class _HomeScreenState extends State<HomeScreen> {
         _riskVal = _prediction!.riskPercentage;
         _loading = false;
       });
+      _arcController.forward(from: 0.0);
     }
   }
 
   @override
   void dispose() {
     _timer.cancel();
+    _arcController.dispose();
     super.dispose();
   }
 
@@ -93,755 +80,722 @@ class _HomeScreenState extends State<HomeScreen> {
         : 'Risk assessment pending';
   }
 
-  Color get _riskColor {
-    if (_prediction == null) return AppColors.textMuted;
+  Color _getRiskColor(BuildContext context) {
+    if (_prediction == null) return AppColors.textMutedColor(context);
     return _prediction!.riskColor;
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = isDark ? AppColors.primaryDark : AppColors.primary;
+    final surface = isDark ? AppColors.surfaceDark : AppColors.surface;
+    final bg = isDark ? AppColors.bgDark : AppColors.bg;
+    final text = isDark ? AppColors.textDark : AppColors.text;
+    final textMuted = isDark ? AppColors.textMutedDark : AppColors.textMuted;
+    final border = isDark ? AppColors.borderDark : AppColors.border;
+
     final risk = _riskVal.round();
+
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Header ──
+          // ── HEADER WITH GRADIENT ──
           Container(
             padding: EdgeInsets.only(
               top: MediaQuery.of(context).padding.top + 18,
-              left: 22,
-              right: 22,
-              bottom: 28,
+              left: 20,
+              right: 20,
+              bottom: 24,
             ),
-            decoration: const BoxDecoration(
-              gradient: AppColors.bluePurple,
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(36),
-                bottomRight: Radius.circular(36),
+            decoration: BoxDecoration(
+              gradient: isDark
+                  ? AppColors.primaryGradientDark
+                  : AppColors.primaryGradient,
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(28),
+                bottomRight: Radius.circular(28),
               ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Good morning,',
-                  style: GoogleFonts.nunito(
-                    fontSize: 13,
-                    color: Colors.white70,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  '${widget.userName} 👋',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 24,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                // Risk hero card
-                Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(22),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.25),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'YOUR RISK SCORE RIGHT NOW',
-                        style: GoogleFonts.nunito(
-                          fontSize: 11,
-                          color: Colors.white70,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                      Text(
-                        '$risk%',
-                        style: GoogleFonts.playfairDisplay(
-                          fontSize: 50,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          Container(
-                            width: 10,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: _riskColor,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Flexible(
-                            child: Text(
-                              _riskLabel,
-                              style: GoogleFonts.nunito(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: LinearProgressIndicator(
-                          value: risk / 100,
-                          minHeight: 7,
-                          backgroundColor:
-                              Colors.white.withValues(alpha: 0.15),
-                          valueColor: AlwaysStoppedAnimation(
-                            Colors.white.withValues(alpha: 0.9),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // ── Env strip ──
-          SizedBox(
-            height: 80,
-            child: _loading || _environment == null
-                ? Center(
-                    child: SizedBox(
-                      width: 30,
-                      height: 30,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation(
-                          AppColors.blue.withValues(alpha: 0.5),
-                        ),
-                      ),
-                    ),
-                  )
-                : ListView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 18, vertical: 8),
-                    children: [
-                      _envChip(
-                        '🌡️',
-                        '${_environment?['temperature']?.toStringAsFixed(0) ?? '34'}°C',
-                        'Temp',
-                        AppColors.yellow,
-                      ),
-                      _envChip(
-                        '💧',
-                        '${_environment?['humidity']?.toStringAsFixed(0) ?? '67'}%',
-                        'Humidity',
-                        AppColors.blue,
-                      ),
-                      _envChip(
-                        '🌫️',
-                        '${_environment?['aqi'] ?? '158'}',
-                        'AQI',
-                        AppColors.red,
-                      ),
-                      _envChip(
-                        '🌸',
-                        _environment?['pollen_level'] ?? 'High',
-                        'Pollen',
-                        AppColors.red,
-                      ),
-                      _envChip(
-                        '💨',
-                        _environment?['dust_level'] ?? 'Med',
-                        'Dust',
-                        AppColors.yellow,
-                      ),
-                      _envChip(
-                        '☁️',
-                        _environment?['weather'] ?? 'Hazy',
-                        'Sky',
-                        AppColors.textMuted,
-                      ),
-                    ],
-                  ),
-          ),
-
-          // ══════════════════════════════════════════════════
-          // TRIP SAFETY CARD — new feature
-          // ══════════════════════════════════════════════════
-          GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const TripRiskScreen(),
-              ),
-            ),
-            child: Container(
-              margin: const EdgeInsets.fromLTRB(18, 4, 18, 14),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: AppColors.bluePurple,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.blue.withValues(alpha: 0.25),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Center(
-                      child: Text('🗺️',
-                          style: TextStyle(fontSize: 22)),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Planning to go somewhere?',
-                          style: GoogleFonts.nunito(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
-                        Text(
-                          'Check if the air is safe at your destination',
-                          style: GoogleFonts.nunito(
-                            fontSize: 11,
-                            color: Colors.white.withValues(alpha: 0.8),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    color: Colors.white.withValues(alpha: 0.7),
-                    size: 16,
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // ── Check-in banner ──
-          GestureDetector(
-            onTap: widget.onCheckinTap,
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 18),
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 18, vertical: 16),
-              decoration: BoxDecoration(
-                gradient: AppColors.greenGradient,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.green.withValues(alpha: 0.3),
-                    blurRadius: 22,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  const Text('📋', style: TextStyle(fontSize: 30)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Daily Check-In',
-                          style: GoogleFonts.nunito(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
-                        Text(
-                          'Log your symptoms — takes 30 seconds',
-                          style: GoogleFonts.nunito(
-                            fontSize: 12,
-                            color: Colors.white70,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Text(
-                    '›',
-                    style: GoogleFonts.nunito(
-                        fontSize: 20, color: Colors.white70),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // ── Alerts ──
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 10),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Active Alerts',
-                  style: GoogleFonts.nunito(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.text,
-                  ),
-                ),
-                Text(
-                  'See all',
-                  style: GoogleFonts.nunito(
-                    fontSize: 12,
-                    color: AppColors.blue,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (_prediction?.alerts.isNotEmpty ?? false)
-            ..._prediction!.alerts.asMap().entries.map(
-              (entry) =>
-                  _buildPredictionAlertCard(entry.value, entry.key),
-            )
-          else
-            ..._alerts.map((a) => _buildAlertCard(a)),
-
-          // ── Quick stats ──
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 0),
-            child: GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-              childAspectRatio: 1.3,
-              children: [
-                _quickStat(
-                    '💨', '4x', 'Inhaler used today', AppColors.red),
-                _quickStat('📅', '7', 'Days tracked', AppColors.blue),
-                _quickStat(
-                    '🏆', 'Mon', 'Best day this week', AppColors.green),
-                _quickStat(
-                    '🩺', 'Mar 18', 'Next appointment', AppColors.purple),
-              ],
-            ),
-          ),
-
-          // ── AI Recommendations ──
-          if (_prediction != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'AI Health Insights',
-                    style: GoogleFonts.nunito(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.text,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Good morning,',
+                      style: GoogleFonts.nunito(
+                        fontSize: 13,
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
+                    Text(
+                      widget.userName,
+                      style: GoogleFonts.playfairDisplay(
+                        fontSize: 24,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  const SizedBox(height: 10),
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: AppColors.border),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
-                          blurRadius: 24,
-                          offset: const Offset(0, 4),
+                  child: const Icon(
+                    Icons.assignment_outlined,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ── RISK SCORE HERO CARD WITH ARC ──
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 20, 18, 16),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: surface,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: border, width: 0.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(isDark ? 0.15 : 0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  // ── ARC PAINTER ──
+                  SizedBox(
+                    width: 110,
+                    height: 110,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        CustomPaint(
+                          size: const Size(110, 110),
+                          painter: _ArcPainter(
+                            value: _riskVal / 100,
+                            riskColor: _getRiskColor(context),
+                            isDark: isDark,
+                            animation: _arcController,
+                          ),
+                        ),
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              '$risk%',
+                              style: GoogleFonts.playfairDisplay(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w800,
+                                color: text,
+                              ),
+                            ),
+                            Text(
+                              _prediction?.riskLevel ?? 'LOADING',
+                              style: GoogleFonts.nunito(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: textMuted,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
+                  ),
+                  const SizedBox(width: 18),
+                  // ── RISK INFO ──
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Risk chip
                         Container(
-                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
-                            border: Border(
-                              left: BorderSide(
-                                  color: _riskColor, width: 4),
+                            color: _getRiskColor(context).withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: _getRiskColor(context),
+                              width: 0.5,
                             ),
                           ),
-                          padding: const EdgeInsets.only(left: 10),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 34,
-                                    height: 34,
-                                    decoration: BoxDecoration(
-                                      borderRadius:
-                                          BorderRadius.circular(10),
-                                      color: _riskColor
-                                          .withValues(alpha: 0.2),
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        _prediction!.riskLevel == 'LOW'
-                                            ? '✅'
-                                            : _prediction!.riskLevel ==
-                                                    'MEDIUM'
-                                                ? '⚠️'
-                                                : '🚨',
-                                        style: const TextStyle(
-                                            fontSize: 18),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'AI Recommendation',
-                                          style: GoogleFonts.nunito(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w700,
-                                            color: AppColors.textMuted,
-                                            letterSpacing: 0.5,
-                                          ),
-                                        ),
-                                        Text(
-                                          'Risk: ${_prediction!.riskLevel} (${_prediction!.confidencePercentage})',
-                                          style: GoogleFonts.nunito(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w800,
-                                            color: AppColors.text,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: _getRiskColor(context),
+                                ),
                               ),
-                              const SizedBox(height: 10),
+                              const SizedBox(width: 8),
                               Text(
-                                _prediction!.advice,
+                                _prediction?.riskLevel ?? 'LOADING',
                                 style: GoogleFonts.nunito(
-                                  fontSize: 13,
-                                  color: AppColors.text,
-                                  height: 1.6,
-                                  fontWeight: FontWeight.w500,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: _getRiskColor(context),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        if (_prediction!.reasons.isNotEmpty) ...[
-                          const SizedBox(height: 14),
-                          Divider(color: AppColors.border, height: 1),
-                          const SizedBox(height: 10),
-                          Text(
-                            'Why This Risk Level:',
-                            style: GoogleFonts.nunito(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.text,
-                            ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'AI Health Risk Score',
+                          style: GoogleFonts.playfairDisplay(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: text,
                           ),
-                          const SizedBox(height: 8),
-                          ..._prediction!.reasons.asMap().entries.map(
-                            (entry) => Padding(
-                              padding:
-                                  const EdgeInsets.only(bottom: 6),
-                              child: Row(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '${entry.key + 1}.',
-                                    style: GoogleFonts.nunito(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.textMuted,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      entry.value,
-                                      style: GoogleFonts.nunito(
-                                        fontSize: 12,
-                                        color: AppColors.text,
-                                        height: 1.4,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          _riskLabel,
+                          style: GoogleFonts.nunito(
+                            fontSize: 12,
+                            color: textMuted,
+                            height: 1.4,
                           ),
-                        ],
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ],
                     ),
                   ),
                 ],
               ),
             ),
+          ),
 
-          // ── Doctor advice ──
+          // ── ENVIRONMENTAL DATA (2x2 GRID) ──
           Padding(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            child: _loading || _environment == null
+                ? SizedBox(
+                    height: 200,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation(primary),
+                      ),
+                    ),
+                  )
+                : GridView.count(
+                    crossAxisCount: 2,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 1.0,
+                    children: [
+                      _envCard(
+                        icon: Icons.thermostat_outlined,
+                        iconColor: AppColors.yellow,
+                        value:
+                            '${_environment?['temperature']?.toStringAsFixed(0) ?? '34'}°C',
+                        label: 'Temperature',
+                        surface: surface,
+                        border: border,
+                        isDark: isDark,
+                      ),
+                      _envCard(
+                        icon: Icons.water_drop_outlined,
+                        iconColor: AppColors.blue,
+                        value:
+                            '${_environment?['humidity']?.toStringAsFixed(0) ?? '67'}%',
+                        label: 'Humidity',
+                        surface: surface,
+                        border: border,
+                        isDark: isDark,
+                      ),
+                      _envCard(
+                        icon: Icons.air_rounded,
+                        iconColor: _environment?['aqi'] != null
+                            ? ((_environment!['aqi'] as num) > 150
+                                  ? AppColors.red
+                                  : AppColors.yellow)
+                            : AppColors.yellow,
+                        value: '${_environment?['aqi'] ?? '158'}',
+                        label: ' AQI',
+                        surface: surface,
+                        border: border,
+                        isDark: isDark,
+                      ),
+                      _envCard(
+                        icon: Icons.local_florist_outlined,
+                        iconColor: primary,
+                        value: _environment?['pollen_level'] ?? 'High',
+                        label: 'Pollen',
+                        surface: surface,
+                        border: border,
+                        isDark: isDark,
+                      ),
+                    ],
+                  ),
+          ),
+
+          // ── QUICK ACTIONS ──
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 20, 18, 12),
+            child: Text(
+              'QUICK ACTIONS',
+              style: GoogleFonts.nunito(
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
+                color: textMuted,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ),
+
+          // Primary action: Check-in
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            child: GestureDetector(
+              onTap: widget.onCheckinTap,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+                decoration: BoxDecoration(
+                  gradient: isDark
+                      ? AppColors.primaryGradientDark
+                      : AppColors.primaryGradient,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: primary.withOpacity(0.25),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.assignment_outlined,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Log Symptoms',
+                            style: GoogleFonts.nunito(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                          Text(
+                            'Daily check-in — 30 seconds',
+                            style: GoogleFonts.nunito(
+                              fontSize: 11,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: Colors.white.withOpacity(0.7),
+                      size: 16,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Secondary actions grid
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            child: GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 1.2,
               children: [
-                Text(
-                  'Latest Doctor Advice',
-                  style: GoogleFonts.nunito(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.text,
+                _secondaryBtn(
+                  icon: Icons.location_on_outlined,
+                  color: primary,
+                  label: 'Trip Risk',
+                  surface: surface,
+                  border: border,
+                  isDark: isDark,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const TripRiskScreen()),
                   ),
                 ),
-                const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: AppColors.border),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
-                        blurRadius: 24,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          border: Border(
-                            left: BorderSide(
-                                color: AppColors.blue, width: 4),
-                          ),
-                        ),
-                        padding: const EdgeInsets.only(left: 10),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  width: 34,
-                                  height: 34,
-                                  decoration: BoxDecoration(
-                                    borderRadius:
-                                        BorderRadius.circular(10),
-                                    gradient: const LinearGradient(
-                                      colors: [
-                                        Color(0xFF1A4A7A),
-                                        Color(0xFF3A8EFF),
-                                      ],
-                                    ),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      'DR',
-                                      style: GoogleFonts.nunito(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w800,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Dr. A. Rahman',
-                                      style: GoogleFonts.nunito(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w800,
-                                        color: AppColors.text,
-                                      ),
-                                    ),
-                                    Text(
-                                      '2 hours ago',
-                                      style: GoogleFonts.nunito(
-                                        fontSize: 10,
-                                        color: AppColors.textMuted,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 9),
-                            Text(
-                              'Carry your rescue inhaler at all times today. With AQI above 150, please wear an N95 mask if you must go outside.',
-                              style: GoogleFonts.nunito(
-                                fontSize: 13,
-                                color: AppColors.text,
-                                height: 1.7,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                _secondaryBtn(
+                  icon: Icons.medication_outlined,
+                  color: primary,
+                  label: 'Record Dose',
+                  surface: surface,
+                  border: border,
+                  isDark: isDark,
+                  onTap: () => _showRecordDoseSheet(context),
                 ),
               ],
             ),
           ),
+
+          // ── ALERTS ──
+          if (_prediction?.alerts.isNotEmpty ?? false)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 20, 18, 12),
+              child: Text(
+                'ACTIVE ALERTS',
+                style: GoogleFonts.nunito(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                  color: textMuted,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ),
+          if (_prediction?.alerts.isNotEmpty ?? false)
+            ..._prediction!.alerts.asMap().entries.map(
+              (entry) => _buildAlertCard(
+                entry.value,
+                _getRiskColor(context),
+                surface,
+                border,
+                isDark,
+              ),
+            ),
+
+          // ── AI INSIGHT ──
+          if (_prediction != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 20, 18, 24),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: surface,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border(
+                    left: BorderSide(color: _getRiskColor(context), width: 3),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(isDark ? 0.15 : 0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: primary.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            Icons.lightbulb_outline_rounded,
+                            color: primary,
+                            size: 14,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'AI INSIGHT',
+                          style: GoogleFonts.nunito(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                            color: textMuted,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      _prediction!.advice,
+                      style: GoogleFonts.nunito(
+                        fontSize: 13,
+                        color: text,
+                        height: 1.6,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                    if (_prediction!.reasons.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Divider(color: border, height: 1),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Why:',
+                        style: GoogleFonts.nunito(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: text,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      ..._prediction!.reasons.asMap().entries.map(
+                        (entry) => Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${entry.key + 1}.',
+                                style: GoogleFonts.nunito(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: textMuted,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  entry.value,
+                                  style: GoogleFonts.nunito(
+                                    fontSize: 11,
+                                    color: text,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+
           const SizedBox(height: 100),
         ],
       ),
     );
   }
 
-  // ── Env chip ──
-  Widget _envChip(
-      String icon, String value, String label, Color valueColor) {
+  Widget _envCard({
+    required IconData icon,
+    required Color iconColor,
+    required String value,
+    required String label,
+    required Color surface,
+    required Color border,
+    required bool isDark,
+  }) {
+    final text = isDark ? AppColors.textDark : AppColors.text;
     return Container(
-      margin: const EdgeInsets.only(right: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
+        color: surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: border, width: 0.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 24,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(isDark ? 0.15 : 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(icon, style: const TextStyle(fontSize: 16)),
-          Text(
-            value,
-            style: GoogleFonts.nunito(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              color: valueColor,
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
             ),
+            child: Icon(icon, color: iconColor, size: 17),
           ),
-          Text(
-            label,
-            style: GoogleFonts.nunito(
-              fontSize: 8,
-              color: AppColors.textDim,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.5,
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: text,
+                ),
+              ),
+              Text(
+                label,
+                style: GoogleFonts.nunito(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textMutedColor(context),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  // ── Alert cards ──
-  Widget _buildAlertCard(Map<String, dynamic> alert) {
-    return Dismissible(
-      key: UniqueKey(),
-      direction: DismissDirection.endToStart,
-      onDismissed: (_) => setState(() => _alerts.remove(alert)),
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        child: const Icon(Icons.delete, color: AppColors.red),
-      ),
+  Widget _secondaryBtn({
+    required IconData icon,
+    required Color color,
+    required String label,
+    required Color surface,
+    required Color border,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    final text = isDark ? AppColors.textDark : AppColors.text;
+    return GestureDetector(
+      onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: border, width: 0.5),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 24,
-              offset: const Offset(0, 4),
+              color: Colors.black.withOpacity(isDark ? 0.15 : 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 17),
+            ),
+            Text(
+              label,
+              style: GoogleFonts.nunito(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: text,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAlertCard(
+    String text,
+    Color riskColor,
+    Color surface,
+    Color border,
+    bool isDark,
+  ) {
+    final textColor = isDark ? AppColors.textDark : AppColors.text;
+    final mutedColor = isDark ? AppColors.textMutedDark : AppColors.textMuted;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: border, width: 0.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.15 : 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
         child: Row(
           children: [
             Container(
-              width: 38,
-              height: 38,
+              width: 34,
+              height: 34,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(11),
-                color: alert['bg'] as Color,
+                color: riskColor.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(10),
               ),
-              child: Center(
-                child: Text(
-                  alert['icon'] as String,
-                  style: const TextStyle(fontSize: 17),
-                ),
+              child: Icon(
+                Icons.warning_amber_rounded,
+                color: riskColor,
+                size: 17,
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    alert['text'] as String,
+                    text,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.nunito(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.text,
-                      height: 1.4,
+                      color: textColor,
+                      height: 1.3,
                     ),
                   ),
-                  const SizedBox(height: 3),
                   Text(
-                    alert['time'] as String,
-                    style: GoogleFonts.nunito(
-                      fontSize: 10,
-                      color: AppColors.textMuted,
-                    ),
+                    'Alert',
+                    style: GoogleFonts.nunito(fontSize: 10, color: mutedColor),
                   ),
                 ],
               ),
@@ -852,115 +806,258 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _quickStat(
-      String icon, String value, String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 24,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(icon, style: const TextStyle(fontSize: 22)),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: GoogleFonts.playfairDisplay(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: color,
+  // ── Record Dose Bottom Sheet ──
+  void _showRecordDoseSheet(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = isDark ? AppColors.primaryDark : AppColors.primary;
+    final surface = isDark ? AppColors.surfaceDark : AppColors.surface;
+    final surface2 = isDark ? AppColors.surface2Dark : AppColors.surface2;
+    final text = isDark ? AppColors.textDark : AppColors.text;
+    final textMuted = isDark ? AppColors.textMutedDark : AppColors.textMuted;
+    final border = isDark ? AppColors.borderDark : AppColors.border;
+
+    final medications = [
+      {
+        'name': 'Salbutamol',
+        'type': 'Rescue Inhaler',
+        'icon': Icons.air_rounded,
+        'color': AppColors.red,
+      },
+      {
+        'name': 'Fluticasone',
+        'type': 'Preventer Inhaler',
+        'icon': Icons.medication_outlined,
+        'color': primary,
+      },
+      {
+        'name': 'Montelukast',
+        'type': 'Tablet',
+        'icon': Icons.medical_services_outlined,
+        'color': AppColors.green,
+      },
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.fromLTRB(22, 12, 22, 28),
+          decoration: BoxDecoration(
+            color: surface,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(28),
             ),
           ),
-          Text(
-            label,
-            style: GoogleFonts.nunito(
-              fontSize: 10,
-              color: AppColors.textMuted,
-              fontWeight: FontWeight.w600,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 18),
+                decoration: BoxDecoration(
+                  color: border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              // Title
+              Row(
+                children: [
+                  Icon(Icons.medication_outlined,
+                      color: primary, size: 22),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Record a Dose',
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: text,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Select the medication you just took',
+                  style: GoogleFonts.nunito(
+                    fontSize: 12,
+                    color: textMuted,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              // Medication list
+              ...medications.map((med) {
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    final now = TimeOfDay.now();
+                    final timeStr =
+                        '${now.hourOfPeriod == 0 ? 12 : now.hourOfPeriod}:${now.minute.toString().padLeft(2, '0')} ${now.period == DayPeriod.am ? 'AM' : 'PM'}';
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        behavior: SnackBarBehavior.floating,
+                        backgroundColor: primary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        content: Row(
+                          children: [
+                            const Icon(Icons.check_circle_outline,
+                                color: Colors.white, size: 18),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                '${med['name']} recorded at $timeStr',
+                                style: GoogleFonts.nunito(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: surface2,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: border),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: (med['color'] as Color)
+                                .withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            med['icon'] as IconData,
+                            color: med['color'] as Color,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                med['name'] as String,
+                                style: GoogleFonts.nunito(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                  color: text,
+                                ),
+                              ),
+                              Text(
+                                med['type'] as String,
+                                style: GoogleFonts.nunito(
+                                  fontSize: 11,
+                                  color: textMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(Icons.add_circle_outline,
+                            color: primary, size: 22),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ],
           ),
-        ],
-      ),
+        );
+      },
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// ARC PAINTER FOR RISK SCORE
+// ══════════════════════════════════════════════════════
+
+class _ArcPainter extends CustomPainter {
+  final double value;
+  final Color riskColor;
+  final bool isDark;
+  final Animation<double> animation;
+
+  _ArcPainter({
+    required this.value,
+    required this.riskColor,
+    required this.isDark,
+    required this.animation,
+  }) : super(repaint: animation);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2 - 8;
+
+    // ── Track ring (background) ──
+    final trackPaint = Paint()
+      ..color = (isDark ? AppColors.surface2Dark : AppColors.surface2)
+          .withOpacity(0.6)
+      ..strokeWidth = 8
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+
+    canvas.drawCircle(center, radius, trackPaint);
+
+    // ── Glow layer ──
+    final glowPaint = Paint()
+      ..color = riskColor.withOpacity(0.18)
+      ..strokeWidth = 15
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+
+    final startAngle = -math.pi / 2;
+    final sweepAngle =
+        2 * math.pi * (animation.value * value); // Animate the sweep angle
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      startAngle,
+      sweepAngle,
+      false,
+      glowPaint,
+    );
+
+    // ── Main arc with gradient ──
+    final arcPaint = Paint()
+      ..color = riskColor
+      ..strokeWidth = 8
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      startAngle,
+      sweepAngle,
+      false,
+      arcPaint,
     );
   }
 
-  Widget _buildPredictionAlertCard(String alertText, int index) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 24,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(11),
-              color: _prediction!.riskColor.withValues(alpha: 0.2),
-            ),
-            child: Center(
-              child: Text(
-                _prediction!.riskLevel == 'HIGH'
-                    ? '⚠️'
-                    : _prediction!.riskLevel == 'MEDIUM'
-                        ? '⚡'
-                        : '✓',
-                style: const TextStyle(fontSize: 17),
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  alertText,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.nunito(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.text,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'AI Prediction',
-                  style: GoogleFonts.nunito(
-                    fontSize: 11,
-                    color: AppColors.textMuted,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  @override
+  bool shouldRepaint(_ArcPainter oldDelegate) =>
+      oldDelegate.value != value ||
+      oldDelegate.riskColor != riskColor ||
+      oldDelegate.isDark != isDark;
 }

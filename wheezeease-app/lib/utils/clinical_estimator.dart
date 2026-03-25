@@ -3,6 +3,7 @@
 /// Estimates clinical AI features from onboarding data so patients never need
 /// to enter medical values like FEV1. All calculations are based on clinical
 /// literature and patient demographics.
+library;
 
 class ClinicalEstimator {
   /// Estimates Forced Expiratory Volume in 1 second (FEV1)

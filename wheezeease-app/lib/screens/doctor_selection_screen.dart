@@ -45,8 +45,18 @@ class _DoctorSelectionScreenState extends State<DoctorSelectionScreen> {
           )
         : null;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = isDark ? AppColors.primaryDark : AppColors.primary;
+    final surface = isDark ? AppColors.surfaceDark : AppColors.surface;
+    final surface3 = isDark ? AppColors.surface2Dark : AppColors.surface3;
+    final text = isDark ? AppColors.textDark : AppColors.text;
+    final textMuted = isDark ? AppColors.textMutedDark : AppColors.textMuted;
+    final textDim = isDark ? AppColors.textDimDark : AppColors.textDim;
+    final border = isDark ? AppColors.borderDark : AppColors.border;
+    final bg = isDark ? AppColors.bgDark : AppColors.bg;
+
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: bg,
       body: Column(
         children: [
           // Header
@@ -57,8 +67,10 @@ class _DoctorSelectionScreenState extends State<DoctorSelectionScreen> {
               right: 20,
               bottom: 22,
             ),
-            decoration: const BoxDecoration(
-              gradient: AppColors.bluePurple,
+            decoration: BoxDecoration(
+              gradient: isDark
+                  ? AppColors.primaryGradientDark
+                  : AppColors.primaryGradient,
               borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(32),
                 bottomRight: Radius.circular(32),
@@ -102,8 +114,8 @@ class _DoctorSelectionScreenState extends State<DoctorSelectionScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              color: AppColors.blue.withValues(alpha: 0.08),
-              border: Border.all(color: AppColors.blue.withValues(alpha: 0.2)),
+              color: primary.withValues(alpha: 0.08),
+              border: Border.all(color: primary.withValues(alpha: 0.2)),
             ),
             child: Row(
               children: [
@@ -121,18 +133,18 @@ class _DoctorSelectionScreenState extends State<DoctorSelectionScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '📍 Location Detected',
+                        'Location Detected',
                         style: GoogleFonts.nunito(
                           fontSize: 12,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.blue,
+                          color: primary,
                         ),
                       ),
                       Text(
                         'Gujranwala, Punjab, Pakistan',
                         style: GoogleFonts.nunito(
                           fontSize: 11,
-                          color: AppColors.textMuted,
+                          color: textMuted,
                         ),
                       ),
                     ],
@@ -154,12 +166,12 @@ class _DoctorSelectionScreenState extends State<DoctorSelectionScreen> {
             margin: const EdgeInsets.symmetric(horizontal: 18),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: surface,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border, width: 2),
+              border: Border.all(color: border, width: 2),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
+                  color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.05),
                   blurRadius: 24,
                   offset: const Offset(0, 4),
                 ),
@@ -167,15 +179,15 @@ class _DoctorSelectionScreenState extends State<DoctorSelectionScreen> {
             ),
             child: TextField(
               onChanged: (v) => setState(() => _searchQuery = v),
-              style: GoogleFonts.nunito(fontSize: 14, color: AppColors.text),
+              style: GoogleFonts.nunito(fontSize: 14, color: text),
               decoration: InputDecoration(
                 hintText: 'Search by name or speciality…',
                 hintStyle: GoogleFonts.nunito(
                   fontSize: 14,
-                  color: AppColors.textDim,
+                  color: textDim,
                 ),
                 border: InputBorder.none,
-                icon: const Text('🔍', style: TextStyle(fontSize: 16)),
+                icon: Icon(Icons.search, size: 16, color: textDim),
               ),
             ),
           ),
@@ -203,7 +215,7 @@ class _DoctorSelectionScreenState extends State<DoctorSelectionScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Text('🔍', style: TextStyle(fontSize: 40)),
+                        const Icon(Icons.search_outlined, color: AppColors.textMuted, size: 40),
                         const SizedBox(height: 12),
                         Text(
                           'No doctors found',
@@ -217,7 +229,7 @@ class _DoctorSelectionScreenState extends State<DoctorSelectionScreen> {
                           'Try a different search or filter',
                           style: GoogleFonts.nunito(
                             fontSize: 13,
-                            color: AppColors.textMuted,
+                            color: textMuted,
                           ),
                         ),
                       ],
@@ -238,8 +250,8 @@ class _DoctorSelectionScreenState extends State<DoctorSelectionScreen> {
             Container(
               padding: const EdgeInsets.fromLTRB(18, 12, 18, 16),
               decoration: BoxDecoration(
-                color: AppColors.surface,
-                border: Border(top: BorderSide(color: AppColors.border)),
+                color: surface,
+                border: Border(top: BorderSide(color: border)),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -286,21 +298,21 @@ class _DoctorSelectionScreenState extends State<DoctorSelectionScreen> {
                                 style: GoogleFonts.nunito(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w800,
-                                  color: AppColors.text,
+                                  color: text,
                                 ),
                               ),
                               Text(
                                 '${selectedDoc.spec} · ${selectedDoc.hospital}',
                                 style: GoogleFonts.nunito(
                                   fontSize: 11,
-                                  color: AppColors.textMuted,
+                                  color: textMuted,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
                         ),
-                        const Text('✅', style: TextStyle(fontSize: 18)),
+                        const Icon(Icons.check_circle_outline, color: AppColors.green, size: 18),
                       ],
                     ),
                   ),
@@ -323,7 +335,7 @@ class _DoctorSelectionScreenState extends State<DoctorSelectionScreen> {
                       ),
                       child: Center(
                         child: Text(
-                          'Confirm & Start Monitoring 🚀',
+                          'Confirm & Start Monitoring',
                           style: GoogleFonts.nunito(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
@@ -343,6 +355,10 @@ class _DoctorSelectionScreenState extends State<DoctorSelectionScreen> {
 
   Widget _filterChip(String label, String filter) {
     final isActive = _activeFilter == filter;
+    final primary = AppColors.primaryColor(context);
+    final surface = AppColors.surfaceColor(context);
+    final border = AppColors.borderColor(context);
+    final textMuted = AppColors.textMutedColor(context);
     return GestureDetector(
       onTap: () => setState(() => _activeFilter = filter),
       child: Container(
@@ -350,9 +366,9 @@ class _DoctorSelectionScreenState extends State<DoctorSelectionScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
-          color: isActive ? AppColors.blueDim : AppColors.surface,
+          color: isActive ? primary.withOpacity(0.12) : surface,
           border: Border.all(
-            color: isActive ? AppColors.blue : AppColors.border,
+            color: isActive ? primary : border,
             width: 1.5,
           ),
         ),
@@ -361,7 +377,7 @@ class _DoctorSelectionScreenState extends State<DoctorSelectionScreen> {
           style: GoogleFonts.nunito(
             fontSize: 12,
             fontWeight: FontWeight.w700,
-            color: isActive ? AppColors.blue : AppColors.textMuted,
+            color: isActive ? primary : textMuted,
           ),
         ),
       ),
@@ -369,6 +385,14 @@ class _DoctorSelectionScreenState extends State<DoctorSelectionScreen> {
   }
 
   Widget _buildDocCard(Doctor doc) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = AppColors.primaryColor(context);
+    final surface = AppColors.surfaceColor(context);
+    final surface3 = isDark ? AppColors.surface2Dark : AppColors.surface3;
+    final text = AppColors.textColor(context);
+    final textMuted = AppColors.textMutedColor(context);
+    final textDim = AppColors.textDimColor(context);
+    final border = AppColors.borderColor(context);
     final isSelected = doc.id == _selectedDocId;
     return GestureDetector(
       onTap: () => setState(() => _selectedDocId = doc.id),
@@ -377,15 +401,15 @@ class _DoctorSelectionScreenState extends State<DoctorSelectionScreen> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.blueDim : AppColors.surface,
+          color: isSelected ? primary.withOpacity(0.08) : surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? AppColors.blue : AppColors.border,
+            color: isSelected ? primary : border,
             width: 2,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
+              color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.05),
               blurRadius: 24,
               offset: const Offset(0, 4),
             ),
@@ -424,22 +448,22 @@ class _DoctorSelectionScreenState extends State<DoctorSelectionScreen> {
                         style: GoogleFonts.nunito(
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.text,
+                          color: text,
                         ),
                       ),
                       Text(
                         doc.spec,
                         style: GoogleFonts.nunito(
                           fontSize: 12,
-                          color: AppColors.textMuted,
+                          color: textMuted,
                         ),
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        '🏥 ${doc.hospital}',
+                        doc.hospital,
                         style: GoogleFonts.nunito(
                           fontSize: 11,
-                          color: AppColors.textDim,
+                          color: textDim,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -450,23 +474,29 @@ class _DoctorSelectionScreenState extends State<DoctorSelectionScreen> {
                             style: GoogleFonts.nunito(
                               fontSize: 12,
                               fontWeight: FontWeight.w800,
-                              color: AppColors.text,
+                              color: text,
                             ),
                           ),
                           const SizedBox(width: 4),
-                          Text(
-                            doc.rating >= 4.8 ? '★★★★★' : '★★★★☆',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: AppColors.yellow,
-                            ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: List.generate(5, (i) {
+                              return Icon(
+                                i < (doc.rating >= 4.8 ? 5 : 4) ? Icons.star : Icons.star_border,
+                                size: 11,
+                                color: AppColors.yellow,
+                              );
+                            }),
                           ),
                           const SizedBox(width: 4),
-                          Text(
-                            '(${doc.reviews} reviews)',
-                            style: GoogleFonts.nunito(
-                              fontSize: 11,
-                              color: AppColors.textMuted,
+                          Flexible(
+                            child: Text(
+                              '(${doc.reviews} reviews)',
+                              style: GoogleFonts.nunito(
+                                fontSize: 11,
+                                color: textMuted,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -490,14 +520,14 @@ class _DoctorSelectionScreenState extends State<DoctorSelectionScreen> {
                       ),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(20),
-                        color: AppColors.surface3,
+                        color: surface3,
                       ),
                       child: Text(
                         t,
                         style: GoogleFonts.nunito(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.textMuted,
+                          color: textMuted,
                         ),
                       ),
                     ),
@@ -508,16 +538,16 @@ class _DoctorSelectionScreenState extends State<DoctorSelectionScreen> {
             Container(
               padding: const EdgeInsets.only(top: 12),
               decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: AppColors.border)),
+                border: Border(top: BorderSide(color: border)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    '📍 ${doc.distance} away',
+                    '${doc.distance} away',
                     style: GoogleFonts.nunito(
                       fontSize: 12,
-                      color: AppColors.textMuted,
+                      color: textMuted,
                     ),
                   ),
                   Container(
@@ -552,24 +582,25 @@ class _DoctorSelectionScreenState extends State<DoctorSelectionScreen> {
   }
 
   Widget _buildSelectBtn(bool isSelected) {
+    final primary = AppColors.primaryColor(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: isSelected ? AppColors.greenDim : AppColors.blueDim,
+        color: isSelected ? AppColors.greenDim : primary.withOpacity(0.08),
         border: Border.all(
           color: isSelected
               ? AppColors.green.withValues(alpha: 0.3)
-              : AppColors.blue.withValues(alpha: 0.3),
+              : primary.withValues(alpha: 0.3),
           width: 1.5,
         ),
       ),
       child: Text(
-        isSelected ? '✓ Selected' : 'Select',
+        isSelected ? 'Selected' : 'Select',
         style: GoogleFonts.nunito(
           fontSize: 12,
           fontWeight: FontWeight.w800,
-          color: isSelected ? AppColors.green : AppColors.blue,
+          color: isSelected ? AppColors.green : primary,
         ),
       ),
     );

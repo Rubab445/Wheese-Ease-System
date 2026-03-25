@@ -28,13 +28,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   // ── Step 1 ──
   final Set<String> _selectedConditions = {'Asthma', 'Dust Allergy'};
-  final List<Map<String, String>> _conditions = [
-    {'icon': '😮‍💨', 'label': 'Asthma'},
-    {'icon': '🤧', 'label': 'Seasonal Allergy'},
-    {'icon': '🌫️', 'label': 'Dust Allergy'},
-    {'icon': '🌸', 'label': 'Pollen Allergy'},
-    {'icon': '🐱', 'label': 'Pet Allergy'},
-    {'icon': '🍤', 'label': 'Food Allergy'},
+  final List<Map<String, dynamic>> _conditions = [
+    {'icon': Icons.air_rounded, 'label': 'Asthma'},
+    {'icon': Icons.sick_outlined, 'label': 'Seasonal Allergy'},
+    {'icon': Icons.cloud_outlined, 'label': 'Dust Allergy'},
+    {'icon': Icons.local_florist_outlined, 'label': 'Pollen Allergy'},
+    {'icon': Icons.pets_outlined, 'label': 'Pet Allergy'},
+    {'icon': Icons.restaurant_outlined, 'label': 'Food Allergy'},
   ];
 
   // ── Step 2 controllers ──
@@ -90,13 +90,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFE8F4FF), Color(0xFFF5F0FF)],
-        ),
+      decoration: BoxDecoration(
+        gradient: isDark
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [AppColors.bgDark, const Color(0xFF0D2920)],
+              )
+            : const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFFE8F4FF), Color(0xFFF5F0FF)],
+              ),
       ),
       child: SafeArea(
         child: SingleChildScrollView(
@@ -112,17 +120,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     height: 44,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(14),
-                      gradient: AppColors.bluePurple,
+                      gradient: isDark
+                          ? AppColors.primaryGradientDark
+                          : AppColors.primaryGradient,
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.blue.withValues(alpha: 0.35),
+                          color: AppColors.primaryColor(context)
+                              .withValues(alpha: 0.35),
                           blurRadius: 16,
                           offset: const Offset(0, 4),
                         ),
                       ],
                     ),
                     child: const Center(
-                      child: Text('🫁', style: TextStyle(fontSize: 20)),
+                      child: Icon(Icons.air_rounded,
+                          color: Colors.white, size: 20),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -131,13 +143,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       style: GoogleFonts.playfairDisplay(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.text,
+                        color: AppColors.textColor(context),
                       ),
                       children: [
                         const TextSpan(text: 'Wheeze'),
                         TextSpan(
                           text: 'Ease',
-                          style: TextStyle(color: AppColors.blue),
+                          style: TextStyle(
+                              color: AppColors.primaryColor(context)),
                         ),
                       ],
                     ),
@@ -156,7 +169,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       style: GoogleFonts.playfairDisplay(
                         fontSize: 25,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.text,
+                        color: AppColors.textColor(context),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -165,7 +178,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       textAlign: TextAlign.center,
                       style: GoogleFonts.nunito(
                         fontSize: 13,
-                        color: AppColors.textMuted,
+                        color: AppColors.textMutedColor(context),
                         height: 1.7,
                       ),
                     ),
@@ -188,10 +201,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(4),
                       color: isActive
-                          ? AppColors.blue
+                          ? AppColors.primaryColor(context)
                           : isDone
                               ? AppColors.green
-                              : AppColors.border,
+                              : AppColors.borderColor(context),
                     ),
                   );
                 }),
@@ -233,13 +246,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           style: GoogleFonts.playfairDisplay(
             fontSize: 21,
             fontWeight: FontWeight.w800,
-            color: AppColors.text,
+            color: AppColors.textColor(context),
           ),
         ),
         const SizedBox(height: 5),
         Text(
           'Personalise your risk monitoring experience',
-          style: GoogleFonts.nunito(fontSize: 12, color: AppColors.textMuted),
+          style: GoogleFonts.nunito(
+              fontSize: 12, color: AppColors.textMutedColor(context)),
         ),
         const SizedBox(height: 14),
 
@@ -274,17 +288,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.border, width: 2),
-                      color: AppColors.surface,
+                      border: Border.all(
+                          color: AppColors.borderColor(context), width: 2),
+                      color: AppColors.surfaceColor(context),
                     ),
                     child: DropdownButton<String>(
                       value: _gender,
                       isExpanded: true,
                       underline: const SizedBox(),
+                      dropdownColor: AppColors.surfaceColor(context),
                       style: GoogleFonts.nunito(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.text,
+                        color: AppColors.textColor(context),
                       ),
                       items: ['Female', 'Male', 'Other']
                           .map((g) => DropdownMenuItem(
@@ -377,9 +393,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   // ══════════════════════════════════════════
-  // STEP 1 — Conditions (unchanged)
+  // STEP 1 — Conditions
   // ══════════════════════════════════════════
   Widget _buildStep1() {
+    final primary = AppColors.primaryColor(context);
+
     return Column(
       key: const ValueKey(1),
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -389,13 +407,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           style: GoogleFonts.playfairDisplay(
             fontSize: 21,
             fontWeight: FontWeight.w800,
-            color: AppColors.text,
+            color: AppColors.textColor(context),
           ),
         ),
         const SizedBox(height: 5),
         Text(
           'Select all that apply',
-          style: GoogleFonts.nunito(fontSize: 12, color: AppColors.textMuted),
+          style: GoogleFonts.nunito(
+              fontSize: 12, color: AppColors.textMutedColor(context)),
         ),
         const SizedBox(height: 14),
         GridView.count(
@@ -423,22 +442,32 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: selected ? AppColors.blue : AppColors.border,
+                    color: selected
+                        ? primary
+                        : AppColors.borderColor(context),
                     width: 2,
                   ),
-                  color: selected ? AppColors.blueDim : AppColors.surface,
+                  color: selected
+                      ? primary.withOpacity(0.12)
+                      : AppColors.surfaceColor(context),
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(c['icon']!, style: const TextStyle(fontSize: 22)),
+                    Icon(c['icon'] as IconData,
+                        size: 22,
+                        color: selected
+                            ? primary
+                            : AppColors.textMutedColor(context)),
                     const SizedBox(height: 5),
                     Text(
                       c['label']!,
                       style: GoogleFonts.nunito(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: selected ? AppColors.blue : AppColors.textMuted,
+                        color: selected
+                            ? primary
+                            : AppColors.textMutedColor(context),
                       ),
                     ),
                   ],
@@ -453,24 +482,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             OutlinedButton(
               onPressed: () => _goToStep(0),
               style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 20, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
-                side: BorderSide(color: AppColors.border, width: 2),
+                side: BorderSide(
+                    color: AppColors.borderColor(context), width: 2),
               ),
               child: Text(
                 '← Back',
                 style: GoogleFonts.nunito(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textMuted,
+                  color: AppColors.textMutedColor(context),
                 ),
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: _buildGradientButton('Continue →', () => _goToStep(2)),
+              child:
+                  _buildGradientButton('Continue →', () => _goToStep(2)),
             ),
           ],
         ),
@@ -479,7 +511,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   // ══════════════════════════════════════════
-  // STEP 2 — Medications + New health questions
+  // STEP 2 — Medications + Health questions
   // ══════════════════════════════════════════
   Widget _buildStep2() {
     return Column(
@@ -491,13 +523,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           style: GoogleFonts.playfairDisplay(
             fontSize: 21,
             fontWeight: FontWeight.w800,
-            color: AppColors.text,
+            color: AppColors.textColor(context),
           ),
         ),
         const SizedBox(height: 5),
         Text(
           'Helps track your inhaler & schedule',
-          style: GoogleFonts.nunito(fontSize: 12, color: AppColors.textMuted),
+          style: GoogleFonts.nunito(
+              fontSize: 12, color: AppColors.textMutedColor(context)),
         ),
         const SizedBox(height: 14),
 
@@ -513,7 +546,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
         // Known triggers
         _buildLabel('KNOWN TRIGGERS'),
-        _buildTextField(_triggersController, 'e.g. Dust, Pollen, Cold air'),
+        _buildTextField(
+            _triggersController, 'e.g. Dust, Pollen, Cold air'),
         const SizedBox(height: 20),
 
         // ── Do you smoke? ──
@@ -588,24 +622,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             OutlinedButton(
               onPressed: () => _goToStep(1),
               style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 20, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
-                side: BorderSide(color: AppColors.border, width: 2),
+                side: BorderSide(
+                    color: AppColors.borderColor(context), width: 2),
               ),
               child: Text(
                 '← Back',
                 style: GoogleFonts.nunito(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textMuted,
+                  color: AppColors.textMutedColor(context),
                 ),
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: _buildGradientButton('Continue →', () => _goToStep(3)),
+              child:
+                  _buildGradientButton('Continue →', () => _goToStep(3)),
             ),
           ],
         ),
@@ -618,11 +655,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   // ══════════════════════════════════════════
   Widget _buildStep3() {
     final firstName = _nameController.text.split(' ').first;
+    final primary = AppColors.primaryColor(context);
+
     return Column(
       key: const ValueKey(3),
       children: [
         const SizedBox(height: 10),
-        const Text('🎉', style: TextStyle(fontSize: 64)),
+        Icon(Icons.celebration_outlined, color: primary, size: 64),
         const SizedBox(height: 14),
         Text(
           "You're all set,\n$firstName!",
@@ -630,7 +669,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           style: GoogleFonts.playfairDisplay(
             fontSize: 24,
             fontWeight: FontWeight.w800,
-            color: AppColors.text,
+            color: AppColors.textColor(context),
           ),
         ),
         const SizedBox(height: 10),
@@ -639,7 +678,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           textAlign: TextAlign.center,
           style: GoogleFonts.nunito(
             fontSize: 13,
-            color: AppColors.textMuted,
+            color: AppColors.textMutedColor(context),
             height: 1.7,
           ),
         ),
@@ -648,19 +687,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           width: double.infinity,
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: AppColors.blueDim,
+            color: primary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.blue.withValues(alpha: 0.25)),
+            border:
+                Border.all(color: primary.withValues(alpha: 0.25)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '✓ Enabled',
+                'Enabled',
                 style: GoogleFonts.nunito(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.blue,
+                  color: primary,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -669,7 +709,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 'High risk alerts · Medication reminders\nDaily check-in · Environmental warnings',
                 style: GoogleFonts.nunito(
                   fontSize: 13,
-                  color: AppColors.text,
+                  color: AppColors.textColor(context),
                   height: 1.8,
                 ),
               ),
@@ -677,7 +717,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
         ),
         const SizedBox(height: 20),
-        _buildGreenButton('Start Monitoring 🚀', widget.onComplete),
+        _buildGreenButton('Start Monitoring', widget.onComplete),
       ],
     );
   }
@@ -693,7 +733,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         style: GoogleFonts.nunito(
           fontSize: 11,
           fontWeight: FontWeight.w700,
-          color: AppColors.textMuted,
+          color: AppColors.textMutedColor(context),
           letterSpacing: 0.7,
         ),
       ),
@@ -706,6 +746,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     TextInputType? keyboardType,
     Function(String)? onChanged,
   }) {
+    final primary = AppColors.primaryColor(context);
+
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
@@ -713,29 +755,32 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       style: GoogleFonts.nunito(
         fontSize: 15,
         fontWeight: FontWeight.w600,
-        color: AppColors.text,
+        color: AppColors.textColor(context),
       ),
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: GoogleFonts.nunito(
           fontSize: 15,
           fontWeight: FontWeight.w600,
-          color: AppColors.textDim,
+          color: AppColors.textDimColor(context),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
         filled: true,
-        fillColor: AppColors.surface,
+        fillColor: AppColors.surfaceColor(context),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: AppColors.border, width: 2),
+          borderSide:
+              BorderSide(color: AppColors.borderColor(context), width: 2),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: AppColors.border, width: 2),
+          borderSide:
+              BorderSide(color: AppColors.borderColor(context), width: 2),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.blue, width: 2),
+          borderSide: BorderSide(color: primary, width: 2),
         ),
       ),
     );
@@ -746,6 +791,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     required bool selected,
     required VoidCallback onTap,
   }) {
+    final primary = AppColors.primaryColor(context);
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -754,17 +801,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: selected ? AppColors.blue : AppColors.border,
+            color: selected ? primary : AppColors.borderColor(context),
             width: 2,
           ),
-          color: selected ? AppColors.blueDim : AppColors.surface,
+          color: selected
+              ? primary.withOpacity(0.12)
+              : AppColors.surfaceColor(context),
         ),
         child: Text(
           label,
           style: GoogleFonts.nunito(
             fontSize: 13,
             fontWeight: FontWeight.w700,
-            color: selected ? AppColors.blue : AppColors.textMuted,
+            color: selected ? primary : AppColors.textMutedColor(context),
           ),
         ),
       ),
@@ -772,6 +821,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Widget _buildGradientButton(String text, VoidCallback onPressed) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: onPressed,
       child: Container(
@@ -779,7 +830,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
-          gradient: AppColors.bluePurple,
+          gradient: isDark
+              ? AppColors.primaryGradientDark
+              : AppColors.primaryGradient,
         ),
         child: Center(
           child: Text(

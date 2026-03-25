@@ -16,7 +16,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = isDark ? AppColors.primaryDark : AppColors.primary;
+    final surface = isDark ? AppColors.surfaceDark : AppColors.surface;
+    final surface2 = isDark ? AppColors.surface2Dark : AppColors.surface2;
+    final surface3 = isDark ? AppColors.surface2Dark : AppColors.surface3;
+    final text = isDark ? AppColors.textDark : AppColors.text;
+    final textMuted = isDark ? AppColors.textMutedDark : AppColors.textMuted;
+    final textDim = isDark ? AppColors.textDimDark : AppColors.textDim;
+    final border = isDark ? AppColors.borderDark : AppColors.border;
     final selected = _data[_selectedDay];
+
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -29,9 +39,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
               right: 22,
               bottom: 28,
             ),
-            decoration: const BoxDecoration(
-              gradient: AppColors.orangeGradient,
-              borderRadius: BorderRadius.only(
+            decoration: BoxDecoration(
+              gradient: isDark
+                  ? AppColors.primaryGradientDark
+                  : AppColors.primaryGradient,
+              borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(34),
                 bottomRight: Radius.circular(34),
               ),
@@ -59,7 +71,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     ),
                   ],
                 ),
-                const Text('📈', style: TextStyle(fontSize: 34)),
+                const Icon(Icons.trending_up_outlined, color: Colors.white, size: 34),
               ],
             ),
           ),
@@ -69,12 +81,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
             margin: const EdgeInsets.fromLTRB(18, 18, 18, 0),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: surface,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: border),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
+                  color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.05),
                   blurRadius: 24,
                   offset: const Offset(0, 4),
                 ),
@@ -88,17 +100,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   style: GoogleFonts.nunito(
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.text,
+                    color: text,
                   ),
                 ),
                 const SizedBox(height: 12),
                 SizedBox(
-                  height: 76,
+                  height: 95,
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: List.generate(_data.length, (i) {
                       final d = _data[i];
-                      final h = (d.risk / 80 * 72).roundToDouble();
+                      final h = (d.risk / 80 * 60).roundToDouble();
                       final isSelected = i == _selectedDay;
                       return Expanded(
                         child: GestureDetector(
@@ -120,7 +132,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                   ),
                                   border: isSelected
                                       ? Border.all(
-                                          color: AppColors.blue,
+                                          color: primary,
                                           width: 3,
                                         )
                                       : null,
@@ -137,8 +149,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                       ? FontWeight.w900
                                       : FontWeight.w700,
                                   color: i == 6
-                                      ? AppColors.blue
-                                      : AppColors.textDim,
+                                      ? primary
+                                      : textDim,
                                 ),
                               ),
                             ],
@@ -152,11 +164,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    _legendDot(AppColors.green, 'Low'),
+                    _legendDot(AppColors.green, 'Low', textMuted),
                     const SizedBox(width: 10),
-                    _legendDot(AppColors.yellow, 'Moderate'),
+                    _legendDot(AppColors.yellow, 'Moderate', textMuted),
                     const SizedBox(width: 10),
-                    _legendDot(AppColors.red, 'High'),
+                    _legendDot(AppColors.red, 'High', textMuted),
                   ],
                 ),
               ],
@@ -168,12 +180,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
             margin: const EdgeInsets.fromLTRB(18, 14, 18, 0),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: surface,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: border),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
+                  color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.05),
                   blurRadius: 24,
                   offset: const Offset(0, 4),
                 ),
@@ -187,34 +199,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   style: GoogleFonts.nunito(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textMuted,
+                    color: textMuted,
                   ),
                 ),
                 const SizedBox(height: 9),
                 Row(
                   children: [
                     Expanded(
-                      child: _detailItem(
-                        '${selected.risk}%',
-                        'Risk Score',
-                        selected.color,
-                      ),
+                      child: _detailItem('${selected.risk}%', 'Risk Score', selected.color, surface2, textMuted),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: _detailItem(
-                        '${selected.inhaler}',
-                        'Inhalers',
-                        AppColors.purple,
-                      ),
+                      child: _detailItem('${selected.inhaler}', 'Inhalers', primary, surface2, textMuted),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: _detailItem(
-                        '${selected.aqi}',
-                        'AQI',
-                        AppColors.yellow,
-                      ),
+                      child: _detailItem('${selected.aqi}', 'AQI', AppColors.yellow, surface2, textMuted),
                     ),
                   ],
                 ),
@@ -223,14 +223,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.surface3,
+                    color: surface3,
                     borderRadius: BorderRadius.circular(11),
                   ),
                   child: Text(
                     'Symptoms: ${selected.symptoms}',
                     style: GoogleFonts.nunito(
                       fontSize: 12,
-                      color: AppColors.textMuted,
+                      color: textMuted,
                       height: 1.7,
                     ),
                   ),
@@ -257,22 +257,28 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          '🏆 BEST DAY',
-                          style: GoogleFonts.nunito(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.green,
-                            letterSpacing: 0.5,
-                          ),
+                        Row(
+                          children: [
+                            Icon(Icons.emoji_events_outlined, color: AppColors.green, size: 12),
+                            const SizedBox(width: 4),
+                            Text(
+                              'BEST DAY',
+                              style: GoogleFonts.nunito(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.green,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 5),
+                        const SizedBox(height: 3),
                         Text(
                           'Monday',
                           style: GoogleFonts.playfairDisplay(
-                            fontSize: 21,
+                            fontSize: 18,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.text,
+                            color: text,
                           ),
                         ),
                         Text(
@@ -301,22 +307,28 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          '⚠️ TOUGHEST',
-                          style: GoogleFonts.nunito(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.red,
-                            letterSpacing: 0.5,
-                          ),
+                        Row(
+                          children: [
+                            Icon(Icons.warning_amber_rounded, color: AppColors.red, size: 12),
+                            const SizedBox(width: 4),
+                            Text(
+                              'TOUGHEST',
+                              style: GoogleFonts.nunito(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.red,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 5),
+                        const SizedBox(height: 3),
                         Text(
                           'Today',
                           style: GoogleFonts.playfairDisplay(
-                            fontSize: 21,
+                            fontSize: 18,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.text,
+                            color: text,
                           ),
                         ),
                         Text(
@@ -340,12 +352,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
             margin: const EdgeInsets.fromLTRB(18, 14, 18, 8),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: surface,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: border),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
+                  color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.05),
                   blurRadius: 24,
                   offset: const Offset(0, 4),
                 ),
@@ -355,20 +367,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '💨 Inhaler Usage This Week',
+                  'Inhaler Usage This Week',
                   style: GoogleFonts.nunito(
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.text,
+                    color: text,
                   ),
                 ),
                 const SizedBox(height: 10),
                 SizedBox(
-                  height: 56,
+                  height: 75,
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: _data.map((d) {
-                      final h = (d.inhaler / 5 * 52).clamp(3.0, 52.0);
+                      final h = (d.inhaler / 5 * 42).clamp(3.0, 42.0);
                       return Expanded(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.end,
@@ -377,7 +389,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               height: h,
                               margin: const EdgeInsets.symmetric(horizontal: 3),
                               decoration: BoxDecoration(
-                                color: AppColors.purple.withValues(alpha: 0.85),
+                                color: primary.withValues(alpha: 0.85),
                                 borderRadius: const BorderRadius.only(
                                   topLeft: Radius.circular(3),
                                   topRight: Radius.circular(3),
@@ -390,7 +402,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               style: GoogleFonts.nunito(
                                 fontSize: 9,
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.textDim,
+                                color: textDim,
                               ),
                             ),
                           ],
@@ -405,14 +417,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     text: TextSpan(
                       style: GoogleFonts.nunito(
                         fontSize: 12,
-                        color: AppColors.textMuted,
+                        color: textMuted,
                       ),
                       children: [
                         const TextSpan(text: 'Total this week: '),
                         TextSpan(
                           text: '14 uses',
                           style: GoogleFonts.nunito(
-                            color: AppColors.purple,
+                            color: primary,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -429,7 +441,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _legendDot(Color color, String label) {
+  Widget _legendDot(Color color, String label, Color muted) {
     return Row(
       children: [
         Container(
@@ -443,17 +455,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
         const SizedBox(width: 4),
         Text(
           label,
-          style: GoogleFonts.nunito(fontSize: 10, color: AppColors.textMuted),
+          style: GoogleFonts.nunito(fontSize: 10, color: muted),
         ),
       ],
     );
   }
 
-  Widget _detailItem(String value, String label, Color color) {
+  Widget _detailItem(String value, String label, Color color, Color bg, Color muted) {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: AppColors.surface2,
+        color: bg,
         borderRadius: BorderRadius.circular(11),
       ),
       child: Column(
@@ -471,7 +483,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             label,
             style: GoogleFonts.nunito(
               fontSize: 9,
-              color: AppColors.textMuted,
+              color: muted,
               fontWeight: FontWeight.w600,
             ),
           ),

@@ -33,12 +33,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = isDark ? AppColors.primaryDark : AppColors.primary;
+    final surface = isDark ? AppColors.surfaceDark : AppColors.surface;
+    final text = isDark ? AppColors.textDark : AppColors.text;
+    final textMuted = isDark ? AppColors.textMutedDark : AppColors.textMuted;
+    final textDim = isDark ? AppColors.textDimDark : AppColors.textDim;
+    final border = isDark ? AppColors.borderDark : AppColors.border;
+
     final initials = widget.userName
         .split(' ')
         .map((w) => w.isNotEmpty ? w[0] : '')
         .take(2)
         .join()
         .toUpperCase();
+
     return SingleChildScrollView(
       child: Column(
         children: [
@@ -50,9 +59,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               right: 22,
               bottom: 28,
             ),
-            decoration: const BoxDecoration(
-              gradient: AppColors.redOrangeGradient,
-              borderRadius: BorderRadius.only(
+            decoration: BoxDecoration(
+              gradient: isDark
+                  ? AppColors.primaryGradientDark
+                  : AppColors.primaryGradient,
+              borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(34),
                 bottomRight: Radius.circular(34),
               ),
@@ -80,7 +91,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ],
                 ),
-                const Text('👤', style: TextStyle(fontSize: 34)),
+                Icon(
+                  Icons.person_outline_rounded,
+                  size: 28,
+                  color: Colors.white,
+                ),
               ],
             ),
           ),
@@ -92,15 +107,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
             height: 74,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(22),
-              gradient: AppColors.bluePurple,
+              gradient: isDark
+                  ? AppColors.primaryGradientDark
+                  : AppColors.primaryGradient,
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.blue.withValues(alpha: 0.3),
+                  color: primary.withValues(alpha: 0.3),
                   blurRadius: 22,
                   offset: const Offset(0, 8),
                 ),
               ],
-              border: Border.all(color: AppColors.surface, width: 3),
+              border: Border.all(color: surface, width: 3),
             ),
             child: Center(
               child: Text(
@@ -119,7 +136,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             style: GoogleFonts.playfairDisplay(
               fontSize: 20,
               fontWeight: FontWeight.w800,
-              color: AppColors.text,
+              color: text,
             ),
           ),
           const SizedBox(height: 4),
@@ -147,110 +164,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
 
           // Health info
-          _sectionLabel('Health Information'),
-          _settingsList([
-            _settingsItem(
-              '🏥',
-              AppColors.blueDim,
-              'Conditions',
-              'Asthma, Dust Allergy',
-              onTap: () {},
-            ),
-            _settingsItem(
-              '💊',
-              AppColors.purpleDim,
-              'Medications',
-              'Salbutamol, Fluticasone, Cetirizine',
-              onTap: () {},
-            ),
-            _settingsItem(
-              '⚠️',
-              AppColors.yellowDim,
-              'Known Triggers',
-              'Dust, Pollen, Cold air',
-              onTap: () {},
-            ),
-            _settingsItem(
-              '📞',
-              AppColors.redDim,
-              'Emergency Contact',
-              '+92 300 9876543',
-              onTap: () {},
-            ),
+          _sectionLabel('Health Information', textMuted),
+          _settingsList(surface, border, isDark, [
+            _settingsItem(Icons.local_hospital_outlined, AppColors.blueDim, 'Conditions', 'Asthma, Dust Allergy',
+                text, textMuted, textDim, border, primary, onTap: () {}),
+            _settingsItem(Icons.medication_outlined, primary.withOpacity(0.12), 'Medications', 'Salbutamol, Fluticasone, Cetirizine',
+                text, textMuted, textDim, border, primary, onTap: () {}),
+            _settingsItem(Icons.warning_amber_rounded, AppColors.yellowDim, 'Known Triggers', 'Dust, Pollen, Cold air',
+                text, textMuted, textDim, border, AppColors.yellow, onTap: () {}),
+            _settingsItem(Icons.phone_outlined, AppColors.redDim, 'Emergency Contact', '+92 300 9876543',
+                text, textMuted, textDim, border, AppColors.red, onTap: () {}),
           ]),
 
           // Notifications
-          _sectionLabel('Notifications'),
-          _settingsList([
-            _toggleItem(
-              '🚨',
-              AppColors.redDim,
-              'High Risk Alerts',
-              'Immediate push notification',
-              'high_risk',
-            ),
-            _toggleItem(
-              '⚠️',
-              AppColors.yellowDim,
-              'Moderate Risk Alerts',
-              'Notify when risk 31–60%',
-              'mod_risk',
-            ),
-            _toggleItem(
-              '💊',
-              AppColors.purpleDim,
-              'Medication Reminders',
-              'Daily dose alerts',
-              'med_remind',
-            ),
-            _toggleItem(
-              '📋',
-              AppColors.greenDim,
-              'Check-In Reminders',
-              'Daily at 9:00 AM',
-              'checkin_remind',
-            ),
-            _toggleItem(
-              '🌤️',
-              AppColors.blueDim,
-              'AQI & Weather Alerts',
-              'When AQI exceeds 100',
-              'aqi_weather',
-            ),
+          _sectionLabel('Notifications', textMuted),
+          _settingsList(surface, border, isDark, [
+            _toggleItem(Icons.error_outline, AppColors.redDim, 'High Risk Alerts', 'Immediate push notification',
+                'high_risk', text, textMuted, border, primary, AppColors.red),
+            _toggleItem(Icons.warning_amber_rounded, AppColors.yellowDim, 'Moderate Risk Alerts', 'Notify when risk 31–60%',
+                'mod_risk', text, textMuted, border, primary, AppColors.yellow),
+            _toggleItem(Icons.medication_outlined, primary.withOpacity(0.12), 'Medication Reminders', 'Daily dose alerts',
+                'med_remind', text, textMuted, border, primary, primary),
+            _toggleItem(Icons.assignment_outlined, AppColors.greenDim, 'Check-In Reminders', 'Daily at 9:00 AM',
+                'checkin_remind', text, textMuted, border, primary, AppColors.green),
+            _toggleItem(Icons.wb_sunny_outlined, AppColors.blueDim, 'AQI & Weather Alerts', 'When AQI exceeds 100',
+                'aqi_weather', text, textMuted, border, primary, AppColors.blue),
           ]),
 
           // App settings
-          _sectionLabel('App Settings'),
-          _settingsList([
-            _settingsItem(
-              '🌍',
-              AppColors.blueDim,
-              'Language',
-              'English',
-              onTap: () => _showToast('🌍 Language: English'),
-            ),
-            _settingsItem(
-              '📍',
-              AppColors.greenDim,
-              'Location Access',
-              'Enabled — Gujranwala, PK',
-              onTap: () => _showToast('📍 Location: Gujranwala, PK'),
-            ),
-            _settingsItem(
-              '📊',
-              AppColors.purpleDim,
-              'Export Health Report',
-              'PDF for your doctor',
-              onTap: () => _showToast('📊 Exporting health report...'),
-            ),
-            _settingsItem(
-              '🚪',
-              AppColors.redDim,
-              'Sign Out',
-              widget.userName,
-              onTap: widget.onLogout,
-              isDestructive: true,
-            ),
+          _sectionLabel('App Settings', textMuted),
+          _settingsList(surface, border, isDark, [
+            _settingsItem(Icons.language_outlined, AppColors.blueDim, 'Language', 'English',
+                text, textMuted, textDim, border, AppColors.blue,
+                onTap: () => _showToast('Language: English')),
+            _settingsItem(Icons.location_on_outlined, AppColors.greenDim, 'Location Access', 'Enabled — Gujranwala, PK',
+                text, textMuted, textDim, border, AppColors.green,
+                onTap: () => _showToast('Location: Gujranwala, PK')),
+            _settingsItem(Icons.assessment_outlined, primary.withOpacity(0.12), 'Export Health Report', 'PDF for your doctor',
+                text, textMuted, textDim, border, primary,
+                onTap: () => _showToast('Exporting health report...')),
+            _settingsItem(Icons.logout_outlined, AppColors.redDim, 'Sign Out', widget.userName,
+                text, textMuted, textDim, border, AppColors.red,
+                onTap: widget.onLogout, isDestructive: true),
           ]),
           const SizedBox(height: 100),
         ],
@@ -258,7 +213,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _sectionLabel(String text) {
+  Widget _sectionLabel(String text, Color muted) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(21, 20, 18, 9),
       child: Align(
@@ -268,7 +223,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           style: GoogleFonts.nunito(
             fontSize: 11,
             fontWeight: FontWeight.w800,
-            color: AppColors.textMuted,
+            color: muted,
             letterSpacing: 0.8,
           ),
         ),
@@ -276,16 +231,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _settingsList(List<Widget> items) {
+  Widget _settingsList(Color surface, Color border, bool isDark, List<Widget> items) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 18),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
+            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.05),
             blurRadius: 24,
             offset: const Offset(0, 4),
           ),
@@ -296,10 +251,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _settingsItem(
-    String icon,
+    IconData icon,
     Color iconBg,
     String title,
-    String subtitle, {
+    String subtitle,
+    Color text,
+    Color muted,
+    Color dim,
+    Color border,
+    Color iconColor, {
     VoidCallback? onTap,
     bool isDestructive = false,
   }) {
@@ -308,7 +268,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: AppColors.border)),
+          border: Border(bottom: BorderSide(color: border)),
         ),
         child: Row(
           children: [
@@ -320,7 +280,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 color: iconBg,
               ),
               child: Center(
-                child: Text(icon, style: const TextStyle(fontSize: 17)),
+                child: Icon(icon, size: 17, color: isDestructive ? AppColors.red : iconColor),
               ),
             ),
             const SizedBox(width: 12),
@@ -333,14 +293,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     style: GoogleFonts.nunito(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: isDestructive ? AppColors.red : AppColors.text,
+                      color: isDestructive ? AppColors.red : text,
                     ),
                   ),
                   Text(
                     subtitle,
                     style: GoogleFonts.nunito(
                       fontSize: 11,
-                      color: AppColors.textMuted,
+                      color: muted,
                     ),
                   ),
                 ],
@@ -350,7 +310,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               '›',
               style: GoogleFonts.nunito(
                 fontSize: 15,
-                color: isDestructive ? AppColors.red : AppColors.textDim,
+                color: isDestructive ? AppColors.red : dim,
               ),
             ),
           ],
@@ -360,17 +320,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _toggleItem(
-    String icon,
+    IconData icon,
     Color iconBg,
     String title,
     String subtitle,
     String key,
+    Color text,
+    Color muted,
+    Color border,
+    Color primary,
+    Color iconColor,
   ) {
     final isOn = _toggles[key] ?? false;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppColors.border)),
+        border: Border(bottom: BorderSide(color: border)),
       ),
       child: Row(
         children: [
@@ -382,7 +347,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               color: iconBg,
             ),
             child: Center(
-              child: Text(icon, style: const TextStyle(fontSize: 17)),
+              child: Icon(icon, size: 17, color: iconColor),
             ),
           ),
           const SizedBox(width: 12),
@@ -395,14 +360,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   style: GoogleFonts.nunito(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.text,
+                    color: text,
                   ),
                 ),
                 Text(
                   subtitle,
                   style: GoogleFonts.nunito(
                     fontSize: 11,
-                    color: AppColors.textMuted,
+                    color: muted,
                   ),
                 ),
               ],
@@ -416,7 +381,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               height: 28,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(14),
-                color: isOn ? AppColors.green : AppColors.border,
+                color: isOn ? primary : border,
               ),
               child: AnimatedAlign(
                 duration: const Duration(milliseconds: 250),

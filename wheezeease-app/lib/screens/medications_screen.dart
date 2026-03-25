@@ -14,30 +14,30 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
     {
       'name': 'Salbutamol (Ventolin)',
       'type': 'Rescue Inhaler · β₂ agonist',
-      'icon': '💨',
+      'icon': Icons.air_rounded,
       'badge': '100mcg/puff',
       'time': 'As needed',
-      'note': '🔔 Alert if used more than 3x/day',
+      'note': 'Alert if used more than 3x/day',
       'taken': false,
       'toggle': true,
     },
     {
       'name': 'Fluticasone (Flixotide)',
       'type': 'Preventer Inhaler · Corticosteroid',
-      'icon': '🌀',
+      'icon': Icons.cyclone_outlined,
       'badge': '250mcg/dose',
       'time': '2:00 PM Daily',
-      'note': '🔔 Daily reminder at 2:00 PM',
+      'note': 'Daily reminder at 2:00 PM',
       'taken': false,
       'toggle': true,
     },
     {
       'name': 'Cetirizine (Zyrtec)',
       'type': 'Antihistamine · Allergy tablet',
-      'icon': '💊',
+      'icon': Icons.medication_outlined,
       'badge': '10mg',
       'time': 'Every morning',
-      'note': '🔔 Daily reminder at 8:00 AM',
+      'note': 'Daily reminder at 8:00 AM',
       'taken': true,
       'takenTime': '8:00 AM',
       'toggle': true,
@@ -52,7 +52,7 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('💊 Medication logged! Dr. Rahman notified.'),
+        content: Text('Medication logged! Dr. Rahman notified.'),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -60,6 +60,13 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = isDark ? AppColors.primaryDark : AppColors.primary;
+    final surface = isDark ? AppColors.surfaceDark : AppColors.surface;
+    final text = isDark ? AppColors.textDark : AppColors.text;
+    final textMuted = isDark ? AppColors.textMutedDark : AppColors.textMuted;
+    final border = isDark ? AppColors.borderDark : AppColors.border;
+
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,9 +79,11 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
               right: 22,
               bottom: 28,
             ),
-            decoration: const BoxDecoration(
-              gradient: AppColors.purpleGradient,
-              borderRadius: BorderRadius.only(
+            decoration: BoxDecoration(
+              gradient: isDark
+                  ? AppColors.primaryGradientDark
+                  : AppColors.primaryGradient,
+              borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(34),
                 bottomRight: Radius.circular(34),
               ),
@@ -102,7 +111,7 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                     ),
                   ],
                 ),
-                const Text('💊', style: TextStyle(fontSize: 34)),
+                const Icon(Icons.medication_outlined, color: Colors.white, size: 34),
               ],
             ),
           ),
@@ -112,11 +121,13 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
             margin: const EdgeInsets.fromLTRB(18, 16, 18, 0),
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              gradient: AppColors.purpleGradient,
+              gradient: isDark
+                  ? AppColors.primaryGradientDark
+                  : AppColors.primaryGradient,
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.purple.withValues(alpha: 0.3),
+                  color: primary.withValues(alpha: 0.3),
                   blurRadius: 26,
                   offset: const Offset(0, 8),
                 ),
@@ -128,14 +139,20 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        '⏰ NEXT DOSE DUE',
-                        style: GoogleFonts.nunito(
-                          fontSize: 11,
-                          color: Colors.white70,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.7,
-                        ),
+                      Row(
+                        children: [
+                          const Icon(Icons.access_time_outlined, color: Colors.white70, size: 12),
+                          const SizedBox(width: 4),
+                          Text(
+                            'NEXT DOSE DUE',
+                            style: GoogleFonts.nunito(
+                              fontSize: 11,
+                              color: Colors.white70,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.7,
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 5),
                       Text(
@@ -158,12 +175,10 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                     ],
                   ),
                 ),
-                Text(
-                  '💊',
-                  style: TextStyle(
-                    fontSize: 38,
-                    color: Colors.white.withValues(alpha: 0.4),
-                  ),
+                Icon(
+                  Icons.medication_outlined,
+                  size: 38,
+                  color: Colors.white.withValues(alpha: 0.4),
                 ),
               ],
             ),
@@ -177,30 +192,30 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
               style: GoogleFonts.nunito(
                 fontSize: 14,
                 fontWeight: FontWeight.w800,
-                color: AppColors.text,
+                color: text,
               ),
             ),
           ),
-          ...List.generate(_meds.length, (i) => _buildMedCard(i)),
+          ...List.generate(_meds.length, (i) => _buildMedCard(i, surface, text, textMuted, border, primary, isDark)),
           const SizedBox(height: 100),
         ],
       ),
     );
   }
 
-  Widget _buildMedCard(int index) {
+  Widget _buildMedCard(int index, Color surface, Color text, Color textMuted, Color border, Color primary, bool isDark) {
     final med = _meds[index];
     final taken = med['taken'] as bool;
     return Container(
       margin: const EdgeInsets.fromLTRB(18, 10, 18, 0),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
+            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.05),
             blurRadius: 24,
             offset: const Offset(0, 4),
           ),
@@ -220,7 +235,7 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                       style: GoogleFonts.nunito(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.text,
+                        color: text,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -228,51 +243,41 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                       med['type'] as String,
                       style: GoogleFonts.nunito(
                         fontSize: 11,
-                        color: AppColors.textMuted,
+                        color: textMuted,
                       ),
                     ),
                   ],
                 ),
               ),
-              Text(med['icon'] as String, style: const TextStyle(fontSize: 24)),
+              Icon(med['icon'] as IconData, size: 24, color: primary),
             ],
           ),
           const SizedBox(height: 10),
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
-                  color: AppColors.purpleDim,
-                  border: Border.all(
-                    color: AppColors.purple.withValues(alpha: 0.2),
-                  ),
+                  color: primary.withOpacity(0.12),
+                  border: Border.all(color: primary.withValues(alpha: 0.2)),
                 ),
                 child: Text(
                   med['badge'] as String,
                   style: GoogleFonts.nunito(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.purple,
+                    color: primary,
                   ),
                 ),
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
                   color: AppColors.blueDim,
-                  border: Border.all(
-                    color: AppColors.blue.withValues(alpha: 0.2),
-                  ),
+                  border: Border.all(color: AppColors.blue.withValues(alpha: 0.2)),
                 ),
                 child: Text(
                   med['time'] as String,
@@ -300,8 +305,8 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
               child: Center(
                 child: Text(
                   taken
-                      ? '✓ Taken at ${med['takenTime'] ?? ''}'
-                      : '✓ Mark as ${index == 0 ? 'Used' : 'Taken'}',
+                      ? 'Taken at ${med['takenTime'] ?? ''}'
+                      : 'Mark as ${index == 0 ? 'Used' : 'Taken'}',
                   style: GoogleFonts.nunito(
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
@@ -315,7 +320,7 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
           Container(
             padding: const EdgeInsets.only(top: 11),
             decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: AppColors.border)),
+              border: Border(top: BorderSide(color: border)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -326,7 +331,7 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                     style: GoogleFonts.nunito(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textMuted,
+                      color: textMuted,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -341,9 +346,7 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                     height: 28,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(14),
-                      color: (med['toggle'] as bool)
-                          ? AppColors.green
-                          : AppColors.border,
+                      color: (med['toggle'] as bool) ? primary : border,
                     ),
                     child: AnimatedAlign(
                       duration: const Duration(milliseconds: 250),
