@@ -24,11 +24,15 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
     low: patients.filter((p) => p.risk < 31).length,
   };
 
-  return (
-    <OverviewPanel
-      patients={patients}
-      weekData={weekData}
-      riskCounts={riskCounts}
-    />
-  );
+ return (
+  <OverviewPanel
+    patients={patients}
+    weekData={weekData}
+    riskCounts={riskCounts}
+    onViewPatient={(id) => {
+      onViewPatient(id);     
+      onNavigate("patients"); 
+    }}
+  />
+);
 };

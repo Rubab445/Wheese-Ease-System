@@ -34,20 +34,19 @@ export const MessagesPanel: React.FC<MessagesPanelProps> = ({
       style={{
         flex: 1,
         display: "flex",
-        overflow: "hidden",
         background: THEME_COLORS.bg,
       }}
+      className="messge-admin-area-styling"
     >
       {/* Patient List */}
       <div
         style={{
-          width: "260px",
           borderRight: `1px solid ${THEME_COLORS.border}`,
           display: "flex",
           flexDirection: "column",
           background: THEME_COLORS.white,
-          overflowY: "auto",
         }}
+        className="patient-list-sidebar"
       >
         {patients.map((p) => (
           <div

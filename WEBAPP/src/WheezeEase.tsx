@@ -11,7 +11,7 @@ import {
   SettingsPage,
 } from "./pages";
 import LoginPage from "./pages/LoginPage";
-import "./styles/index.css";
+import "./styles/index.css"
 
 interface Alert {
   id: number;
@@ -203,6 +203,7 @@ const Dashboard: React.FC = () => {
   // Chat Functions
   const openChat = (id: string) => {
     setActiveChatId(id);
+    console.log('fff',activeChatId);
     if (!chats[id]) {
       setChats((prev) => ({ ...prev, [id]: [] }));
     }
@@ -283,6 +284,7 @@ const Dashboard: React.FC = () => {
           position: "sticky",
           top: 0,
           zIndex: 100,
+          overflow: "hidden",
           boxShadow: THEME_COLORS.shadow,
         }}
       >
@@ -392,7 +394,7 @@ const Dashboard: React.FC = () => {
             Live
           </div>
 
-          <div style={{ fontSize: "12px", color: THEME_COLORS.muted }}>
+          <div style={{ fontSize: "12px", color: THEME_COLORS.muted, whiteSpace: "nowrap" }}>
             {clock}
           </div>
 
@@ -501,25 +503,17 @@ const Dashboard: React.FC = () => {
       </nav>
 
       {/* MAIN CONTENT */}
-      <div
-        style={{
-          display: "flex",
-          flex: 1,
-          overflow: "hidden",
-          height: "calc(100vh - 60px)",
-        }}
-      >
+      <div className="wheezease-admin-sidebar-styling">
         {/* SIDEBAR */}
-        {(activeSection === "overview" || activeSection === "patients") && (
+        {( activeSection === "patients") && (
           <div
             style={{
-              width: "260px",
               background: THEME_COLORS.white,
               borderRight: `1px solid ${THEME_COLORS.border}`,
               display: "flex",
               flexDirection: "column",
-              overflow: "hidden",
             }}
+            className="patient-sidebar"
           >
             <div
               style={{
@@ -756,9 +750,9 @@ const WheezeEase: React.FC = () => {
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute>
+            // <ProtectedRoute>
               <Dashboard />
-            </ProtectedRoute>
+            // </ProtectedRoute>
           }
         />
 

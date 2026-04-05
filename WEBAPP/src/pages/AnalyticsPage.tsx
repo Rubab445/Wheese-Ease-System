@@ -1,11 +1,10 @@
 import React from "react";
-import { Patient } from "../data/patients";
 import { AnalyticsPanel } from "../components/sections/AnalyticsPanel";
 
-interface AnalyticsPageProps {
-  patients: Patient[];
-}
-
-export const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ patients }) => {
-  return <AnalyticsPanel patients={patients} />;
+export const AnalyticsPage: React.FC<{ patients: any[] }> = ({ patients }) => {
+  return (
+    <div style={{ width: "100%", height: "100vh", overflow: "hidden" }}>
+      <AnalyticsPanel patients={patients} />
+    </div>
+  );
 };
