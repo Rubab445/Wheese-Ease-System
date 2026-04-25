@@ -13,7 +13,7 @@ import { PATIENTS } from './data/patients';
 import AdminDashboard from './AdminDashboard';
 import LoginPage from './pages/LoginPage';
 
-type Section = 'overview' | 'patients' | 'alerts' | 'analytics' | 'messages' | 'settings';
+type Section = 'dashboard' | 'patients' | 'alerts' | 'analytics' | 'messages' | 'settings';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const token = localStorage.getItem('token');
@@ -27,7 +27,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 // Main Dashboard Component
 const Dashboard: React.FC = () => {
-  const [activeSection, setActiveSection] = useState<Section>('overview');
+  const [activeSection, setActiveSection] = useState<Section>('dashboard');
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
   const [messagePatientId, setMessagePatientId] = useState<string | null>(null);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
@@ -81,7 +81,7 @@ const Dashboard: React.FC = () => {
 
   const renderSection = () => {
     switch (activeSection) {
-      case 'overview':
+      case 'dashboard':
         return (
           <OverviewPage
             onPatientSelect={handlePatientSelect}

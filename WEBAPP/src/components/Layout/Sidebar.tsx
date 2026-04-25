@@ -13,7 +13,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   isExpanded
 }) => {
   const menuItems = [
-    { id: 'overview', label: 'Overview', icon: '📊' },
+    { id: 'dashboard', label: 'Dashboard', icon: '📊' },
     { id: 'patients', label: 'Patients', icon: '👥' },
     { id: 'alerts', label: 'Alerts', icon: '🔔' },
     { id: 'analytics', label: 'Analytics', icon: '📈' },

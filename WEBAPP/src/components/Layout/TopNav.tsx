@@ -73,7 +73,7 @@ const TopNav: React.FC<TopNavProps> = ({
     setIsDropdownOpen(!isDropdownOpen);
   };
 
-  const sections = ['overview', 'patients', 'alerts', 'analytics', 'messages', 'settings'];
+  const sections = ['dashboard', 'patients', 'alerts', 'analytics', 'messages', 'settings'];
 
   return (
     <nav className="topnav">
