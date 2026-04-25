@@ -26,7 +26,8 @@ import Config from './admin-pages/Config';
 import Settings from './admin-pages/Settings';
 import { INIT_DOCTORS, INIT_PATIENTS, INIT_ALERTS } from './data/mockData';
 import type { Doctor, Patient, Alert, NewDoctorData, NewPatientData } from './types';
-import './admin-components/dashboard.css';
+
+import './styles/admin-dashboard.css';
 
 const AdminDashboard: React.FC = () => {
   const [activeNav, setActiveNav] = useState('overview');
@@ -64,6 +65,15 @@ const AdminDashboard: React.FC = () => {
   const unassignedCount = patients.filter(p => p.doctor === '—').length;
   const pendingCount = doctors.filter(d => d.status === 'pending').length;
   const alertCount = alerts.filter(a => !a.read).length;
+
+  // Logout Handler
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('doctorName');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userEmail');
+    window.location.href = '/login';
+  };
 
   // Mobile menu handlers
   const toggleMobileMenu = () => {
@@ -456,6 +466,7 @@ const AdminDashboard: React.FC = () => {
           alertCount={alertCount}
           onSearchOpen={() => setSearchOpen(true)}
           onAlertsClick={() => handleNavChange('alerts')}
+          onLogout={handleLogout}  // <-- Added Logout prop
         />
         <div className="content">
           {activeNav === 'overview' && <Overview onShowToast={showToast} onNavChange={handleNavChange} />}

@@ -7,9 +7,17 @@ interface TopBarProps {
   alertCount: number;
   onSearchOpen: () => void;
   onAlertsClick: () => void;
+  onLogout?: () => void;  // Add this prop
 }
 
-const TopBar: React.FC<TopBarProps> = ({ title, subtitle, alertCount, onSearchOpen, onAlertsClick }) => {
+const TopBar: React.FC<TopBarProps> = ({ 
+  title, 
+  subtitle, 
+  alertCount, 
+  onSearchOpen, 
+  onAlertsClick,
+  onLogout  // Add this
+}) => {
   const [time, setTime] = useState('');
 
   useEffect(() => {
@@ -21,6 +29,17 @@ const TopBar: React.FC<TopBarProps> = ({ title, subtitle, alertCount, onSearchOp
     const interval = setInterval(updateClock, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  const handleLogout = () => {
+    if (onLogout) {
+      onLogout();
+    } else {
+      localStorage.removeItem('token');
+      localStorage.removeItem('doctorName');
+      localStorage.removeItem('userRole');
+      window.location.href = '/login';
+    }
+  };
 
   return (
     <div className="topbar">
@@ -37,6 +56,10 @@ const TopBar: React.FC<TopBarProps> = ({ title, subtitle, alertCount, onSearchOp
           🔔
           {alertCount > 0 && <div className="tb-notif-dot">{alertCount}</div>}
         </div>
+        {/* Logout Button - Extreme Right, Oval, No Icon */}
+        <button className="tb-logout-btn" onClick={handleLogout}>
+          Logout
+        </button>
       </div>
     </div>
   );
