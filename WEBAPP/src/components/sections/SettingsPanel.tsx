@@ -13,10 +13,10 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
     <div
       style={{
         flex: 1,
-        overflowY: "auto",
         padding: "24px",
         background: THEME_COLORS.bg,
         maxWidth: "600px",
+        margin: "0 auto"
       }}
     >
       {/* Doctor Profile */}
