@@ -1,4 +1,3 @@
-
 # Run: uvicorn main:app --reload --host 0.0.0.0 --port 8000
 from dotenv import load_dotenv
 load_dotenv()                    
@@ -7,6 +6,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
+from get_recommendation import router as recommendation_router, get_activity_recommendation, get_trip_risk_recommendation
 import os
 import sys
 
@@ -25,6 +25,7 @@ app = FastAPI(
     description="AI-powered asthma risk prediction — OpenWeatherMap only",
     version="2.0.0"
 )
+app.include_router(recommendation_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -73,6 +74,30 @@ class PredictionResponse(BaseModel):
     environment:   dict
     models_used:   str
 
+# ── UPDATED: symptoms_reported replaces had_symptoms ──
+class ExerciseLogRequest(BaseModel):
+    exercise_type:     str            # walking, running, cycling, swimming
+    duration:          int            # minutes
+    intensity:         str            # mild, moderate, intense
+    indoor:            bool           # True = indoor, False = outdoor
+    used_inhaler:      bool           # used inhaler before exercise
+    # Structured symptom fields (replaces had_symptoms: bool)
+    symptoms_reported: List[str]  = []    # e.g. ["Wheezing", "Coughing"]
+    symptom_severity:  Optional[str] = None  # "Mild" / "Moderate" / "Severe"
+    symptom_notes:     Optional[str] = None  # free-text from patient
+    city:              str        = "Gujrat"
+
+class HouseholdActivityRequest(BaseModel):
+    activity_type:     str            # cleaning, cooking, painting, gardening
+    duration:          int            # minutes
+    wore_mask:         bool
+    # Structured symptom fields (replaces had_symptoms: bool)
+    symptoms_reported: List[str]  = []
+    symptom_severity:  Optional[str] = None
+    symptom_notes:     Optional[str] = None
+    city:              str        = "Gujrat"
+
+
 # DEMO DOCTOR ACCOUNTS
 DOCTORS = {
     "doctor@wheezeease.com": {
@@ -94,6 +119,15 @@ DOCTORS = {
         "role":     "Pulmonologist"
     }
 }
+
+# Trigger mapping for household activities
+HOUSEHOLD_TRIGGERS = {
+    "cleaning":  {"trigger": "Dust & Allergens",      "description": "Cleaning stirs up dust mites, pet dander, and mold spores — all major asthma triggers."},
+    "cooking":   {"trigger": "Smoke & Fumes",          "description": "Cooking produces smoke, steam, and strong odors (especially frying/grilling) that can irritate airways."},
+    "painting":  {"trigger": "VOCs & Chemical Fumes",  "description": "Paint, varnish, and solvents release volatile organic compounds that severely irritate the respiratory system."},
+    "gardening": {"trigger": "Pollen & Outdoor Allergens", "description": "Gardening exposes you to pollen, grass, mold spores, and soil dust."},
+}
+
 # ENDPOINTS
 
 @app.get("/", tags=["Root"])
@@ -125,7 +159,6 @@ async def health():
 
 @app.get("/cities", tags=["Info"])
 async def get_supported_cities():
-    """Returns list of Pakistan cities with coordinates"""
     return {
         "cities": [
             {"name": city.title(), "lat": coords[0], "lon": coords[1]}
@@ -136,14 +169,9 @@ async def get_supported_cities():
 
 @app.get("/environment", tags=["Environment"])
 async def get_environment_data(city: str = "Gujrat"):
-    """
-    Fetch live weather + air quality for a Pakistan city.
-    Uses OpenWeatherMap for both — no WAQI needed.
-    """
     try:
         weather = get_weather(city)
         aqi     = get_aqi(city)
-
         aqi_value = aqi.get("aqi", 50)
 
         if aqi_value > 150:   aqi_category = "Unhealthy"
@@ -163,17 +191,12 @@ async def get_environment_data(city: str = "Gujrat"):
             "pm10":         aqi.get("pm10", 20.0),
             "pollen_count": aqi.get("pollen_estimate", 30),
         }
-
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/predict", tags=["Prediction"], response_model=PredictionResponse)
 async def predict(request: PredictionRequest):
-    """
-    Full AI prediction — fetches live air quality automatically.
-    Uses OpenWeatherMap Air Pollution API for PM2.5 and NO2.
-    """
     try:
         patient_data = {
             "wheezing":              request.wheezing,
@@ -205,7 +228,7 @@ async def predict(request: PredictionRequest):
             "risk_level":    result["risk_level"],
             "icon":          result["icon"],
             "color":         result["color"],
-            "main_message":  result["main_message"],   # ← add this
+            "main_message":  result["main_message"],
             "confidence":    result["confidence"],
             "probabilities": result["probabilities"],
             "advice":        result["advice"],
@@ -214,7 +237,6 @@ async def predict(request: PredictionRequest):
             "environment":   result["environment"],
             "models_used":   result["models_used"],
         }
-        
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -241,7 +263,6 @@ async def quick_predict(
     eczema:                int   = 0,
     dust_exposure:         float = 3.0
 ):
-    """Home screen live refresh — lightweight prediction every 9 seconds"""
     try:
         patient_data = {
             "wheezing": wheezing, "coughing": coughing,
@@ -285,7 +306,6 @@ async def quick_predict(
 
 @app.post("/api/login", tags=["Auth"])
 async def login(request: LoginRequest):
-    """Login endpoint for WheezeEase web and mobile apps"""
     doctor = DOCTORS.get(request.identifier.lower().strip())
     if not doctor or doctor["password"] != request.password:
         raise HTTPException(
@@ -302,10 +322,10 @@ async def login(request: LoginRequest):
         }
     }
 
+
 @app.get("/trip-risk", tags=["Prediction"])
 async def trip_risk(
     destination:           str,
-    # Patient profile passed as query params
     wheezing:              int   = 0,
     coughing:              int   = 0,
     chest_tightness:       int   = 0,
@@ -324,10 +344,6 @@ async def trip_risk(
     eczema:                int   = 0,
     dust_exposure:         float = 3.0
 ):
-    """
-    Checks if it is safe for the patient to travel
-    to a destination city based on live air quality there.
-    """
     try:
         patient_data = {
             "wheezing": wheezing, "coughing": coughing,
@@ -346,66 +362,224 @@ async def trip_risk(
             "dust_exposure": dust_exposure,
         }
 
-        # Fetch env data for destination
         env = get_environment(destination, destination)
-
-        # Run prediction using destination environment
-        full_data = {**env, **patient_data}
         result = predict_with_live_data(
             weather_city=destination,
             patient_symptoms=patient_data,
             aqi_city=destination
         )
 
-        # Generate trip-specific advice
-        aqi = env.get("AQI", 50)
-        if result["risk_level"] == "HIGH":
-            trip_verdict   = "NOT RECOMMENDED"
-            trip_verdict_color = "red"
-            trip_advice    = (
-                f"Travelling to {destination} today is risky for you. "
-                f"Air quality there is poor (AQI: {aqi}). "
-                "If you must go, take your rescue inhaler, wear an N95 mask, "
-                "and avoid spending time outdoors."
-            )
-        elif result["risk_level"] == "MEDIUM":
-            trip_verdict   = "PROCEED WITH CAUTION"
-            trip_verdict_color = "orange"
-            trip_advice    = (
-                f"Travelling to {destination} is possible but take precautions. "
-                f"Air quality there is moderate (AQI: {aqi}). "
-                "Carry your inhaler, limit outdoor exposure, "
-                "and take your medication before leaving."
-            )
-        else:
-            trip_verdict   = "SAFE TO TRAVEL"
-            trip_verdict_color = "green"
-            trip_advice    = (
-                f"Conditions in {destination} look good for you today (AQI: {aqi}). "
-                "Continue your normal medication routine and enjoy your trip."
-            )
+        # Build patient profile for context
+        patient_profile = {
+            "recent_attacks": past_attacks,
+            "medication_adherence": medication_adherence,
+            "smoking": smoking,
+        }
+
+        # Get Gemini-powered trip recommendation
+        ai_rec = await get_trip_risk_recommendation(
+            destination=destination,
+            risk_level=result["risk_level"],
+            environment=env,
+            patient_profile=patient_profile,
+            symptom_history=f"Recent asthma activity: {breathing_difficulty}/3 breathing difficulty"
+        )
 
         return {
-            "destination":       destination,
-            "trip_verdict":      trip_verdict,
-            "trip_verdict_color": trip_verdict_color,
-            "trip_advice":       trip_advice,
-            "risk_level":        result["risk_level"],
-            "confidence":        result["confidence"],
-            "reasons":           result["reasons"],
-            "alerts":            result["alerts"],
+            "destination":             destination,
+            "trip_verdict":            result["risk_level"],
+            "risk_level":              result["risk_level"],
+            "confidence":              result["confidence"],
+            "reasons":                 result["reasons"],
+            "alerts":                  result["alerts"],
             "destination_environment": {
                 "AQI":         env["AQI"],
                 "temperature": env["temperature"],
                 "humidity":    env["humidity"],
                 "PM2_5":       env["PM2_5"],
                 "NO2":         env["NO2"],
-            }
+                "pollen":      env.get("pollen_count", 0),
+            },
+            "ai_recommendation": ai_rec,
         }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
+
+
+# ── ACTIVITY LOGGING ENDPOINTS ───────────────────────────────────────
+
+def _determine_exercise_risk(request: ExerciseLogRequest, aqi, temp, humidity, pm25):
+    """Determine risk level based on exercise parameters and environment."""
+    risk_level = "LOW"
+    had_symptoms = len(request.symptoms_reported) > 0
+
+    if not request.indoor:
+        if aqi > 150:   risk_level = "HIGH"
+        elif aqi > 100: risk_level = "MEDIUM"
+        if temp > 38 or temp < 5:
+            if risk_level == "LOW": risk_level = "MEDIUM"
+
+    if request.intensity == "intense" and not request.used_inhaler:
+        if risk_level == "LOW": risk_level = "MEDIUM"
+
+    # Bump risk if patient reported symptoms — severity makes it worse
+    if had_symptoms:
+        if request.symptom_severity == "Severe":
+            risk_level = "HIGH"
+        elif request.symptom_severity == "Moderate" and risk_level == "LOW":
+            risk_level = "MEDIUM"
+        elif risk_level == "LOW":
+            risk_level = "MEDIUM"
+
+    return risk_level
+
+
+def _determine_household_risk(request: HouseholdActivityRequest, aqi, pollen):
+    """Determine risk level based on household activity and environment."""
+    activity   = request.activity_type.lower()
+    risk_level = "LOW"
+    had_symptoms = len(request.symptoms_reported) > 0
+
+    if activity == "cleaning":
+        if request.duration > 30 or not request.wore_mask: risk_level = "MEDIUM"
+    elif activity == "cooking":
+        if request.duration > 45: risk_level = "MEDIUM"
+    elif activity == "painting":
+        risk_level = "MEDIUM"
+        if not request.wore_mask or request.duration > 30: risk_level = "HIGH"
+    elif activity == "gardening":
+        if pollen > 50 or aqi > 100:  risk_level = "MEDIUM"
+        if aqi > 150:                  risk_level = "HIGH"
+        if not request.wore_mask and risk_level == "LOW": risk_level = "MEDIUM"
+
+    # Bump risk based on reported symptoms + severity
+    if had_symptoms:
+        if request.symptom_severity == "Severe":
+            risk_level = "HIGH"
+        elif request.symptom_severity == "Moderate" and risk_level == "LOW":
+            risk_level = "MEDIUM"
+        elif risk_level == "LOW":
+            risk_level = "MEDIUM"
+
+    return risk_level
+
+
+@app.post("/activity/exercise", tags=["Activities"])
+async def log_exercise(request: ExerciseLogRequest):
+    """
+    Logs an exercise session and returns Gemini-powered safety recommendations
+    based on current environmental conditions and exercise parameters.
+    """
+    try:
+        weather  = get_weather(request.city)
+        aqi_data = get_aqi(request.city)
+        aqi      = aqi_data.get("aqi", 50)
+        temp     = weather.get("temperature", 25.0)
+        humidity = weather.get("humidity", 60.0)
+        pm25     = aqi_data.get("pm25", 15.0)
+
+        risk_level = _determine_exercise_risk(request, aqi, temp, humidity, pm25)
+
+        env_data = {
+            "aqi":         aqi,
+            "temperature": temp,
+            "humidity":    humidity,
+            "pm25":        pm25,
+        }
+
+        ai_rec = await get_activity_recommendation(
+            activity_type=request.exercise_type,
+            duration=request.duration,
+            risk_level=risk_level,
+            environment=env_data,
+            is_exercise=True,
+            intensity=request.intensity,
+            indoor=request.indoor,
+            used_inhaler=request.used_inhaler,
+            # Pass structured symptom data — no more bool
+            symptoms_reported=request.symptoms_reported,
+            symptom_severity=request.symptom_severity,
+            symptom_notes=request.symptom_notes,
+        )
+
+        return {
+            "risk_level":  risk_level,
+            "exercise": {
+                "type":          request.exercise_type,
+                "duration":      request.duration,
+                "intensity":     request.intensity,
+                "indoor":        request.indoor,
+                "symptoms":      request.symptoms_reported,
+                "symptom_severity": request.symptom_severity,
+            },
+            "environment":      env_data,
+            "ai_recommendation": ai_rec,
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/activity/household", tags=["Activities"])
+async def log_household_activity(request: HouseholdActivityRequest):
+    """
+    Logs a household activity and returns Gemini-powered trigger-aware 
+    safety recommendations.
+    """
+    try:
+        activity     = request.activity_type.lower()
+        trigger_info = HOUSEHOLD_TRIGGERS.get(activity, {
+            "trigger":     "General Irritants",
+            "description": "This activity may expose you to airborne irritants."
+        })
+
+        weather  = get_weather(request.city)
+        aqi_data = get_aqi(request.city)
+        aqi      = aqi_data.get("aqi", 50)
+        pollen   = aqi_data.get("pollen_estimate", 30)
+
+        risk_level = _determine_household_risk(request, aqi, pollen)
+
+        env_data = {
+            "aqi":    aqi,
+            "pollen": pollen,
+        }
+
+        ai_rec = await get_activity_recommendation(
+            activity_type=request.activity_type,
+            duration=request.duration,
+            risk_level=risk_level,
+            environment=env_data,
+            is_exercise=False,
+            wore_mask=request.wore_mask,
+            # Pass structured symptom data — no more bool
+            symptoms_reported=request.symptoms_reported,
+            symptom_severity=request.symptom_severity,
+            symptom_notes=request.symptom_notes,
+            trigger=trigger_info["trigger"],
+            trigger_description=trigger_info["description"],
+        )
+
+        return {
+            "risk_level":        risk_level,
+            "trigger":           trigger_info["trigger"],
+            "trigger_description": trigger_info["description"],
+            "activity": {
+                "type":             request.activity_type,
+                "duration":         request.duration,
+                "wore_mask":        request.wore_mask,
+                "symptoms":         request.symptoms_reported,
+                "symptom_severity": request.symptom_severity,
+            },
+            "environment":       env_data,
+            "ai_recommendation": ai_rec,
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # RUN
 if __name__ == "__main__":
     import uvicorn
