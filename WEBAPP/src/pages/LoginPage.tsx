@@ -1,13 +1,19 @@
+// src/pages/LoginPage.tsx
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { LoginForm } from '../components/auth';
+import { useNavigate, Link } from 'react-router-dom';
 import { saveToken } from '../services/authService';
 import '../styles/login.css';
 
 /* ── SVG Icons ─────────────────────────────────────────────────────────────── */
 const PlusIcon = () => (
-  <svg viewBox="0 0 24 24">
-    <path d="M19 11h-6V5a1 1 0 0 0-2 0v6H5a1 1 0 0 0 0 2h6v6a1 1 0 0 0 2 0v-6h6a1 1 0 0 0 0-2z" />
+  <svg viewBox="0 0 24 24" width="32" height="32">
+    <path d="M19 11h-6V5a1 1 0 0 0-2 0v6H5a1 1 0 0 0 0 2h6v6a1 1 0 0 0 2 0v-6h6a1 1 0 0 0 0-2z" fill="url(#logoGradient)" />
+    <defs>
+      <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#3a8eff" />
+        <stop offset="100%" stopColor="#6a5af9" />
+      </linearGradient>
+    </defs>
   </svg>
 );
 
@@ -71,34 +77,115 @@ const ECG_D =
   'L780,32 L880,32 L900,32 L910,12 L922,52 L936,4 L948,60 L958,32 ' +
   'L980,32 L1080,32 L1100,32 L1110,12 L1122,52 L1136,4 L1148,60 L1158,32 L1200,32';
 
-/* ── LoginPage ─────────────────────────────────────────────────────────────── */
+/* ── Login Page Component ─────────────────────────────────────────────────── */
 const LoginPage = () => {
   const navigate = useNavigate();
-  const [toast, setToast]         = useState('');
+  const [toast, setToast] = useState('');
   const [toastShow, setToastShow] = useState(false);
-  const toastTimer                = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [errors, setErrors] = useState({ email: '', password: '', general: '' });
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const showToast = (msg: string) => {
+  const showToast = (msg: string, isError: boolean = false) => {
     setToast(msg);
     setToastShow(true);
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToastShow(false), 3200);
   };
 
-  const handleSuccess = (data: any) => {
-    if (data?.token) saveToken(data.token);
-    setTimeout(() => navigate('/dashboard'), 1400);
+  const validate = () => {
+    let isValid = true;
+    const newErrors = { email: '', password: '', general: '' };
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+      isValid = false;
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Enter a valid email address';
+      isValid = false;
+    }
+
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+      isValid = false;
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
   };
 
-  useEffect(() => () => {
-    if (toastTimer.current) clearTimeout(toastTimer.current);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target;
+    if (type === 'checkbox') {
+      setRememberMe(checked);
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+      if (errors[name as keyof typeof errors]) {
+        setErrors(prev => ({ ...prev, [name]: '' }));
+      }
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+
+    setIsLoading(true);
+    setErrors(prev => ({ ...prev, general: '' }));
+
+    setTimeout(() => {
+      // Demo credentials
+      if (formData.email === 'admin@wheezeease.com' && formData.password === 'admin123') {
+        const token = 'admin-token-' + Date.now();
+        saveToken(token);
+        localStorage.setItem('userRole', 'admin');
+        localStorage.setItem('doctorName', 'Admin User');
+        if (rememberMe) localStorage.setItem('rememberMe', 'true');
+        showToast('Welcome back, Admin!');
+        setTimeout(() => navigate('/admin-dashboard'), 1000);
+      } 
+      else if (formData.email === 'doctor@wheezeease.com' && formData.password === 'doctor123') {
+        const token = 'doctor-token-' + Date.now();
+        saveToken(token);
+        localStorage.setItem('userRole', 'doctor');
+        localStorage.setItem('doctorName', 'Dr. A. Rahman');
+        if (rememberMe) localStorage.setItem('rememberMe', 'true');
+        showToast('Welcome back, Doctor!');
+        setTimeout(() => navigate('/dashboard'), 1000);
+      }
+      else {
+        setErrors(prev => ({ ...prev, general: 'Invalid email or password' }));
+        showToast('Invalid credentials', true);
+        setIsLoading(false);
+      }
+    }, 800);
+  };
+
+  const handleGoogleLogin = () => {
+    showToast('Google login coming soon!', false);
+  };
+
+  useEffect(() => {
+    // Check for remembered user
+    const remembered = localStorage.getItem('rememberMe');
+    if (remembered === 'true') {
+      // Auto-fill logic can be added here
+    }
+    return () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+    };
   }, []);
 
   return (
     <>
-      {/* ── Background ── */}
+      {/* Background with bubbles and ECG */}
       <div className="login-bg">
-        {/* Bubbles */}
         <div className="bubble bubble-1"><BubbleChemIcon /></div>
         <div className="bubble bubble-2"><BubbleCubeIcon /></div>
         <div className="bubble bubble-3"><BubbleStethoscopeIcon /></div>
@@ -107,7 +194,6 @@ const LoginPage = () => {
         <div className="bubble bubble-6"><BubblePillsIcon /></div>
         <div className="bubble bubble-7"><BubblePillsIcon /></div>
 
-        {/* ECG line */}
         <div className="ecg-line-wrap">
           <svg viewBox="0 0 1200 64" preserveAspectRatio="none">
             <path className="ecg-path" d={ECG_D} />
@@ -115,23 +201,123 @@ const LoginPage = () => {
         </div>
       </div>
 
-      {/* ── Page / Card ── */}
+      {/* Login Card */}
       <div className="login-page">
         <div className="login-card">
-          {/* Logo */}
-          <div className="logo-wrap" aria-hidden="true">
+          <div className="logo-wrap">
             <PlusIcon />
           </div>
 
-          <h1>WheezeEase</h1>
+          <h1 className="login-main-title">Wheeze<span className="title-highlight">Ease</span></h1>
+          <p className="login-subtitle">Welcome back! Please login to your account</p>
 
-          <LoginForm onSuccess={handleSuccess} onToast={showToast} />
+          {/* Login Form */}
+          <form onSubmit={handleSubmit} className="login-form">
+            {/* Email Field */}
+            <div className={`form-group ${errors.email ? 'error' : ''}`}>
+              <label className="form-label">Email Address</label>
+              <div className="input-wrapper">
+                <input
+                  type="email"
+                  name="email"
+                  className="form-input"
+                  placeholder="Enter your email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  autoComplete="email"
+                />
+              </div>
+              {errors.email && <span className="error-text">{errors.email}</span>}
+            </div>
+
+            {/* Password Field */}
+            <div className={`form-group ${errors.password ? 'error' : ''}`}>
+              <label className="form-label">Password</label>
+              <div className="input-wrapper">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  className="form-input"
+                  placeholder="Enter your password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  autoComplete="current-password"
+                />
+                <button 
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? '🙈' : '👁️'}
+                </button>
+              </div>
+              {errors.password && <span className="error-text">{errors.password}</span>}
+            </div>
+
+            {/* Remember Me & Forgot Password */}
+            <div className="form-options">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={handleChange}
+                />
+                <span>Remember me</span>
+              </label>
+              <Link to="/forgot-password" className="forgot-link">Forgot Password?</Link>
+            </div>
+
+            {/* General Error */}
+            {errors.general && (
+              <div className="general-error">
+                <span>⚠️</span> {errors.general}
+              </div>
+            )}
+
+            {/* Login Button */}
+            <button 
+              type="submit" 
+              className={`login-btn ${isLoading ? 'loading' : ''}`}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <span className="spinner"></span>
+                  Logging in...
+                </>
+              ) : (
+                'Login'
+              )}
+            </button>
+
+            {/* Divider */}
+            <div className="divider">
+            </div>
+
+            {/* Google Login Button */}
+            <button 
+              type="button" 
+              className="google-btn"
+              onClick={handleGoogleLogin}
+            >
+              <span className="google-icon">G</span>
+              Continue with Google
+            </button>
+
+            {/* Sign Up Link */}
+            <div className="signup-section">
+              <p>Don't have an account? <Link to="/signup" className="signup-link">Sign up</Link></p>
+            </div>
+          </form>
         </div>
       </div>
 
-      {/* ── Toast ── */}
-      <div className={`toast${toastShow ? ' toast-show' : ''}`} role="status" aria-live="polite">
-        {toast}
+      {/* Toast Notification */}
+      <div className={`custom-toast ${toastShow ? 'show' : ''}`}>
+        <div className="toast-content">
+          <span className="toast-icon">{toast.includes('Welcome') ? '🎉' : '⚠️'}</span>
+          <span>{toast}</span>
+        </div>
       </div>
     </>
   );

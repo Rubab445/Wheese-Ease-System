@@ -12,6 +12,9 @@ import { SettingsPage } from './pages/SettingsPage';
 import { PATIENTS } from './data/patients';
 import AdminDashboard from './AdminDashboard';
 import LoginPage from './pages/LoginPage';
+// src/App.tsx ya src/WheezeEase.tsx
+// src/App.tsx or src/WheezeEase.tsx
+import SignupPage from './SignupPage';
 
 type Section = 'dashboard' | 'patients' | 'alerts' | 'analytics' | 'messages' | 'settings';
 
@@ -151,6 +154,7 @@ export const WheezeEase: React.FC = () => {
             <AdminDashboard />
           </ProtectedRoute>
         } />
+         <Route path="/signup" element={<SignupPage />} />  {/* ← Add this route */}
         <Route path="/" element={
           localStorage.getItem('token') ? (
             localStorage.getItem('userRole') === 'admin' ? 
