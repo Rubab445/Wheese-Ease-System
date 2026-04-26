@@ -30,6 +30,10 @@ class _CheckinScreenState extends State<CheckinScreen> {
     text: 'Worse after going outside this morning. Used inhaler twice.',
   );
 
+  // Gemini recommendation state
+  Map<String, dynamic>? _recommendation;
+  bool _recommendationLoading = false;
+
   final List<Map<String, dynamic>> _symptoms = [
     {
       'icon': Icons.volume_up_outlined,
@@ -83,8 +87,27 @@ class _CheckinScreenState extends State<CheckinScreen> {
     super.dispose();
   }
 
+  // Build a text summary of selected symptoms for Gemini
+  String _buildSymptomsText() {
+    final selected = _symptoms
+        .where((s) => s['selected'] == true && s['name'] != 'None')
+        .map((s) => s['name'] as String)
+        .toList();
+    if (selected.isEmpty) return 'No symptoms reported';
+    final intensity = _intensity == 'mild'
+        ? 'Mild'
+        : _intensity == 'sev'
+            ? 'Severe'
+            : 'Moderate';
+    return '${selected.join(", ")} ($intensity intensity)';
+  }
+
   void _submitCheckin() async {
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _recommendation = null;
+      _recommendationLoading = true;
+    });
 
     // Collect form data
     final coughing = _symptoms[0]['selected'] ? 1 : 0;
@@ -117,9 +140,8 @@ class _CheckinScreenState extends State<CheckinScreen> {
       'dust_exposure': 0.5,
     };
 
-    // Call API with patient data - use PatientProfile for clinical values
+    // ── Step 1: ML Prediction (silent — user sees "Loading Recommendations...") ──
     final result = await ApiService.predict(
-      // Symptoms from check-in form
       wheezing: wheezing,
       coughing: coughing,
       chestTightness: 0,
@@ -130,7 +152,6 @@ class _CheckinScreenState extends State<CheckinScreen> {
         1,
       ),
       pastAttacks: PatientProfile.getClinicalValue('past_attacks', 2),
-      // Clinical values - estimated automatically from profile
       lungFunctionFev1: PatientProfile.getClinicalValue(
         'lung_function_fev1',
         2.5,
@@ -158,24 +179,131 @@ class _CheckinScreenState extends State<CheckinScreen> {
       dustExposure: PatientProfile.getClinicalValue('dust_exposure', 3.0),
     );
 
-    if (mounted) {
+    if (!mounted) return;
+
+    if (result == null) {
       setState(() {
         _loading = false;
-        if (result != null) {
-          _predictionResult = PredictionResult.fromJson(result);
-          _submitted = true;
-          // Update parent with patient data
-          widget.onPatientDataUpdate(patientData);
-        } else {
-          // Show error
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to get prediction. Check server.'),
-            ),
-          );
-        }
+        _recommendationLoading = false;
       });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to get prediction. Check server.'),
+        ),
+      );
+      return;
     }
+
+    // Parse prediction (keep internally, don't show ML card to user)
+    final prediction = PredictionResult.fromJson(result);
+    setState(() {
+      _predictionResult = prediction;
+      _submitted = true;
+      _loading = false;
+      // Keep _recommendationLoading = true → user sees "Loading Recommendations..."
+      widget.onPatientDataUpdate(patientData);
+    });
+
+    // ── Step 2: Gemini Recommendation ──
+    final env = result['environment'] as Map<String, dynamic>?;
+
+    final recResult = await ApiService.getRecommendation(
+      riskLevel: prediction.riskLevel,
+      aqi: (env?['AQI'] as num?)?.toDouble(),
+      humidity: (env?['humidity'] as num?)?.toDouble(),
+      temperature: (env?['temperature'] as num?)?.toDouble(),
+      symptoms: _buildSymptomsText(),
+      weatherDescription: env?['description'] as String?,
+      age: PatientProfile.age,
+      gender: PatientProfile.gender,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _recommendationLoading = false;
+      if (recResult != null && recResult['success'] == true) {
+        _recommendation = recResult['data'] as Map<String, dynamic>?;
+      } else if (recResult != null && recResult['data'] != null) {
+        if (recResult['data'] is Map<String, dynamic>) {
+          _recommendation = recResult['data'] as Map<String, dynamic>;
+        }
+      }
+
+      // ── Fallback: build recommendation from ML model if Gemini failed ──
+      _recommendation ??= _buildFallbackRecommendation(prediction);
+    });
+  }
+
+  /// Builds a recommendation map from ML prediction data when Gemini is unavailable
+  Map<String, dynamic> _buildFallbackRecommendation(PredictionResult prediction) {
+    // Use ML advice as summary
+    String summary = prediction.advice.isNotEmpty
+        ? prediction.advice
+        : 'Your risk level is ${prediction.riskLevel}. Please follow the recommendations below.';
+
+    // Build immediate actions from ML reasons/alerts
+    List<String> immediateActions = [];
+    if (prediction.alerts.isNotEmpty) {
+      immediateActions.addAll(prediction.alerts);
+    }
+    if (prediction.reasons.isNotEmpty) {
+      for (final reason in prediction.reasons) {
+        if (immediateActions.length >= 3) break;
+        immediateActions.add(reason);
+      }
+    }
+    // Fill with defaults if needed
+    if (immediateActions.isEmpty) {
+      if (prediction.riskLevel == 'HIGH') {
+        immediateActions = [
+          'Use your rescue inhaler immediately if symptoms are present',
+          'Move to a clean, well-ventilated indoor area',
+          'Seek emergency medical help if breathing does not improve',
+        ];
+      } else if (prediction.riskLevel == 'MEDIUM') {
+        immediateActions = [
+          'Take prescribed controller medication as directed',
+          'Avoid outdoor activity if air quality is poor',
+          'Stay hydrated and rest in a clean environment',
+        ];
+      } else {
+        immediateActions = [
+          'Continue regular medication schedule as prescribed',
+          'Keep rescue inhaler accessible at all times',
+          'Maintain good indoor air quality at home',
+        ];
+      }
+    }
+
+    // Build preventive steps
+    List<String> preventiveSteps;
+    if (prediction.riskLevel == 'HIGH') {
+      preventiveSteps = [
+        'Avoid all known triggers including smoke, dust, and strong odors',
+        'Monitor symptoms every few hours and keep medication nearby',
+      ];
+    } else if (prediction.riskLevel == 'MEDIUM') {
+      preventiveSteps = [
+        'Track symptoms daily and note any worsening patterns',
+        'Schedule a routine checkup with your doctor this week',
+      ];
+    } else {
+      preventiveSteps = [
+        'Exercise in low-pollution environments and avoid peak traffic hours',
+        'Stay updated on local air quality and weather forecasts',
+      ];
+    }
+
+    return {
+      'condition_summary': summary,
+      'immediate_actions': immediateActions,
+      'preventive_steps': preventiveSteps,
+      'doctor_alert': prediction.riskLevel == 'HIGH',
+      'doctor_alert_reason': prediction.riskLevel == 'HIGH'
+          ? 'High risk score requires urgent medical evaluation'
+          : null,
+    };
   }
 
   void _resetCheckin() {
@@ -632,15 +760,25 @@ class _CheckinScreenState extends State<CheckinScreen> {
   Widget _buildResult() {
     final riskColor = _predictionResult.riskColor;
     final riskLevel = _predictionResult.riskLevel;
-    final advice = _predictionResult.advice;
-    final reasons = _predictionResult.reasons;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = isDark ? AppColors.primaryDark : AppColors.primary;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.only(left: 22, right: 22, top: 22, bottom: 100),
       child: Column(
         children: [
-          const SizedBox(height: 36),
-          Icon(_predictionResult.riskIconData, color: _predictionResult.riskColor, size: 66),
+          const SizedBox(height: 24),
+          // ── Risk Level Hero ──
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: riskColor.withOpacity(0.12),
+              border: Border.all(color: riskColor.withOpacity(0.3), width: 3),
+            ),
+            child: Icon(_predictionResult.riskIconData, color: riskColor, size: 40),
+          ),
           const SizedBox(height: 14),
           Text(
             'Check-In Complete!',
@@ -650,7 +788,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
               color: AppColors.textColor(context),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           RichText(
             textAlign: TextAlign.center,
             text: TextSpan(
@@ -661,8 +799,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
               ),
               children: [
                 const TextSpan(
-                  text:
-                      'Great job! Dr. Rahman has been notified. Based on your check-in, your risk is ',
+                  text: 'Dr. Rahman has been notified. Your risk is ',
                 ),
                 TextSpan(
                   text: riskLevel,
@@ -671,84 +808,197 @@ class _CheckinScreenState extends State<CheckinScreen> {
                     color: riskColor,
                   ),
                 ),
-                const TextSpan(text: ' today. '),
-                TextSpan(
-                  text: riskLevel == 'HIGH'
-                      ? 'Stay indoors if possible.'
-                      : riskLevel == 'MEDIUM'
-                      ? 'Monitor your symptoms closely.'
-                      : 'Keep your routine.',
-                  style: GoogleFonts.nunito(fontWeight: FontWeight.w500),
-                ),
+                const TextSpan(text: ' today.'),
               ],
             ),
           ),
-          const SizedBox(height: 14),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: riskColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: riskColor.withValues(alpha: 0.2)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.auto_awesome, color: riskColor, size: 14),
-                    const SizedBox(width: 4),
-                    Text(
-                      'AI RECOMMENDATIONS',
-                      style: GoogleFonts.nunito(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: riskColor,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
+
+          const SizedBox(height: 18),
+
+          // ══════════════════════════════════════════
+          // RECOMMENDATIONS CARD
+          // ══════════════════════════════════════════
+          if (_recommendationLoading)
+            // ── Loading state ──
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceColor(context),
+                borderRadius: BorderRadius.circular(18),
+                border: Border(
+                  left: BorderSide(color: primary, width: 3),
                 ),
-                const SizedBox(height: 7),
-                Text(
-                  advice,
-                  style: GoogleFonts.nunito(
-                    fontSize: 13,
-                    color: AppColors.textColor(context),
-                    height: 1.8,
-                    fontWeight: FontWeight.w600,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(isDark ? 0.15 : 0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
-                ),
-                if (reasons.isNotEmpty) ...[
-                  const SizedBox(height: 10),
+                ],
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: 28,
+                    height: 28,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      valueColor: AlwaysStoppedAnimation(primary),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   Text(
-                    'Why this risk level:',
+                    'Loading Recommendations...',
                     style: GoogleFonts.nunito(
-                      fontSize: 11,
+                      fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textMuted,
+                      color: AppColors.textColor(context),
                     ),
                   ),
                   const SizedBox(height: 6),
-                  ...reasons.map(
-                    (reason) => Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Text(
-                        '• $reason',
-                        style: GoogleFonts.nunito(
-                          fontSize: 12,
-                          color: AppColors.textColor(context),
-                          height: 1.5,
-                        ),
-                      ),
+                  Text(
+                    'Analyzing your symptoms and environment',
+                    style: GoogleFonts.nunito(
+                      fontSize: 12,
+                      color: AppColors.textMutedColor(context),
                     ),
                   ),
+                  const SizedBox(height: 12),
                 ],
-              ],
+              ),
+            )
+          else if (_recommendation != null)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceColor(context),
+                borderRadius: BorderRadius.circular(18),
+                border: Border(
+                  left: BorderSide(color: primary, width: 3),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(isDark ? 0.15 : 0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  Row(
+                    children: [
+                      Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: primary.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(Icons.auto_awesome, color: primary, size: 15),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'RECOMMENDATIONS',
+                        style: GoogleFonts.nunito(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textMutedColor(context),
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Condition summary
+                  if (_recommendation!['condition_summary'] != null)
+                    Text(
+                      _recommendation!['condition_summary'] as String,
+                      style: GoogleFonts.nunito(
+                        fontSize: 13,
+                        color: AppColors.textColor(context),
+                        height: 1.6,
+                        fontWeight: FontWeight.w600,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+
+                  // Do Right Now
+                  if (_recommendation!['immediate_actions'] != null) ...[
+                    const SizedBox(height: 14),
+                    _sectionLabel(Icons.flash_on_rounded, 'Do Right Now', AppColors.red),
+                    const SizedBox(height: 8),
+                    ...(_recommendation!['immediate_actions'] as List).map(
+                      (action) => _actionItem(action.toString(), AppColors.red),
+                    ),
+                  ],
+
+                  // Preventive Steps
+                  if (_recommendation!['preventive_steps'] != null) ...[
+                    const SizedBox(height: 14),
+                    _sectionLabel(Icons.shield_outlined, 'Preventive Steps', AppColors.green),
+                    const SizedBox(height: 8),
+                    ...(_recommendation!['preventive_steps'] as List).map(
+                      (step) => _actionItem(step.toString(), AppColors.green),
+                    ),
+                  ],
+
+                  // Doctor Visit
+                  if (_recommendation!['doctor_alert'] == true) ...[
+                    const SizedBox(height: 14),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.red.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.red.withOpacity(0.2)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.local_hospital_rounded, color: AppColors.red, size: 20),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Doctor Visit Recommended',
+                                  style: GoogleFonts.nunito(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.red,
+                                  ),
+                                ),
+                                if (_recommendation!['doctor_alert_reason'] != null)
+                                  Text(
+                                    _recommendation!['doctor_alert_reason'] as String,
+                                    style: GoogleFonts.nunito(
+                                      fontSize: 11,
+                                      color: AppColors.textColor(context),
+                                      height: 1.4,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
+
+          const SizedBox(height: 22),
+
+          // ── Back to Home button ──
           GestureDetector(
             onTap: _resetCheckin,
             child: Container(
@@ -756,7 +1006,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
               padding: const EdgeInsets.symmetric(vertical: 16),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(18),
-                gradient: Theme.of(context).brightness == Brightness.dark
+                gradient: isDark
                     ? AppColors.primaryGradientDark
                     : AppColors.primaryGradient,
               ),
@@ -769,6 +1019,57 @@ class _CheckinScreenState extends State<CheckinScreen> {
                     color: Colors.white,
                   ),
                 ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Helper: Section label for recommendation cards ──
+  Widget _sectionLabel(IconData icon, String label, Color color) {
+    return Row(
+      children: [
+        Icon(icon, color: color, size: 14),
+        const SizedBox(width: 6),
+        Text(
+          label.toUpperCase(),
+          style: GoogleFonts.nunito(
+            fontSize: 10,
+            fontWeight: FontWeight.w800,
+            color: color,
+            letterSpacing: 0.8,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Helper: Action item row ──
+  Widget _actionItem(String text, Color dotColor) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 5),
+            width: 5,
+            height: 5,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: dotColor,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: GoogleFonts.nunito(
+                fontSize: 12,
+                color: AppColors.textColor(context),
+                height: 1.5,
               ),
             ),
           ),

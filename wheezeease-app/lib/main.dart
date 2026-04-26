@@ -15,6 +15,7 @@ import 'screens/history_screen.dart';
 import 'screens/medications_screen.dart';
 import 'screens/doctor_detail_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/activities_screen.dart';
 import 'widgets/sos_modal.dart';
 import 'widgets/message_modal.dart';
 
@@ -130,6 +131,7 @@ class _AppShellState extends State<AppShell> {
   final List<Map<String, dynamic>> _tabs = [
     {'icon': Icons.home_rounded, 'label': 'Home'},
     {'icon': Icons.add_circle_outline, 'label': 'Check-In'},
+    {'icon': Icons.directions_run_rounded, 'label': 'Activities'},
     {'icon': Icons.show_chart_rounded, 'label': 'History'},
     {'icon': Icons.medication_outlined, 'label': 'Meds'},
     {'icon': Icons.medical_services_outlined, 'label': 'Doctor'},
@@ -259,6 +261,7 @@ class _AppShellState extends State<AppShell> {
             setState(() => _lastPatientData = data);
           },
         ),
+        const ActivitiesScreen(),
         const HistoryScreen(),
         const MedicationsScreen(),
         DoctorDetailScreen(
@@ -330,7 +333,7 @@ class _AppShellState extends State<AppShell> {
                                 color: isActive ? primary : textMuted,
                               ),
                             ),
-                            if (i == 3)
+                            if (i == 4)
                               Positioned(
                                 top: -4,
                                 right: -8,
