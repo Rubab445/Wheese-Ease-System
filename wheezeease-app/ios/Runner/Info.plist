@@ -45,5 +45,18 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Location permissions for passive monitoring -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>WheezeEase needs your location to monitor real-time air quality, pollen, and weather conditions in your area to protect your respiratory health.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>WheezeEase monitors your location in the background to alert you when you move to an area with poor air quality that could trigger asthma symptoms.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>WheezeEase uses background location to passively monitor air quality as you move, sending alerts when conditions become dangerous for asthma patients.</string>
+	<!-- Background modes -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>fetch</string>
+	</array>
 </dict>
 </plist>

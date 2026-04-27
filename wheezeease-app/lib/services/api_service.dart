@@ -316,4 +316,29 @@ class ApiService {
       return null;
     }
   }
+
+  // ENVIRONMENT BY COORDINATES (passive location monitoring)
+  static Future<Map<String, dynamic>?> getEnvironmentByCoords(
+    double lat,
+    double lon,
+  ) async {
+    try {
+      final uri = Uri.parse(
+        '$_baseUrl/environment/coords?lat=$lat&lon=$lon',
+      );
+
+      print('Fetching environment for coords: $lat, $lon');
+      final res = await http.get(uri).timeout(_timeout);
+
+      print('Environment coords status: ${res.statusCode}');
+
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body);
+      }
+      return null;
+    } catch (e) {
+      print('Environment coords error: $e');
+      return null;
+    }
+  }
 }

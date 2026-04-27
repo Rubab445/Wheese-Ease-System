@@ -24,7 +24,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
   bool _loading = false;
   late PredictionResult _predictionResult;
   int _inhalerCount = 4;
-  String _intensity = 'mod';
+  // _intensity is now derived from per-symptom intensities (kept for submission logic)
   int _selectedMood = 2; // 0-4
   final _notesController = TextEditingController(
     text: 'Worse after going outside this morning. Used inhaler twice.',
@@ -40,36 +40,48 @@ class _CheckinScreenState extends State<CheckinScreen> {
       'name': 'Coughing',
       'sub': 'Dry or wet',
       'selected': false,
+      'expanded': false,
+      'intensity': null, // null = not chosen yet
     },
     {
       'icon': Icons.air_rounded,
       'name': 'Wheezing',
       'sub': 'Whistling breath',
-      'selected': true,
+      'selected': false,
+      'expanded': false,
+      'intensity': null,
     },
     {
       'icon': Icons.emergency_outlined,
       'name': 'Shortness',
       'sub': 'Hard to breathe',
-      'selected': true,
+      'selected': false,
+      'expanded': false,
+      'intensity': null,
     },
     {
       'icon': Icons.battery_1_bar_rounded,
       'name': 'Fatigue',
       'sub': 'Low energy',
       'selected': false,
+      'expanded': false,
+      'intensity': null,
     },
     {
       'icon': Icons.water_drop_outlined,
       'name': 'Runny Nose',
       'sub': 'Nasal congestion',
       'selected': false,
+      'expanded': false,
+      'intensity': null,
     },
     {
       'icon': Icons.check_circle_outline,
       'name': 'None',
       'sub': 'Feeling fine!',
       'selected': false,
+      'expanded': false,
+      'intensity': null,
     },
   ];
 
@@ -87,19 +99,35 @@ class _CheckinScreenState extends State<CheckinScreen> {
     super.dispose();
   }
 
+  /// Derives the worst intensity across all selected symptoms for submission
+  String get _intensity {
+    final selectedSymptoms = _symptoms.where(
+      (s) => s['selected'] == true && s['name'] != 'None',
+    );
+    if (selectedSymptoms.isEmpty) return 'mild';
+    // Priority: sev > mod > mild
+    if (selectedSymptoms.any((s) => s['intensity'] == 'sev')) return 'sev';
+    if (selectedSymptoms.any((s) => s['intensity'] == 'mod')) return 'mod';
+    return 'mild';
+  }
+
   // Build a text summary of selected symptoms for Gemini
   String _buildSymptomsText() {
     final selected = _symptoms
         .where((s) => s['selected'] == true && s['name'] != 'None')
-        .map((s) => s['name'] as String)
         .toList();
     if (selected.isEmpty) return 'No symptoms reported';
-    final intensity = _intensity == 'mild'
-        ? 'Mild'
-        : _intensity == 'sev'
-            ? 'Severe'
-            : 'Moderate';
-    return '${selected.join(", ")} ($intensity intensity)';
+    final parts = selected.map((s) {
+      final name = s['name'] as String;
+      final intensityVal = s['intensity'] as String?;
+      final label = intensityVal == 'mild'
+          ? 'Mild'
+          : intensityVal == 'sev'
+              ? 'Severe'
+              : 'Moderate';
+      return '$name ($label)';
+    });
+    return parts.join(', ');
   }
 
   void _submitCheckin() async {
@@ -383,132 +411,10 @@ class _CheckinScreenState extends State<CheckinScreen> {
               ),
             ),
           ),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 18),
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
-            childAspectRatio: 1.4,
-            children: _symptoms.map((s) {
-              final selected = s['selected'] as bool;
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    if (s['name'] == 'None') {
-                      for (var sym in _symptoms) {
-                        sym['selected'] = false;
-                      }
-                      s['selected'] = true;
-                    } else {
-                      _symptoms.last['selected'] = false;
-                      s['selected'] = !(s['selected'] as bool);
-                    }
-                  });
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? AppColors.primaryColor(context).withOpacity(0.12)
-                        : AppColors.surfaceColor(context),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: selected
-                          ? AppColors.primaryColor(context)
-                          : AppColors.borderColor(context),
-                      width: 2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(
-                          alpha: Theme.of(context).brightness == Brightness.dark
-                              ? 0.15
-                              : 0.08,
-                        ),
-                        blurRadius: 24,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        s['icon'] as IconData,
-                        size: 28,
-                        color: selected
-                            ? AppColors.primaryColor(context)
-                            : AppColors.textMutedColor(context),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        s['name'] as String,
-                        style: GoogleFonts.nunito(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: selected
-                              ? AppColors.primaryColor(context)
-                              : AppColors.textColor(context),
-                        ),
-                      ),
-                      Text(
-                        s['sub'] as String,
-                        style: GoogleFonts.nunito(
-                          fontSize: 10,
-                          color: AppColors.textMutedColor(context),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-
-          // Intensity
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 10),
-            child: Text(
-              'Symptom intensity',
-              style: GoogleFonts.nunito(
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textColor(context),
-              ),
-            ),
-          ),
+          // Expandable symptom cards in 2-column layout
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 18),
-            child: Row(
-              children: [
-                _intensityBtn(
-                  Icons.sentiment_satisfied_outlined,
-                  'Mild',
-                  'mild',
-                  AppColors.green,
-                  AppColors.greenDim,
-                ),
-                const SizedBox(width: 8),
-                _intensityBtn(
-                  Icons.sentiment_neutral_outlined,
-                  'Moderate',
-                  'mod',
-                  AppColors.yellow,
-                  AppColors.yellowDim,
-                ),
-                const SizedBox(width: 8),
-                _intensityBtn(
-                  Icons.sentiment_very_dissatisfied_outlined,
-                  'Severe',
-                  'sev',
-                  AppColors.red,
-                  AppColors.redDim,
-                ),
-              ],
-            ),
+            child: _buildSymptomGrid(),
           ),
 
           // Inhaler usage
@@ -1078,52 +984,231 @@ class _CheckinScreenState extends State<CheckinScreen> {
     );
   }
 
-  Widget _intensityBtn(
-    IconData icon,
+  // ── Builds the 2-column symptom grid with expandable cards ──
+  Widget _buildSymptomGrid() {
+    final List<Widget> rows = [];
+    for (int i = 0; i < _symptoms.length; i += 2) {
+      rows.add(
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: _buildSymptomCard(_symptoms[i], i)),
+            const SizedBox(width: 10),
+            if (i + 1 < _symptoms.length)
+              Expanded(child: _buildSymptomCard(_symptoms[i + 1], i + 1))
+            else
+              const Expanded(child: SizedBox()),
+          ],
+        ),
+      );
+      if (i + 2 < _symptoms.length) rows.add(const SizedBox(height: 10));
+    }
+    return Column(children: rows);
+  }
+
+  // ── Individual expandable symptom card ──
+  Widget _buildSymptomCard(Map<String, dynamic> s, int index) {
+    final selected = s['selected'] as bool;
+    final expanded = s['expanded'] as bool;
+    final isNone = s['name'] == 'None';
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          if (isNone) {
+            // "None" deselects everything else and collapses all
+            for (var sym in _symptoms) {
+              sym['selected'] = false;
+              sym['expanded'] = false;
+              sym['intensity'] = null;
+            }
+            s['selected'] = true;
+          } else {
+            // Deselect "None" if it was selected
+            _symptoms.last['selected'] = false;
+            _symptoms.last['expanded'] = false;
+            _symptoms.last['intensity'] = null;
+
+            final wasSelected = s['selected'] as bool;
+            if (wasSelected) {
+              // Deselect and collapse
+              s['selected'] = false;
+              s['expanded'] = false;
+              s['intensity'] = null;
+            } else {
+              // Select and expand
+              s['selected'] = true;
+              s['expanded'] = true;
+            }
+          }
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceColor(context),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: selected
+                ? AppColors.primaryColor(context)
+                : AppColors.borderColor(context),
+            width: selected ? 2.0 : 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(
+                alpha: Theme.of(context).brightness == Brightness.dark
+                    ? 0.15
+                    : 0.08,
+              ),
+              blurRadius: selected ? 16 : 24,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Icon + Title + Subtitle
+            Column(
+              children: [
+                const SizedBox(height: 4),
+                Icon(
+                  s['icon'] as IconData,
+                  size: 28,
+                  color: selected
+                      ? AppColors.primaryColor(context)
+                      : AppColors.textMutedColor(context),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  s['name'] as String,
+                  style: GoogleFonts.nunito(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: selected
+                        ? AppColors.primaryColor(context)
+                        : AppColors.textColor(context),
+                  ),
+                ),
+                Text(
+                  s['sub'] as String,
+                  style: GoogleFonts.nunito(
+                    fontSize: 10,
+                    color: AppColors.textMutedColor(context),
+                  ),
+                ),
+                const SizedBox(height: 4),
+              ],
+            ),
+            // Expandable intensity section
+            AnimatedCrossFade(
+              firstChild: const SizedBox.shrink(),
+              secondChild: !isNone
+                  ? _buildInlineIntensity(s, index)
+                  : const SizedBox.shrink(),
+              crossFadeState: expanded && !isNone
+                  ? CrossFadeState.showSecond
+                  : CrossFadeState.showFirst,
+              duration: const Duration(milliseconds: 300),
+              sizeCurve: Curves.easeInOut,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Inline intensity picker inside an expanded card ──
+  Widget _buildInlineIntensity(Map<String, dynamic> s, int index) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        children: [
+          // Divider
+          Container(
+            height: 1,
+            margin: const EdgeInsets.only(bottom: 8),
+            decoration: BoxDecoration(
+              color: AppColors.primaryColor(context).withOpacity(0.15),
+              borderRadius: BorderRadius.circular(1),
+            ),
+          ),
+          Text(
+            'Intensity',
+            style: GoogleFonts.nunito(
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textMutedColor(context),
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              _inlineIntensityBtn(
+                s, index, 'Mild', 'mild',
+                AppColors.green, AppColors.greenDim,
+              ),
+              const SizedBox(width: 4),
+              _inlineIntensityBtn(
+                s, index, 'Mod', 'mod',
+                AppColors.yellow, AppColors.yellowDim,
+              ),
+              const SizedBox(width: 4),
+              _inlineIntensityBtn(
+                s, index, 'Severe', 'sev',
+                AppColors.red, AppColors.redDim,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Single inline intensity button ──
+  Widget _inlineIntensityBtn(
+    Map<String, dynamic> s,
+    int index,
     String label,
     String value,
     Color activeColor,
     Color activeBg,
   ) {
-    final isActive = _intensity == value;
+    final isActive = s['intensity'] == value;
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => _intensity = value),
+        onTap: () {
+          // Only select intensity — do NOT collapse the card
+          setState(() {
+            s['intensity'] = value;
+          });
+        },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 6),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(13),
-            color: isActive ? activeBg : AppColors.surfaceColor(context),
+            borderRadius: BorderRadius.circular(10),
+            color: isActive ? activeBg : Colors.transparent,
             border: Border.all(
               color: isActive ? activeColor : AppColors.borderColor(context),
-              width: 2,
+              width: 1.5,
             ),
           ),
           child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  icon,
-                  color: isActive
-                      ? activeColor
-                      : AppColors.textMutedColor(context),
-                  size: 20,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: isActive
-                        ? activeColor
-                        : AppColors.textMutedColor(context),
-                  ),
-                ),
-              ],
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.nunito(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: isActive
+                    ? activeColor
+                    : AppColors.textMutedColor(context),
+              ),
             ),
           ),
         ),

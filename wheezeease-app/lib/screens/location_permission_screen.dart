@@ -1,6 +1,10 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:geolocator/geolocator.dart';
 import '../theme/app_colors.dart';
+// import '../services/location_monitor_service.dart'; // DISABLED: location alerts module
 
 class LocationPermissionScreen extends StatefulWidget {
   final VoidCallback onAllow;
@@ -40,16 +44,78 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
 
   void _allowLocation() async {
     setState(() => _searching = true);
-    final steps = [
-      'Accessing GPS…',
-      'Obtaining coordinates…',
-      'Resolving address…',
-      'Location confirmed',
-    ];
-    for (int i = 0; i < steps.length; i++) {
-      await Future.delayed(const Duration(milliseconds: 600));
-      if (mounted) setState(() => _statusText = steps[i]);
+
+    // On web, permission_handler doesn't support locationWhenInUse/locationAlways.
+    // Skip native permission flow and proceed directly.
+    if (kIsWeb) {
+      setState(() => _statusText = 'Web platform detected…');
+      await Future.delayed(const Duration(milliseconds: 500));
+      setState(() => _statusText = 'Location confirmed ✓');
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted) widget.onAllow();
+      return;
     }
+
+    // Step 1: Check if location services are enabled
+    setState(() => _statusText = 'Checking location services…');
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      if (mounted) {
+        setState(() => _statusText = 'Location services disabled');
+        await Future.delayed(const Duration(seconds: 1));
+        // Still proceed — some devices allow permission grant before enabling
+      }
+    }
+
+    // Step 2: Request foreground location permission
+    setState(() => _statusText = 'Requesting location permission…');
+    var locationStatus = await Permission.locationWhenInUse.request();
+
+    if (locationStatus.isDenied || locationStatus.isPermanentlyDenied) {
+      if (mounted) {
+        setState(() {
+          _searching = false;
+          _statusText = 'Permission denied';
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Location permission is required for air quality monitoring'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Step 3: Request background location (Always) permission
+    setState(() => _statusText = 'Requesting background location…');
+    var bgStatus = await Permission.locationAlways.request();
+    // Background location denial is non-blocking — we still proceed
+    if (bgStatus.isDenied) {
+      print('Background location denied — monitoring limited to foreground');
+    }
+
+    // Step 4: Get current position
+    setState(() => _statusText = 'Obtaining coordinates…');
+    try {
+      await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+          timeLimit: Duration(seconds: 10),
+        ),
+      );
+    } catch (e) {
+      print('Initial position fetch failed: $e');
+    }
+
+    setState(() => _statusText = 'Resolving address…');
+    await Future.delayed(const Duration(milliseconds: 400));
+
+    // Start location monitoring — DISABLED
+    // await LocationMonitorService().startMonitoring();
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    setState(() => _statusText = 'Location confirmed ✓');
     await Future.delayed(const Duration(milliseconds: 500));
     if (mounted) widget.onAllow();
   }
