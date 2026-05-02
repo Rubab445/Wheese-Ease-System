@@ -1,0 +1,154 @@
+.settings-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: #f1f5f9;
+  padding: 20px;
+}
+
+.settings-glass-card {
+  width: 950px;
+  height: 620px;
+  background: white;
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.08);
+  display: flex;
+  overflow: hidden;
+}
+
+/* Sidebar */
+.settings-nav-pane {
+  width: 240px;
+  background: #295984;
+  padding: 30px 15px;
+}
+
+.nav-brand {
+  color: white;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 40px;
+  padding-left: 10px;
+}
+
+.brand-dot { height: 10px; width: 10px; background: #6366f1; border-radius: 50%; }
+
+.settings-nav-pane nav button {
+  width: 100%;
+  padding: 12px 15px;
+  margin-bottom: 8px;
+  background: transparent;
+  border: none;
+  color: #0c0c0c;
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+  transition: 0.2s;
+}
+
+.settings-nav-pane nav button.active {
+  background: #6366f1;
+  color: white;
+}
+
+/* Content */
+.settings-workspace {
+  flex: 1;
+  padding: 40px;
+  overflow-y: auto;
+}
+
+.workspace-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.workspace-header h1 { font-size: 24px; color: #1e293b; margin: 0; }
+.workspace-header p { color: #64748b; font-size: 14px; margin-top: 4px; }
+
+/* Buttons */
+.btn-save {
+  background: #6366f1;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.btn-save:active { transform: scale(0.95); }
+
+.btn-cancel {
+  background: #f1f5f9;
+  color: #475569;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-right: 12px;
+}
+
+/* Forms */
+.photo-section {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding-bottom: 25px;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 25px;
+}
+
+.photo-container { position: relative; width: 80px; height: 80px; }
+.avatar-placeholder, .avatar-img {
+  width: 100%; height: 100%; border-radius: 20px;
+  background: #6366f1; color: white; display: flex;
+  align-items: center; justify-content: center; font-size: 28px; object-fit: cover;
+}
+
+.edit-badge {
+  position: absolute; bottom: -5px; right: -5px;
+  background: white; border: 1.5px solid #6366f1; border-radius: 50%;
+  width: 28px; height: 28px; cursor: pointer;
+}
+
+.settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.input-box { display: flex; flex-direction: column; gap: 6px; }
+.input-box label { font-size: 13px; font-weight: 700; color: #334155; }
+.input-box input, .custom-select {
+  padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 10px; background: #f8fafc;
+}
+
+/* Switches */
+.toggle-card {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 15px 20px; background: #f8fafc; border-radius: 14px; margin-bottom: 12px;
+}
+
+.ios-switch { position: relative; width: 46px; height: 24px; }
+.ios-switch input { opacity: 0; width: 0; height: 0; }
+.ios-slider {
+  position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #cbd5e1; transition: .4s; border-radius: 34px;
+}
+.ios-slider:before {
+  position: absolute; content: ""; height: 18px; width: 18px;
+  left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%;
+}
+input:checked + .ios-slider { background-color: #6366f1; }
+input:checked + .ios-slider:before { transform: translateX(22px); }
+
+/* Animation */
+.fade-in { animation: fadeIn 0.4s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
