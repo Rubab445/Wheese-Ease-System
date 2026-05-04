@@ -6,9 +6,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'theme/app_colors.dart';
 import 'theme/app_theme.dart';
 import 'models/doctor.dart';
-import 'screens/intro_onboarding_screen.dart';
-import 'screens/login_screen.dart';
-import 'screens/signup_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/location_permission_screen.dart';
 import 'screens/doctor_selection_screen.dart';
@@ -19,20 +16,12 @@ import 'screens/medications_screen.dart';
 import 'screens/doctor_detail_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/activities_screen.dart';
+import 'widgets/sos_modal.dart';
 import 'widgets/message_modal.dart';
-import 'services/notification_service.dart';
-// import 'services/location_monitor_service.dart'; // DISABLED: location alerts module
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-
-  // Initialize notification service (required before location monitoring)
-  await NotificationService().init();
-
-  // Initialize location monitor service — DISABLED
-  // await LocationMonitorService().init();
-
   runApp(const WheezeEaseApp());
 }
 
@@ -102,7 +91,7 @@ class WheezeEaseApp extends StatelessWidget {
   }
 }
 
-enum AppFlow { introOnboarding, login, signup, onboarding, location, doctorSelection, main }
+enum AppFlow { onboarding, location, doctorSelection, main }
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -112,9 +101,10 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
-  AppFlow _flow = AppFlow.introOnboarding;
+  AppFlow _flow = AppFlow.onboarding;
   int _currentTab = 0;
   String _userName = 'Sara Ahmed';
+  bool _showSos = false;
   bool _showMessage = false;
 
   // Last check-in data (used by HomeScreen for predictions)
@@ -153,8 +143,6 @@ class _AppShellState extends State<AppShell> {
   }
 
   void _onLocationAllow() {
-    // Start passive location monitoring after permission granted — DISABLED
-    // LocationMonitorService().startMonitoring();
     setState(() => _flow = AppFlow.doctorSelection);
   }
 
@@ -174,7 +162,7 @@ class _AppShellState extends State<AppShell> {
 
   void _logout() {
     setState(() {
-      _flow = AppFlow.login;
+      _flow = AppFlow.onboarding;
       _currentTab = 0;
     });
     ScaffoldMessenger.of(context).showSnackBar(
@@ -193,6 +181,44 @@ class _AppShellState extends State<AppShell> {
         children: [
           _buildCurrentFlow(),
 
+          if (_flow == AppFlow.main && !_showSos)
+            Positioned(
+              bottom: 104,
+              right: 16,
+              child: GestureDetector(
+                onTap: () => setState(() => _showSos = true),
+                child: Container(
+                  width: 54,
+                  height: 54,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(17),
+                    color: AppColors.red,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.red.withValues(alpha: 0.45),
+                        blurRadius: 20,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      'SOS',
+                      style: GoogleFonts.nunito(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+          if (_showSos)
+            SosModal(onClose: () => setState(() => _showSos = false)),
+
           if (_showMessage)
             MessageModal(onClose: () => setState(() => _showMessage = false)),
         ],
@@ -203,20 +229,6 @@ class _AppShellState extends State<AppShell> {
 
   Widget _buildCurrentFlow() {
     switch (_flow) {
-      case AppFlow.introOnboarding:
-        return IntroOnboardingScreen(
-          onComplete: () => setState(() => _flow = AppFlow.login),
-        );
-      case AppFlow.login:
-        return LoginScreen(
-          onLogin: () => setState(() => _flow = AppFlow.onboarding),
-          onCreateAccount: () => setState(() => _flow = AppFlow.signup),
-        );
-      case AppFlow.signup:
-        return SignupScreen(
-          onSignup: () => setState(() => _flow = AppFlow.onboarding),
-          onBackToLogin: () => setState(() => _flow = AppFlow.login),
-        );
       case AppFlow.onboarding:
         return OnboardingScreen(
           onComplete: _onOnboardingComplete,

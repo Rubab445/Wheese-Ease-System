@@ -16,8 +16,7 @@ from step8_live_api import (
     predict_with_live_data,
     get_weather,
     get_aqi,
-    get_environment,
-    get_environment_by_coords,
+    get_environment,   
     CITY_COORDS
 )
 
@@ -191,36 +190,6 @@ async def get_environment_data(city: str = "Gujrat"):
             "no2":          aqi.get("no2",  25.0),
             "pm10":         aqi.get("pm10", 20.0),
             "pollen_count": aqi.get("pollen_estimate", 30),
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/environment/coords", tags=["Environment"])
-async def get_environment_data_by_coords(lat: float, lon: float):
-    """Fetch environment data by raw lat/lon coordinates.
-    Used by passive location monitoring when user moves 800m+."""
-    try:
-        env = get_environment_by_coords(lat, lon)
-
-        aqi_value = env.get("AQI", 50)
-        if aqi_value > 150:   aqi_category = "Unhealthy"
-        elif aqi_value > 100: aqi_category = "Moderate"
-        elif aqi_value > 50:  aqi_category = "Acceptable"
-        else:                  aqi_category = "Good"
-
-        return {
-            "city":         env.get("city", "Unknown"),
-            "temperature":  env.get("temperature", 22.0),
-            "humidity":     env.get("humidity", 60.0),
-            "description":  env.get("description", "Unknown"),
-            "aqi":          aqi_value,
-            "aqi_category": aqi_category,
-            "pm25":         env.get("PM2_5", 15.0),
-            "no2":          env.get("NO2", 25.0),
-            "pollen_count": env.get("pollen_count", 30),
-            "lat":          lat,
-            "lon":          lon,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -1,0 +1,203 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.app-layout {
+    display: flex;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+    background: #F8F7FF;
+}
+
+/* Main Container - Takes remaining space after sidebar */
+.main-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    margin-left: 0;
+    transition: margin-left 0.3s ease;
+    background: rgb(241, 246, 246);
+}
+
+/* Header Container - Fixed at top */
+.header-container {
+    position: sticky;
+    top: 0;
+    margin-left: auto;
+    z-index: 100;
+    background: rgb(241, 246, 246);
+    flex-shrink: 0;
+    width: calc(100% - 108px)  !important;
+}
+
+/* Dashboard Container - Contains content and utility bar side by side */
+.dashboard-container {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    gap: 0;
+}
+
+/* Content Area - Takes available space */
+.content-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 24px 24px 108px;
+    background: rgb(241, 246, 246);
+}
+
+/* Custom scrollbar for content area */
+.content-area::-webkit-scrollbar {
+    width: 6px;
+}
+
+.content-area::-webkit-scrollbar-track {
+    background:white;
+    border-radius: 3px;
+}
+
+.content-area::-webkit-scrollbar-thumb {
+    background: #c4b5fd;
+    border-radius: 3px;
+}
+
+.content-area::-webkit-scrollbar-thumb:hover {
+    background: #7C3AED;
+}
+
+/* Utility Area - Fixed width on the right */
+.utility-area {
+    flex-shrink: 0;
+    width: 380px;
+    background: #F8F7FF;
+    border-left: 1px solid rgba(124, 58, 237, 0.1);
+    overflow-y: auto;
+}
+
+/* Hide scrollbar for utility area */
+.utility-area {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.utility-area::-webkit-scrollbar {
+    display: none;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .utility-area {
+        width: 400px;
+    }
+    
+}
+
+@media (max-width: 768px) {
+    .dashboard-container {
+        flex-direction: column;
+    }
+    
+    .utility-area {
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid rgba(124, 58, 237, 0.1);
+        max-height: 50vh;
+    }
+    
+    .content-area {
+        max-height: 50vh;
+    }
+}
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 24px;
+    padding: 32px;
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-content h3 {
+    font-size: 20px;
+    margin-bottom: 8px;
+    color: #1a1a2e;
+}
+
+.modal-content p {
+    color: #64748b;
+    margin-top: 8px;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 24px;
+}
+
+.btn-cancel {
+    border: 1px solid #e2e8f0;
+    background: white;
+    cursor: pointer;
+    padding: 10px 24px;
+    border-radius: 40px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-cancel:hover {
+    background: #f8f7ff;
+    border-color: #c4b5fd;
+}
+
+.btn-logout {
+    border: none;
+    background: #ef4444;
+    color: white;
+    cursor: pointer;
+    padding: 10px 24px;
+    border-radius: 40px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-logout:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}

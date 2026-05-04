@@ -32,7 +32,7 @@ class _MessageModalState extends State<MessageModal> {
     "Thank you Sara. I'll monitor your risk closely.",
     "Please take medication on time. I'll check your data.",
     "Understood. Rest and stay indoors. We'll talk at your next visit.",
-    "Noted. If symptoms worsen, please contact me immediately.",
+    "Noted. If symptoms worsen, use the SOS button immediately.",
   ];
 
   @override
