@@ -66,7 +66,12 @@ class DoctorDetailScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                const Icon(Icons.medical_services_outlined, color: Colors.white, size: 34),
+                Image.asset(
+                  'images/logo.png',
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.contain,
+                ),
               ],
             ),
           ),
@@ -98,8 +103,14 @@ class DoctorDetailScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(18),
                         gradient: LinearGradient(
                           colors: isDark
-                              ? [const Color(0xFF1A5C48), AppColors.primaryMidDark]
-                              : [const Color(0xFF1A4A7A), const Color(0xFF3A8EFF)],
+                              ? [
+                                  const Color(0xFF1A5C48),
+                                  AppColors.primaryMidDark,
+                                ]
+                              : [
+                                  const Color(0xFF1A4A7A),
+                                  const Color(0xFF3A8EFF),
+                                ],
                         ),
                         border: Border.all(
                           color: primary.withValues(alpha: 0.3),
@@ -152,11 +163,32 @@ class DoctorDetailScreen extends StatelessWidget {
                 const SizedBox(height: 14),
                 Row(
                   children: [
-                    _statCard('Experience', '14 yrs', AppColors.greenDim, AppColors.green, text, textMuted),
+                    _statCard(
+                      'Experience',
+                      '14 yrs',
+                      AppColors.greenDim,
+                      AppColors.green,
+                      text,
+                      textMuted,
+                    ),
                     const SizedBox(width: 8),
-                    _statCard('Last Visit', 'Feb 18', AppColors.blueDim, AppColors.blue, text, textMuted),
+                    _statCard(
+                      'Last Visit',
+                      'Feb 18',
+                      AppColors.blueDim,
+                      AppColors.blue,
+                      text,
+                      textMuted,
+                    ),
                     const SizedBox(width: 8),
-                    _statCard('Next Visit', 'Mar 18', AppColors.purpleDim, primary, text, textMuted),
+                    _statCard(
+                      'Next Visit',
+                      'Mar 18',
+                      AppColors.purpleDim,
+                      primary,
+                      text,
+                      textMuted,
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -168,13 +200,34 @@ class DoctorDetailScreen extends StatelessWidget {
                   mainAxisSpacing: 8,
                   childAspectRatio: 3.2,
                   children: [
-                    _actionBtn(context, 'Message', AppColors.blueDim, AppColors.blue, onMessageTap),
-                    _actionBtn(context, 'Book Visit', AppColors.greenDim, AppColors.green,
-                        () => _showToast(context, 'Appointment request sent!')),
-                    _actionBtn(context, 'Call Now', AppColors.redDim, AppColors.red,
-                        () => _showToast(context, 'Calling Dr. Rahman...')),
-                    _actionBtn(context, 'Share Report', AppColors.yellowDim, AppColors.yellow,
-                        () => _showToast(context, 'Sharing health report...')),
+                    _actionBtn(
+                      context,
+                      'Message',
+                      AppColors.blueDim,
+                      AppColors.blue,
+                      onMessageTap,
+                    ),
+                    _actionBtn(
+                      context,
+                      'Book Visit',
+                      AppColors.greenDim,
+                      AppColors.green,
+                      () => _showToast(context, 'Appointment request sent!'),
+                    ),
+                    _actionBtn(
+                      context,
+                      'Call Now',
+                      AppColors.redDim,
+                      AppColors.red,
+                      () => _showToast(context, 'Calling Dr. Rahman...'),
+                    ),
+                    _actionBtn(
+                      context,
+                      'Share Report',
+                      AppColors.yellowDim,
+                      AppColors.yellow,
+                      () => _showToast(context, 'Sharing health report...'),
+                    ),
                   ],
                 ),
               ],
@@ -193,22 +246,50 @@ class DoctorDetailScreen extends StatelessWidget {
               ),
             ),
           ),
-          _adviceCard('Today · 7:22 AM',
-              'Carry your rescue inhaler at all times. AQI is above 150 — wear an N95 mask if you must go outside. Take corticosteroid as scheduled.',
-              AppColors.blue, surface, border, text, textMuted, isDark),
-          _adviceCard('March 05 · 2:10 PM',
-              'Good progress this week! Risk scores are improving. Continue current medication. Reduce inhaler use if possible.',
-              AppColors.green, surface, border, text, textMuted, isDark),
-          _adviceCard('March 01 · 9:45 AM',
-              'Pollen season starting. Start Cetirizine daily. Avoid morning outdoor walks 6–10 AM when pollen peaks.',
-              primary, surface, border, text, textMuted, isDark),
+          _adviceCard(
+            'Today · 7:22 AM',
+            'Carry your rescue inhaler at all times. AQI is above 150 — wear an N95 mask if you must go outside. Take corticosteroid as scheduled.',
+            AppColors.blue,
+            surface,
+            border,
+            text,
+            textMuted,
+            isDark,
+          ),
+          _adviceCard(
+            'March 05 · 2:10 PM',
+            'Good progress this week! Risk scores are improving. Continue current medication. Reduce inhaler use if possible.',
+            AppColors.green,
+            surface,
+            border,
+            text,
+            textMuted,
+            isDark,
+          ),
+          _adviceCard(
+            'March 01 · 9:45 AM',
+            'Pollen season starting. Start Cetirizine daily. Avoid morning outdoor walks 6–10 AM when pollen peaks.',
+            primary,
+            surface,
+            border,
+            text,
+            textMuted,
+            isDark,
+          ),
           const SizedBox(height: 100),
         ],
       ),
     );
   }
 
-  Widget _statCard(String label, String value, Color bg, Color borderColor, Color text, Color muted) {
+  Widget _statCard(
+    String label,
+    String value,
+    Color bg,
+    Color borderColor,
+    Color text,
+    Color muted,
+  ) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(10),
@@ -271,8 +352,16 @@ class DoctorDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _adviceCard(String date, String text, Color borderColor,
-      Color surface, Color border, Color textColor, Color muted, bool isDark) {
+  Widget _adviceCard(
+    String date,
+    String text,
+    Color borderColor,
+    Color surface,
+    Color border,
+    Color textColor,
+    Color muted,
+    bool isDark,
+  ) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 18, vertical: 5),
       padding: const EdgeInsets.all(14),

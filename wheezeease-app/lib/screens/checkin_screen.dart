@@ -18,46 +18,53 @@ class CheckinScreen extends StatefulWidget {
 
 class _CheckinScreenState extends State<CheckinScreen> {
   bool _loading = false;
-  String _intensity = 'mod';
   int _selectedMood = 2; // 0-4
   final _notesController = TextEditingController();
 
+  // Each symptom: icon, name, selected (bool), severity (null, 'mild', 'moderate', 'severe'), expanded (bool)
   final List<Map<String, dynamic>> _symptoms = [
     {
       'icon': Icons.volume_up_outlined,
       'name': 'Coughing',
-      'sub': 'Dry or wet',
       'selected': false,
+      'severity': null,
+      'expanded': false,
     },
     {
       'icon': Icons.air_rounded,
       'name': 'Wheezing',
-      'sub': 'Whistling breath',
-      'selected': true,
+      'selected': false,
+      'severity': null,
+      'expanded': false,
     },
     {
       'icon': Icons.emergency_outlined,
       'name': 'Shortness',
-      'sub': 'Hard to breathe',
-      'selected': true,
+      'selected': false,
+      'severity': null,
+      'expanded': false,
     },
     {
       'icon': Icons.battery_1_bar_rounded,
       'name': 'Fatigue',
-      'sub': 'Low energy',
       'selected': false,
+      'severity': null,
+      'expanded': false,
     },
     {
       'icon': Icons.water_drop_outlined,
       'name': 'Runny Nose',
-      'sub': 'Nasal congestion',
       'selected': false,
+      'severity': null,
+      'expanded': false,
     },
     {
-      'icon': Icons.check_circle_outline,
+      'icon': Icons.block_outlined,
       'name': 'None',
-      'sub': 'Feeling fine!',
       'selected': false,
+      'severity': null,
+      'expanded': false,
+      'isNone': true,
     },
   ];
 
@@ -75,39 +82,114 @@ class _CheckinScreenState extends State<CheckinScreen> {
     super.dispose();
   }
 
-  // Build a text summary of selected symptoms for Gemini
-  String _buildSymptomsText() {
-    final selected = _symptoms
-        .where((s) => s['selected'] == true && s['name'] != 'None')
-        .map((s) => s['name'] as String)
-        .toList();
-    if (selected.isEmpty) return 'No symptoms reported';
-    final intensity = _intensity == 'mild'
-        ? 'Mild'
-        : _intensity == 'sev'
-            ? 'Severe'
-            : 'Moderate';
-    return '${selected.join(", ")} ($intensity intensity)';
+  void _toggleSymptom(int index) {
+    setState(() {
+      final symptom = _symptoms[index];
+      final isNone = symptom['isNone'] == true;
+
+      if (isNone) {
+        // "None" deselects everything else
+        for (var s in _symptoms) {
+          s['selected'] = false;
+          s['severity'] = null;
+          s['expanded'] = false;
+        }
+        symptom['selected'] = true;
+        return;
+      }
+
+      // Deselect "None" when selecting any real symptom
+      _symptoms.last['selected'] = false;
+
+      final isCurrentlyExpanded = symptom['expanded'] as bool;
+
+      if (isCurrentlyExpanded) {
+        // Collapse it and deselect if no severity chosen
+        symptom['expanded'] = false;
+        if (symptom['severity'] == null) {
+          symptom['selected'] = false;
+        }
+      } else {
+        // Expand it
+        symptom['expanded'] = true;
+        symptom['selected'] = true;
+      }
+    });
+  }
+
+  void _selectSeverity(int index, String severity) {
+    setState(() {
+      _symptoms[index]['severity'] = severity;
+      _symptoms[index]['selected'] = true;
+    });
+  }
+
+  Color _severityBgColor(String severity) {
+    switch (severity) {
+      case 'mild':
+        return const Color(0xFFE8F8F0); // light green
+      case 'moderate':
+        return const Color(0xFFFFF5E6); // light yellow/orange
+      case 'severe':
+        return const Color(0xFFFEECE6); // light red
+      default:
+        return Colors.transparent;
+    }
+  }
+
+  Color _severityTextColor(String severity) {
+    switch (severity) {
+      case 'mild':
+        return AppColors.green;
+      case 'moderate':
+        return AppColors.yellow;
+      case 'severe':
+        return AppColors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Color _severityBorderColor(String severity) {
+    switch (severity) {
+      case 'mild':
+        return AppColors.green.withOpacity(0.3);
+      case 'moderate':
+        return AppColors.yellow.withOpacity(0.3);
+      case 'severe':
+        return AppColors.red.withOpacity(0.3);
+      default:
+        return Colors.transparent;
+    }
   }
 
   void _submitCheckin() async {
     setState(() => _loading = true);
 
     // Collect form data
-    final coughing = _symptoms[0]['selected'] ? 1 : 0;
-    final wheezing = _symptoms[1]['selected'] ? 1 : 0;
-    final breathingDifficulty = _symptoms[2]['selected'] ? 1 : 0;
+    int coughing = 0, wheezing = 0, breathingDifficulty = 0, chestTightness = 0;
 
-    // Map intensity to breathing difficulty level (1=Mild, 2=Moderate, 3=Severe)
-    int breathingLevel = 1; // default
-    if (_intensity == 'mod') breathingLevel = 2;
-    if (_intensity == 'sev') breathingLevel = 3;
+    for (var s in _symptoms) {
+      if (s['selected'] == true && s['severity'] != null) {
+        switch (s['name']) {
+          case 'Coughing':
+            coughing = 1;
+            break;
+          case 'Wheezing':
+            wheezing = 1;
+            break;
+          case 'Shortness':
+            breathingDifficulty = 1;
+            break;
+        }
+      }
+    }
 
     // Store patient data for home screen
     final patientData = {
       'wheezing': wheezing,
       'coughing': coughing,
-      'chest_tightness': 0,
+      'chest_tightness': chestTightness,
       'inhaler_usage': 0,
       'breathing_difficulty': breathingDifficulty,
       'medication_adherence': 1,
@@ -169,44 +251,42 @@ class _CheckinScreenState extends State<CheckinScreen> {
         // Header
         Container(
           padding: EdgeInsets.only(
-            top: MediaQuery.of(context).padding.top + 22,
-            left: 22,
-            right: 22,
-            bottom: 32,
+            top: MediaQuery.of(context).padding.top + 14,
+            left: 16,
+            right: 16,
+            bottom: 14,
           ),
           decoration: BoxDecoration(
             gradient: Theme.of(context).brightness == Brightness.dark
                 ? AppColors.primaryGradientDark
                 : AppColors.primaryGradient,
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(34),
-              bottomRight: Radius.circular(34),
-            ),
           ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Daily Check-In',
-                    style: GoogleFonts.playfairDisplay(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                    ),
-                  ),
-                  Text(
-                    'How are you feeling right now?',
-                    style: GoogleFonts.nunito(
-                      fontSize: 12,
-                      color: Colors.white70,
-                    ),
-                  ),
-                ],
+              GestureDetector(
+                onTap: () => widget.onComplete(),
+                child: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
               ),
-              const Icon(Icons.assignment_outlined, color: Colors.white, size: 34),
+              const SizedBox(width: 14),
+              Text(
+                'Daily Check-In',
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(0.2),
+                  border: Border.all(color: Colors.white.withOpacity(0.4), width: 1.5),
+                ),
+                child: const Icon(Icons.person, color: Colors.white, size: 20),
+              ),
             ],
           ),
         ),
@@ -222,236 +302,36 @@ class _CheckinScreenState extends State<CheckinScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Symptoms
+          // Title section
           Padding(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 10),
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 4),
             child: Text(
-              'Select your symptoms',
-              style: GoogleFonts.nunito(
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textColor(context),
-              ),
-            ),
-          ),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 18),
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
-            childAspectRatio: 1.4,
-            children: _symptoms.map((s) {
-              final selected = s['selected'] as bool;
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    if (s['name'] == 'None') {
-                      for (var sym in _symptoms) {
-                        sym['selected'] = false;
-                      }
-                      s['selected'] = true;
-                    } else {
-                      _symptoms.last['selected'] = false;
-                      s['selected'] = !(s['selected'] as bool);
-                    }
-                  });
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? AppColors.primaryColor(context).withOpacity(0.12)
-                        : AppColors.surfaceColor(context),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: selected
-                          ? AppColors.primaryColor(context)
-                          : AppColors.borderColor(context),
-                      width: 2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(
-                          alpha: Theme.of(context).brightness == Brightness.dark
-                              ? 0.15
-                              : 0.08,
-                        ),
-                        blurRadius: 24,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        s['icon'] as IconData,
-                        size: 28,
-                        color: selected
-                            ? AppColors.primaryColor(context)
-                            : AppColors.textMutedColor(context),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        s['name'] as String,
-                        style: GoogleFonts.nunito(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: selected
-                              ? AppColors.primaryColor(context)
-                              : AppColors.textColor(context),
-                        ),
-                      ),
-                      Text(
-                        s['sub'] as String,
-                        style: GoogleFonts.nunito(
-                          fontSize: 10,
-                          color: AppColors.textMutedColor(context),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-
-          // Intensity
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 10),
-            child: Text(
-              'Symptom intensity',
-              style: GoogleFonts.nunito(
-                fontSize: 14,
+              'How are you breathing today?',
+              style: GoogleFonts.playfairDisplay(
+                fontSize: 24,
                 fontWeight: FontWeight.w800,
                 color: AppColors.textColor(context),
               ),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18),
-            child: Row(
-              children: [
-                _intensityBtn(
-                  Icons.sentiment_satisfied_outlined,
-                  'Mild',
-                  'mild',
-                  AppColors.green,
-                  AppColors.greenDim,
-                ),
-                const SizedBox(width: 8),
-                _intensityBtn(
-                  Icons.sentiment_neutral_outlined,
-                  'Moderate',
-                  'mod',
-                  AppColors.yellow,
-                  AppColors.yellowDim,
-                ),
-                const SizedBox(width: 8),
-                _intensityBtn(
-                  Icons.sentiment_very_dissatisfied_outlined,
-                  'Severe',
-                  'sev',
-                  AppColors.red,
-                  AppColors.redDim,
-                ),
-              ],
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            child: Text(
+              'Select any symptoms you\'re currently\nexperiencing to track your respiratory health.',
+              style: GoogleFonts.nunito(
+                fontSize: 13,
+                color: AppColors.textMutedColor(context),
+                height: 1.5,
+              ),
             ),
           ),
 
-          // Inhaler usage
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 10),
-            child: Text(
-              'Inhaler usage today',
-              style: GoogleFonts.nunito(
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textColor(context),
-              ),
-            ),
-          ),
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 18),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceColor(context),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: AppColors.borderColor(context)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
-                  blurRadius: 24,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryColor(context).withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    Icons.air_rounded,
-                    color: AppColors.primaryColor(context),
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Rescue Inhaler',
-                        style: GoogleFonts.nunito(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textColor(context),
-                        ),
-                      ),
-                      Text(
-                        'Times used today',
-                        style: GoogleFonts.nunito(
-                          fontSize: 11,
-                          color: AppColors.textMutedColor(context),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                _counterBtn(
-                  '−',
-                  () => setState(
-                    () => _inhalerCount = (_inhalerCount - 1).clamp(0, 20),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  '$_inhalerCount',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textColor(context),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                _counterBtn(
-                  '+',
-                  () => setState(
-                    () => _inhalerCount = (_inhalerCount + 1).clamp(0, 20),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // Symptom cards
+          ...List.generate(_symptoms.length, (index) {
+            return _buildSymptomCard(index);
+          }),
+
+          const SizedBox(height: 8),
 
           // Mood
           Padding(
@@ -560,7 +440,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
 
           // Submit button
           Padding(
-            padding: const EdgeInsets.fromLTRB(18, 14, 18, 20),
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 6),
             child: GestureDetector(
               onTap: _loading ? null : _submitCheckin,
               child: Container(
@@ -570,7 +450,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
                   borderRadius: BorderRadius.circular(18),
                   gradient: _loading
                       ? const LinearGradient(colors: [Colors.grey, Colors.grey])
-                      : AppColors.greenGradient,
+                      : AppColors.primaryGradient,
                 ),
                 child: Center(
                   child: _loading
@@ -584,291 +464,28 @@ class _CheckinScreenState extends State<CheckinScreen> {
                             strokeWidth: 2,
                           ),
                         )
-                      : Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Check In',
-                              style: GoogleFonts.nunito(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            const Icon(Icons.check_circle_outline, color: Colors.white, size: 18),
-                          ],
-                        ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildResult() {
-    final riskColor = _predictionResult.riskColor;
-    final riskLevel = _predictionResult.riskLevel;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary = isDark ? AppColors.primaryDark : AppColors.primary;
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.only(left: 22, right: 22, top: 22, bottom: 100),
-      child: Column(
-        children: [
-          const SizedBox(height: 24),
-          // ── Risk Level Hero ──
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: riskColor.withOpacity(0.12),
-              border: Border.all(color: riskColor.withOpacity(0.3), width: 3),
-            ),
-            child: Icon(_predictionResult.riskIconData, color: riskColor, size: 40),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            'Check-In Complete!',
-            style: GoogleFonts.playfairDisplay(
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textColor(context),
-            ),
-          ),
-          const SizedBox(height: 8),
-          RichText(
-            textAlign: TextAlign.center,
-            text: TextSpan(
-              style: GoogleFonts.nunito(
-                fontSize: 13,
-                color: AppColors.textMutedColor(context),
-                height: 1.7,
-              ),
-              children: [
-                const TextSpan(
-                  text: 'Dr. Rahman has been notified. Your risk is ',
-                ),
-                TextSpan(
-                  text: riskLevel,
-                  style: GoogleFonts.nunito(
-                    fontWeight: FontWeight.w800,
-                    color: riskColor,
-                  ),
-                ),
-                const TextSpan(text: ' today.'),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 18),
-
-          // ══════════════════════════════════════════
-          // RECOMMENDATIONS CARD
-          // ══════════════════════════════════════════
-          if (_recommendationLoading)
-            // ── Loading state ──
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceColor(context),
-                borderRadius: BorderRadius.circular(18),
-                border: Border(
-                  left: BorderSide(color: primary, width: 3),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(isDark ? 0.15 : 0.05),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: 28,
-                    height: 28,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 3,
-                      valueColor: AlwaysStoppedAnimation(primary),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Loading Recommendations...',
-                    style: GoogleFonts.nunito(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textColor(context),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Analyzing your symptoms and environment',
-                    style: GoogleFonts.nunito(
-                      fontSize: 12,
-                      color: AppColors.textMutedColor(context),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-              ),
-            )
-          else if (_recommendation != null)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceColor(context),
-                borderRadius: BorderRadius.circular(18),
-                border: Border(
-                  left: BorderSide(color: primary, width: 3),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(isDark ? 0.15 : 0.05),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header
-                  Row(
-                    children: [
-                      Container(
-                        width: 28,
-                        height: 28,
-                        decoration: BoxDecoration(
-                          color: primary.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(Icons.auto_awesome, color: primary, size: 15),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        'RECOMMENDATIONS',
-                        style: GoogleFonts.nunito(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textMutedColor(context),
-                          letterSpacing: 1.0,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Condition summary
-                  if (_recommendation!['condition_summary'] != null)
-                    Text(
-                      _recommendation!['condition_summary'] as String,
-                      style: GoogleFonts.nunito(
-                        fontSize: 13,
-                        color: AppColors.textColor(context),
-                        height: 1.6,
-                        fontWeight: FontWeight.w600,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-
-                  // Do Right Now
-                  if (_recommendation!['immediate_actions'] != null) ...[
-                    const SizedBox(height: 14),
-                    _sectionLabel(Icons.flash_on_rounded, 'Do Right Now', AppColors.red),
-                    const SizedBox(height: 8),
-                    ...(_recommendation!['immediate_actions'] as List).map(
-                      (action) => _actionItem(action.toString(), AppColors.red),
-                    ),
-                  ],
-
-                  // Preventive Steps
-                  if (_recommendation!['preventive_steps'] != null) ...[
-                    const SizedBox(height: 14),
-                    _sectionLabel(Icons.shield_outlined, 'Preventive Steps', AppColors.green),
-                    const SizedBox(height: 8),
-                    ...(_recommendation!['preventive_steps'] as List).map(
-                      (step) => _actionItem(step.toString(), AppColors.green),
-                    ),
-                  ],
-
-                  // Doctor Visit
-                  if (_recommendation!['doctor_alert'] == true) ...[
-                    const SizedBox(height: 14),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.red.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.red.withOpacity(0.2)),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.local_hospital_rounded, color: AppColors.red, size: 20),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Doctor Visit Recommended',
-                                  style: GoogleFonts.nunito(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.red,
-                                  ),
-                                ),
-                                if (_recommendation!['doctor_alert_reason'] != null)
-                                  Text(
-                                    _recommendation!['doctor_alert_reason'] as String,
-                                    style: GoogleFonts.nunito(
-                                      fontSize: 11,
-                                      color: AppColors.textColor(context),
-                                      height: 1.4,
-                                    ),
-                                  ),
-                              ],
-                            ),
+                      : Text(
+                          'Complete Check-In',
+                          style: GoogleFonts.nunito(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
                           ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ],
+                        ),
+                ),
               ),
             ),
+          ),
 
-          const SizedBox(height: 22),
-
-          // ── Back to Home button ──
-          GestureDetector(
-            onTap: _resetCheckin,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
-                gradient: isDark
-                    ? AppColors.primaryGradientDark
-                    : AppColors.primaryGradient,
-              ),
-              child: Center(
-                child: Text(
-                  'Back to Home',
-                  style: GoogleFonts.nunito(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                  ),
+          // Footer text
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 8, bottom: 10),
+              child: Text(
+                'Logged data is shared with your clinical team.',
+                style: GoogleFonts.nunito(
+                  fontSize: 11,
+                  color: AppColors.textMutedColor(context),
                 ),
               ),
             ),
@@ -878,130 +495,225 @@ class _CheckinScreenState extends State<CheckinScreen> {
     );
   }
 
-  // ── Helper: Section label for recommendation cards ──
-  Widget _sectionLabel(IconData icon, String label, Color color) {
-    return Row(
-      children: [
-        Icon(icon, color: color, size: 14),
-        const SizedBox(width: 6),
-        Text(
-          label.toUpperCase(),
-          style: GoogleFonts.nunito(
-            fontSize: 10,
-            fontWeight: FontWeight.w800,
-            color: color,
-            letterSpacing: 0.8,
-          ),
+  Widget _buildSymptomCard(int index) {
+    final symptom = _symptoms[index];
+    final isExpanded = symptom['expanded'] as bool;
+    final isSelected = symptom['selected'] as bool;
+    final severity = symptom['severity'] as String?;
+    final isNone = symptom['isNone'] == true;
+
+    // Border color changes when selected/expanded
+    Color cardBorderColor = AppColors.borderColor(context);
+    if (isSelected && severity != null) {
+      cardBorderColor = _severityBorderColor(severity);
+    } else if (isExpanded) {
+      cardBorderColor = AppColors.primaryColor(context).withOpacity(0.4);
+    }
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+      margin: const EdgeInsets.symmetric(horizontal: 18, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceColor(context),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: cardBorderColor,
+          width: isExpanded || (isSelected && severity != null) ? 1.8 : 1.2,
         ),
-      ],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha: Theme.of(context).brightness == Brightness.dark
+                  ? 0.12
+                  : 0.04,
+            ),
+            blurRadius: isExpanded ? 20 : 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Tappable header row
+          GestureDetector(
+            onTap: () => _toggleSymptom(index),
+            behavior: HitTestBehavior.opaque,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: isExpanded ? 14 : 16,
+              ),
+              child: Row(
+                children: [
+                  // Icon container
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? (severity != null
+                              ? _severityBgColor(severity)
+                              : AppColors.primaryColor(context).withOpacity(0.08))
+                          : AppColors.surface2Color(context),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      symptom['icon'] as IconData,
+                      size: 19,
+                      color: isSelected
+                          ? (severity != null
+                              ? _severityTextColor(severity)
+                              : AppColors.primaryColor(context))
+                          : AppColors.textMutedColor(context),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  // Symptom name
+                  Expanded(
+                    child: Text(
+                      symptom['name'] as String,
+                      style: GoogleFonts.nunito(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textColor(context),
+                      ),
+                    ),
+                  ),
+                  // Chevron or check for "None"
+                  if (!isNone)
+                    AnimatedRotation(
+                      turns: isExpanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 250),
+                      child: Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: AppColors.textMutedColor(context),
+                        size: 24,
+                      ),
+                    ),
+                  if (isNone && isSelected)
+                    Icon(
+                      Icons.check_circle,
+                      color: AppColors.green,
+                      size: 22,
+                    ),
+                ],
+              ),
+            ),
+          ),
+
+          // Expandable severity section
+          AnimatedCrossFade(
+            firstChild: const SizedBox.shrink(),
+            secondChild: _buildSeverityOptions(index),
+            crossFadeState: isExpanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 250),
+            sizeCurve: Curves.easeInOut,
+          ),
+        ],
+      ),
     );
   }
 
-  // ── Helper: Action item row ──
-  Widget _actionItem(String text, Color dotColor) {
+  Widget _buildSeverityOptions(int index) {
+    final symptom = _symptoms[index];
+    final currentSeverity = symptom['severity'] as String?;
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Divider
           Container(
-            margin: const EdgeInsets.only(top: 5),
-            width: 5,
-            height: 5,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: dotColor,
+            height: 1,
+            color: AppColors.borderColor(context).withOpacity(0.5),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'SEVERITY LEVEL',
+            style: GoogleFonts.nunito(
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.2,
+              color: AppColors.textMutedColor(context),
             ),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: GoogleFonts.nunito(
-                fontSize: 12,
-                color: AppColors.textColor(context),
-                height: 1.5,
-              ),
-            ),
-          ),
+          const SizedBox(height: 10),
+          // Severity options
+          _buildSeverityRow('mild', 'Mild', currentSeverity, index),
+          const SizedBox(height: 6),
+          _buildSeverityRow('moderate', 'Moderate', currentSeverity, index),
+          const SizedBox(height: 6),
+          _buildSeverityRow('severe', 'Severe', currentSeverity, index),
         ],
       ),
     );
   }
 
-  Widget _intensityBtn(
-    IconData icon,
-    String label,
+  Widget _buildSeverityRow(
     String value,
-    Color activeColor,
-    Color activeBg,
+    String label,
+    String? currentSeverity,
+    int symptomIndex,
   ) {
-    final isActive = _intensity == value;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _intensity = value),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(13),
-            color: isActive ? activeBg : AppColors.surfaceColor(context),
-            border: Border.all(
-              color: isActive ? activeColor : AppColors.borderColor(context),
-              width: 2,
-            ),
-          ),
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  icon,
-                  color: isActive
-                      ? activeColor
-                      : AppColors.textMutedColor(context),
-                  size: 20,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: isActive
-                        ? activeColor
-                        : AppColors.textMutedColor(context),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+    final isActive = currentSeverity == value;
+    final bgColor = _severityBgColor(value);
+    final textColor = _severityTextColor(value);
 
-  Widget _counterBtn(String label, VoidCallback onTap) {
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 34,
-        height: 34,
+      onTap: () => _selectSeverity(symptomIndex, value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
         decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: AppColors.surface2Color(context),
-          border: Border.all(color: AppColors.borderColor(context), width: 2),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: GoogleFonts.nunito(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textColor(context),
-            ),
+          color: isActive ? bgColor : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isActive
+                ? _severityBorderColor(value)
+                : AppColors.borderColor(context).withOpacity(0.3),
+            width: 1.2,
           ),
+        ),
+        child: Row(
+          children: [
+            Text(
+              label,
+              style: GoogleFonts.nunito(
+                fontSize: 14,
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+                color: isActive ? textColor : AppColors.textColor(context),
+              ),
+            ),
+            const Spacer(),
+            // Radio circle
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isActive ? textColor : AppColors.borderColor(context),
+                  width: 2,
+                ),
+                color: isActive ? textColor.withOpacity(0.08) : Colors.transparent,
+              ),
+              child: isActive
+                  ? Center(
+                      child: Icon(
+                        Icons.check,
+                        size: 14,
+                        color: textColor,
+                      ),
+                    )
+                  : null,
+            ),
+          ],
         ),
       ),
     );

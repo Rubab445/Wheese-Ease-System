@@ -20,11 +20,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _currentStep = 0;
 
   // ── Step 0 controllers ──
-  final _nameController     = TextEditingController(text: 'Sara Ahmed');
-  final _ageController      = TextEditingController(text: '28');
-  final _heightController   = TextEditingController(text: '165');
-  final _weightController   = TextEditingController(text: '68');
-  String _gender            = 'Female';
+  final _nameController = TextEditingController(text: 'Sara Ahmed');
+  final _ageController = TextEditingController(text: '28');
+  final _heightController = TextEditingController(text: '165');
+  final _weightController = TextEditingController(text: '68');
+  String _gender = 'Female';
 
   // ── Step 1 ──
   final Set<String> _selectedConditions = {'Asthma', 'Dust Allergy'};
@@ -38,12 +38,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   ];
 
   // ── Step 2 controllers ──
-  final _primaryMedController   = TextEditingController(text: 'Salbutamol');
+  final _primaryMedController = TextEditingController(text: 'Salbutamol');
   final _secondaryMedController = TextEditingController(text: 'Fluticasone');
-  final _triggersController     = TextEditingController(text: 'Dust, Pollen');
-  bool   _smoking        = false;
-  bool   _familyHistory  = false;
-  String _activityLevel  = 'Moderate';
+  final _triggersController = TextEditingController(text: 'Dust, Pollen');
+  bool _smoking = false;
+  bool _familyHistory = false;
+  String _activityLevel = 'Moderate';
 
   @override
   void dispose() {
@@ -115,27 +115,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               // ── Logo ──
               Row(
                 children: [
-                  Container(
+                  Image.asset(
+                    'images/logo.png',
                     width: 44,
                     height: 44,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(14),
-                      gradient: isDark
-                          ? AppColors.primaryGradientDark
-                          : AppColors.primaryGradient,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primaryColor(context)
-                              .withValues(alpha: 0.35),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: const Center(
-                      child: Icon(Icons.air_rounded,
-                          color: Colors.white, size: 20),
-                    ),
+                    fit: BoxFit.contain,
                   ),
                   const SizedBox(width: 10),
                   RichText(
@@ -150,7 +134,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         TextSpan(
                           text: 'Ease',
                           style: TextStyle(
-                              color: AppColors.primaryColor(context)),
+                            color: AppColors.primaryColor(context),
+                          ),
                         ),
                       ],
                     ),
@@ -192,19 +177,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(4, (i) {
                   final isActive = i == _currentStep;
-                  final isDone   = i < _currentStep;
+                  final isDone = i < _currentStep;
                   return AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
                     margin: const EdgeInsets.symmetric(horizontal: 4),
-                    width:  isActive ? 24 : 8,
+                    width: isActive ? 24 : 8,
                     height: 8,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(4),
                       color: isActive
                           ? AppColors.primaryColor(context)
                           : isDone
-                              ? AppColors.green
-                              : AppColors.borderColor(context),
+                          ? AppColors.green
+                          : AppColors.borderColor(context),
                     ),
                   );
                 }),
@@ -225,11 +210,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Widget _buildStep(int step) {
     switch (step) {
-      case 0:  return _buildStep0();
-      case 1:  return _buildStep1();
-      case 2:  return _buildStep2();
-      case 3:  return _buildStep3();
-      default: return _buildStep0();
+      case 0:
+        return _buildStep0();
+      case 1:
+        return _buildStep1();
+      case 2:
+        return _buildStep2();
+      case 3:
+        return _buildStep3();
+      default:
+        return _buildStep0();
     }
   }
 
@@ -253,7 +243,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         Text(
           'Personalise your risk monitoring experience',
           style: GoogleFonts.nunito(
-              fontSize: 12, color: AppColors.textMutedColor(context)),
+            fontSize: 12,
+            color: AppColors.textMutedColor(context),
+          ),
         ),
         const SizedBox(height: 14),
 
@@ -289,7 +281,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                          color: AppColors.borderColor(context), width: 2),
+                        color: AppColors.borderColor(context),
+                        width: 2,
+                      ),
                       color: AppColors.surfaceColor(context),
                     ),
                     child: DropdownButton<String>(
@@ -303,10 +297,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         color: AppColors.textColor(context),
                       ),
                       items: ['Female', 'Male', 'Other']
-                          .map((g) => DropdownMenuItem(
-                                value: g,
-                                child: Text(g),
-                              ))
+                          .map(
+                            (g) => DropdownMenuItem(value: g, child: Text(g)),
+                          )
                           .toList(),
                       onChanged: (v) => setState(() => _gender = v!),
                     ),
@@ -414,7 +407,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         Text(
           'Select all that apply',
           style: GoogleFonts.nunito(
-              fontSize: 12, color: AppColors.textMutedColor(context)),
+            fontSize: 12,
+            color: AppColors.textMutedColor(context),
+          ),
         ),
         const SizedBox(height: 14),
         GridView.count(
@@ -442,9 +437,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: selected
-                        ? primary
-                        : AppColors.borderColor(context),
+                    color: selected ? primary : AppColors.borderColor(context),
                     width: 2,
                   ),
                   color: selected
@@ -454,11 +447,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(c['icon'] as IconData,
-                        size: 22,
-                        color: selected
-                            ? primary
-                            : AppColors.textMutedColor(context)),
+                    Icon(
+                      c['icon'] as IconData,
+                      size: 22,
+                      color: selected
+                          ? primary
+                          : AppColors.textMutedColor(context),
+                    ),
                     const SizedBox(height: 5),
                     Text(
                       c['label']!,
@@ -483,12 +478,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               onPressed: () => _goToStep(0),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 12),
+                  horizontal: 20,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
                 side: BorderSide(
-                    color: AppColors.borderColor(context), width: 2),
+                  color: AppColors.borderColor(context),
+                  width: 2,
+                ),
               ),
               child: Text(
                 '← Back',
@@ -501,8 +500,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
             const SizedBox(width: 10),
             Expanded(
-              child:
-                  _buildGradientButton('Continue →', () => _goToStep(2)),
+              child: _buildGradientButton('Continue →', () => _goToStep(2)),
             ),
           ],
         ),
@@ -530,7 +528,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         Text(
           'Helps track your inhaler & schedule',
           style: GoogleFonts.nunito(
-              fontSize: 12, color: AppColors.textMutedColor(context)),
+            fontSize: 12,
+            color: AppColors.textMutedColor(context),
+          ),
         ),
         const SizedBox(height: 14),
 
@@ -546,8 +546,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
         // Known triggers
         _buildLabel('KNOWN TRIGGERS'),
-        _buildTextField(
-            _triggersController, 'e.g. Dust, Pollen, Cold air'),
+        _buildTextField(_triggersController, 'e.g. Dust, Pollen, Cold air'),
         const SizedBox(height: 20),
 
         // ── Do you smoke? ──
@@ -623,12 +622,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               onPressed: () => _goToStep(1),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 12),
+                  horizontal: 20,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
                 side: BorderSide(
-                    color: AppColors.borderColor(context), width: 2),
+                  color: AppColors.borderColor(context),
+                  width: 2,
+                ),
               ),
               child: Text(
                 '← Back',
@@ -641,8 +644,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
             const SizedBox(width: 10),
             Expanded(
-              child:
-                  _buildGradientButton('Continue →', () => _goToStep(3)),
+              child: _buildGradientButton('Continue →', () => _goToStep(3)),
             ),
           ],
         ),
@@ -689,8 +691,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           decoration: BoxDecoration(
             color: primary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(16),
-            border:
-                Border.all(color: primary.withValues(alpha: 0.25)),
+            border: Border.all(color: primary.withValues(alpha: 0.25)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -764,19 +765,25 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           fontWeight: FontWeight.w600,
           color: AppColors.textDimColor(context),
         ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 13,
+        ),
         filled: true,
         fillColor: AppColors.surfaceColor(context),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide:
-              BorderSide(color: AppColors.borderColor(context), width: 2),
+          borderSide: BorderSide(
+            color: AppColors.borderColor(context),
+            width: 2,
+          ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide:
-              BorderSide(color: AppColors.borderColor(context), width: 2),
+          borderSide: BorderSide(
+            color: AppColors.borderColor(context),
+            width: 2,
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),

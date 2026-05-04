@@ -10,119 +10,71 @@ class ExerciseLogScreen extends StatefulWidget {
 }
 
 class _ExerciseLogScreenState extends State<ExerciseLogScreen> {
-  // Form state
-  String _exerciseType = 'walking';
-  int _duration = 30;
-  String _intensity = 'moderate';
-  bool _isIndoor = false;
-  bool _usedInhaler = false;
-
-  // Symptom state
-  bool _hadSymptoms = false;
-  final List<String> _selectedSymptoms = [];
-  String? _symptomSeverity;
-  final TextEditingController _symptomNotesController = TextEditingController();
-
-  // Submission state
-  bool _loading = false;
-
-  final List<Map<String, dynamic>> _exerciseTypes = [
-    {
-      'key': 'walking',
-      'icon': Icons.directions_walk_rounded,
-      'label': 'Walking',
-    },
-    {
-      'key': 'running',
-      'icon': Icons.directions_run_rounded,
-      'label': 'Running',
-    },
-    {
-      'key': 'cycling',
-      'icon': Icons.directions_bike_rounded,
-      'label': 'Cycling',
-    },
-    {'key': 'swimming', 'icon': Icons.pool_rounded, 'label': 'Swimming'},
+  // Categories with exercises
+  final List<Map<String, dynamic>> _cardioExercises = [
+    {'icon': Icons.directions_walk_rounded, 'label': 'Walking'},
+    {'icon': Icons.directions_run_rounded, 'label': 'Running'},
+    {'icon': Icons.directions_bike_rounded, 'label': 'Cycling'},
   ];
 
-  final List<Map<String, dynamic>> _intensityLevels = [
-    {'key': 'mild', 'label': 'Mild', 'icon': Icons.self_improvement_rounded},
-    {
-      'key': 'moderate',
-      'label': 'Moderate',
-      'icon': Icons.directions_walk_rounded,
-    },
-    {'key': 'intense', 'label': 'Intense', 'icon': Icons.flash_on_rounded},
+  final List<Map<String, dynamic>> _recoveryExercises = [
+    {'icon': Icons.self_improvement_rounded, 'label': 'Yoga'},
+    {'icon': Icons.accessibility_new_rounded, 'label': 'Stretching'},
+    {'icon': Icons.air_rounded, 'label': 'Breathwork'},
   ];
 
-  static const List<String> _symptomOptions = [
-    'Wheezing',
-    'Coughing',
-    'Chest Tightness',
-    'Shortness of Breath',
-    'Runny Nose',
-  ];
+  // Tracks which exercises have been logged
+  final Map<String, Map<String, dynamic>> _exerciseLogs = {};
 
-  static const List<Map<String, dynamic>> _severityLevels = [
-    {
-      'key': 'Mild',
-      'color': Color(0xFF27AE60),
-      'icon': Icons.sentiment_satisfied_rounded,
-    },
-    {
-      'key': 'Moderate',
-      'color': Color(0xFFF39C12),
-      'icon': Icons.sentiment_neutral_rounded,
-    },
-    {
-      'key': 'Severe',
-      'color': Color(0xFFE74C3C),
-      'icon': Icons.sentiment_very_dissatisfied_rounded,
-    },
-  ];
+  void _openExerciseSheet(String exerciseName, IconData icon) {
+    // Initialize defaults if not already set
+    _exerciseLogs.putIfAbsent(exerciseName, () => {
+      'duration': 30,
+      'intensity': 'moderate',
+      'isIndoor': false,
+      'usedInhaler': false,
+      'hadSymptoms': false,
+    });
 
-  @override
-  void dispose() {
-    _symptomNotesController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submit() async {
-    setState(() => _loading = true);
-
-    // Simulate logging delay
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    if (!mounted) return;
-
-    setState(() => _loading = false);
-
-    // Show success snackbar
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle_outline, color: Colors.white, size: 18),
-            const SizedBox(width: 10),
-            Text(
-              'Exercise logged successfully',
-              style: GoogleFonts.nunito(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _ExerciseBottomSheet(
+        exerciseName: exerciseName,
+        icon: icon,
+        initialData: Map<String, dynamic>.from(_exerciseLogs[exerciseName]!),
+        onSave: (data) {
+          setState(() {
+            _exerciseLogs[exerciseName] = data;
+          });
+          Navigator.pop(ctx);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle_outline, color: Colors.white, size: 18),
+                  const SizedBox(width: 10),
+                  Text(
+                    '$exerciseName logged successfully',
+                    style: GoogleFonts.nunito(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
               ),
+              backgroundColor: AppColors.green,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              margin: const EdgeInsets.all(16),
+              duration: const Duration(seconds: 2),
             ),
-          ],
-        ),
-        backgroundColor: AppColors.green,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-        duration: const Duration(seconds: 2),
+          );
+        },
       ),
     );
-
-    Navigator.pop(context);
   }
 
   @override
@@ -133,310 +85,262 @@ class _ExerciseLogScreenState extends State<ExerciseLogScreen> {
     final bg = isDark ? AppColors.bgDark : AppColors.bg;
     final text = isDark ? AppColors.textDark : AppColors.text;
     final textMuted = isDark ? AppColors.textMutedDark : AppColors.textMuted;
-    final textDim = isDark ? AppColors.textDimDark : AppColors.textDim;
     final border = isDark ? AppColors.borderDark : AppColors.border;
 
     return Scaffold(
       backgroundColor: bg,
-      appBar: AppBar(
-        backgroundColor: surface,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: text, size: 18),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'Exercise Logging',
-          style: GoogleFonts.playfairDisplay(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            color: text,
-          ),
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: border),
-        ),
-      ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Header card ──
+            // ── HEADER ──
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF2980B9), Color(0xFF3498DB)],
-                ),
-                borderRadius: BorderRadius.circular(20),
+              padding: EdgeInsets.only(
+                top: MediaQuery.of(context).padding.top + 14,
+                left: 16,
+                right: 16,
+                bottom: 14,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              decoration: BoxDecoration(
+                gradient: isDark
+                    ? AppColors.primaryGradientDark
+                    : AppColors.primaryGradient,
+              ),
+              child: Row(
                 children: [
-                  const Icon(
-                    Icons.fitness_center_rounded,
-                    color: Colors.white,
-                    size: 32,
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(width: 14),
                   Text(
-                    'Log Your Workout',
+                    'Select Exercise',
                     style: GoogleFonts.playfairDisplay(
-                      fontSize: 22,
+                      fontSize: 20,
                       fontWeight: FontWeight.w800,
                       color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Track your exercise to help monitor your asthma patterns.',
-                    style: GoogleFonts.nunito(
-                      fontSize: 13,
-                      color: Colors.white.withOpacity(0.85),
-                      height: 1.6,
+                      fontStyle: FontStyle.italic,
                     ),
                   ),
                 ],
               ),
             ),
+
+            const SizedBox(height: 16),
+
+            // ── HERO IMAGE CARD ──
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(18),
+                child: SizedBox(
+                  height: 180,
+                  width: double.infinity,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      // Image
+                      Image.network(
+                        'https://images.unsplash.com/photo-1545205597-3d9d02c29597?w=800&q=80',
+                        fit: BoxFit.cover,
+                        errorBuilder: (ctx, err, stack) => Container(
+                          color: primary.withOpacity(0.15),
+                          child: Center(
+                            child: Icon(
+                              Icons.fitness_center_rounded,
+                              color: primary,
+                              size: 48,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Gradient overlay
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withOpacity(0.65),
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Text overlay
+                      Positioned(
+                        bottom: 18,
+                        left: 18,
+                        right: 18,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Breathe & Move',
+                              style: GoogleFonts.playfairDisplay(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Gentle exercises optimized for lung health.',
+                              style: GoogleFonts.nunito(
+                                fontSize: 12,
+                                color: Colors.white.withOpacity(0.85),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
             const SizedBox(height: 24),
 
-            // ── EXERCISE TYPE ──
-            _sectionLabel('TYPE OF EXERCISE', textMuted),
-            const SizedBox(height: 10),
-            Row(
-              children: _exerciseTypes.map((t) {
-                final isSelected = _exerciseType == t['key'];
-                return Expanded(
-                  child: GestureDetector(
-                    onTap: () => setState(() => _exerciseType = t['key']),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      margin: EdgeInsets.only(
-                        right: t != _exerciseTypes.last ? 8 : 0,
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      decoration: BoxDecoration(
-                        color: isSelected ? primary.withOpacity(0.15) : surface,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: isSelected ? primary : border,
-                          width: isSelected ? 2 : 1,
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          Icon(
-                            t['icon'] as IconData,
-                            color: isSelected ? primary : textDim,
-                            size: 22,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            t['label'] as String,
-                            style: GoogleFonts.nunito(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: isSelected ? primary : textMuted,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 22),
-
-            // ── DURATION SLIDER ──
-            _sectionLabel('DURATION', textMuted),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                Expanded(
-                  child: SliderTheme(
-                    data: SliderThemeData(
-                      activeTrackColor: primary,
-                      inactiveTrackColor: border,
-                      thumbColor: primary,
-                      overlayColor: primary.withOpacity(0.15),
-                      trackHeight: 4,
-                      thumbShape: const RoundSliderThumbShape(
-                        enabledThumbRadius: 8,
-                      ),
-                    ),
-                    child: Slider(
-                      value: _duration.toDouble(),
-                      min: 5,
-                      max: 120,
-                      divisions: 23,
-                      onChanged: (v) => setState(() => _duration = v.round()),
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: primary.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    '$_duration min',
+            // ── CARDIO CATEGORY ──
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  Icon(Icons.favorite_outline_rounded, color: primary, size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    'CARDIO',
                     style: GoogleFonts.nunito(
-                      fontSize: 14,
+                      fontSize: 11,
                       fontWeight: FontWeight.w800,
-                      color: primary,
+                      color: textMuted,
+                      letterSpacing: 1.2,
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-            const SizedBox(height: 22),
-
-            // ── INTENSITY ──
-            _sectionLabel('INTENSITY', textMuted),
-            const SizedBox(height: 10),
-            Row(
-              children: _intensityLevels.map((level) {
-                final isSelected = _intensity == level['key'];
-                return Expanded(
-                  child: GestureDetector(
-                    onTap: () =>
-                        setState(() => _intensity = level['key'] as String),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      margin: EdgeInsets.only(
-                        right: level != _intensityLevels.last ? 8 : 0,
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              child: Row(
+                children: _cardioExercises.map((exercise) {
+                  return Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        right: exercise != _cardioExercises.last ? 10 : 0,
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      decoration: BoxDecoration(
-                        color: isSelected ? primary.withOpacity(0.15) : surface,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: isSelected ? primary : border,
-                          width: isSelected ? 2 : 1,
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          Icon(
-                            level['icon'] as IconData,
-                            color: isSelected ? primary : textDim,
-                            size: 20,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            level['label'] as String,
-                            style: GoogleFonts.nunito(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: isSelected ? primary : textMuted,
-                            ),
-                          ),
-                        ],
+                      child: _buildExerciseTile(
+                        exercise['icon'] as IconData,
+                        exercise['label'] as String,
+                        surface, border, text, textMuted, primary,
                       ),
                     ),
+                  );
+                }).toList(),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // ── RECOVERY CATEGORY ──
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  Icon(Icons.spa_outlined, color: primary, size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    'RECOVERY',
+                    style: GoogleFonts.nunito(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: textMuted,
+                      letterSpacing: 1.2,
+                    ),
                   ),
-                );
-              }).toList(),
+                ],
+              ),
             ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              child: Row(
+                children: _recoveryExercises.map((exercise) {
+                  return Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        right: exercise != _recoveryExercises.last ? 10 : 0,
+                      ),
+                      child: _buildExerciseTile(
+                        exercise['icon'] as IconData,
+                        exercise['label'] as String,
+                        surface, border, text, textMuted, primary,
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
 
-            // ── DETAILS TOGGLES ──
-            _sectionLabel('DETAILS', textMuted),
-            const SizedBox(height: 10),
-            _toggleTile(
-              icon: Icons.location_on_outlined,
-              label: 'Indoor Exercise',
-              sublabel: _isIndoor
-                  ? 'Gym, home, or indoor facility'
-                  : 'Outdoor — park, road, or field',
-              value: _isIndoor,
-              onChanged: (v) => setState(() => _isIndoor = v),
-              surface: surface,
-              border: border,
-              text: text,
-              textMuted: textMuted,
-              primary: primary,
-            ),
-            const SizedBox(height: 10),
-            _toggleTile(
-              icon: Icons.medication_outlined,
-              label: 'Used Inhaler Before',
-              sublabel: 'Did you take your inhaler before exercising?',
-              value: _usedInhaler,
-              onChanged: (v) => setState(() => _usedInhaler = v),
-              surface: surface,
-              border: border,
-              text: text,
-              textMuted: textMuted,
-              primary: primary,
-            ),
-            const SizedBox(height: 22),
-
-            // ── SYMPTOMS SECTION ──
-            _sectionLabel('SYMPTOMS DURING / AFTER', textMuted),
-            const SizedBox(height: 10),
-            _buildSymptomsSection(
-              surface,
-              border,
-              text,
-              textMuted,
-              textDim,
-              primary,
-            ),
             const SizedBox(height: 28),
 
-            // ── SUBMIT BUTTON ──
-            GestureDetector(
-              onTap: _loading ? null : _submit,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+            // ── HEALTH TIP CARD ──
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              child: Container(
+                padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  gradient: _loading
-                      ? LinearGradient(colors: [textDim, textDim])
-                      : const LinearGradient(
-                          colors: [Color(0xFF2980B9), Color(0xFF3498DB)],
-                        ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    if (!_loading)
-                      BoxShadow(
-                        color: const Color(0xFF2980B9).withOpacity(0.3),
-                        blurRadius: 14,
-                        offset: const Offset(0, 4),
-                      ),
-                  ],
+                  color: primary.withOpacity(0.06),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: primary.withOpacity(0.12),
+                  ),
                 ),
-                child: Center(
-                  child: _loading
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: primary.withOpacity(0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.info_outline_rounded,
+                        color: primary,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Health Tip',
+                            style: GoogleFonts.nunito(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: text,
+                            ),
                           ),
-                        )
-                      : Text(
-                          'Log Exercise',
-                          style: GoogleFonts.nunito(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
+                          const SizedBox(height: 4),
+                          Text(
+                            'During high pollen days, prefer indoor activities like Yoga or Stretching to minimize respiratory irritation.',
+                            style: GoogleFonts.nunito(
+                              fontSize: 12,
+                              color: textMuted,
+                              height: 1.5,
+                            ),
                           ),
-                        ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -448,99 +352,348 @@ class _ExerciseLogScreenState extends State<ExerciseLogScreen> {
     );
   }
 
-  // ── Symptoms section widget ──
-  Widget _buildSymptomsSection(
+  Widget _buildExerciseTile(
+    IconData icon,
+    String label,
     Color surface,
     Color border,
     Color text,
     Color textMuted,
-    Color textDim,
     Color primary,
   ) {
-    return Container(
-      decoration: BoxDecoration(
-        color: surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: _hadSymptoms ? primary.withOpacity(0.5) : border,
-          width: _hadSymptoms ? 1.5 : 1,
+    final isLogged = _exerciseLogs.containsKey(label);
+
+    return GestureDetector(
+      onTap: () => _openExerciseSheet(label, icon),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        decoration: BoxDecoration(
+          color: isLogged ? primary.withOpacity(0.08) : surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isLogged ? primary.withOpacity(0.3) : border,
+            width: isLogged ? 1.5 : 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 28,
+              color: isLogged ? primary : textMuted,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: GoogleFonts.nunito(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: isLogged ? primary : text,
+              ),
+            ),
+          ],
         ),
       ),
-      child: Column(
-        children: [
-          // Top row: toggle "Did you have symptoms?"
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child: Row(
-              children: [
-                Container(
-                  width: 34,
-                  height: 34,
+    );
+  }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Bottom Sheet for individual exercise logging
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+class _ExerciseBottomSheet extends StatefulWidget {
+  final String exerciseName;
+  final IconData icon;
+  final Map<String, dynamic> initialData;
+  final Function(Map<String, dynamic>) onSave;
+
+  const _ExerciseBottomSheet({
+    required this.exerciseName,
+    required this.icon,
+    required this.initialData,
+    required this.onSave,
+  });
+
+  @override
+  State<_ExerciseBottomSheet> createState() => _ExerciseBottomSheetState();
+}
+
+class _ExerciseBottomSheetState extends State<_ExerciseBottomSheet> {
+  late int _duration;
+  late String _intensity;
+  late bool _isIndoor;
+  late bool _usedInhaler;
+  late bool _hadSymptoms;
+  final List<String> _selectedSymptoms = [];
+  final TextEditingController _symptomNotesController = TextEditingController();
+
+  static const List<String> _symptomOptions = [
+    'Wheezing',
+    'Coughing',
+    'Chest Tightness',
+    'Shortness of Breath',
+    'Runny Nose',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _duration = widget.initialData['duration'] as int;
+    _intensity = widget.initialData['intensity'] as String;
+    _isIndoor = widget.initialData['isIndoor'] as bool;
+    _usedInhaler = widget.initialData['usedInhaler'] as bool;
+    _hadSymptoms = widget.initialData['hadSymptoms'] as bool;
+  }
+
+  @override
+  void dispose() {
+    _symptomNotesController.dispose();
+    super.dispose();
+  }
+
+  Color _intensityColor(String value) {
+    switch (value) {
+      case 'mild':
+        return AppColors.green;
+      case 'moderate':
+        return AppColors.yellow;
+      case 'severe':
+        return AppColors.red;
+      default:
+        return AppColors.green;
+    }
+  }
+
+  String get _durationLabel {
+    if (_duration >= 120) return '120m+';
+    return '$_duration min';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = isDark ? AppColors.primaryDark : AppColors.primary;
+    final surface = isDark ? AppColors.surfaceDark : AppColors.surface;
+    final bg = isDark ? AppColors.bgDark : AppColors.bg;
+    final text = isDark ? AppColors.textDark : AppColors.text;
+    final textMuted = isDark ? AppColors.textMutedDark : AppColors.textMuted;
+    final border = isDark ? AppColors.borderDark : AppColors.border;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(28),
+          topRight: Radius.circular(28),
+        ),
+      ),
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Handle bar
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 12, bottom: 16),
+                  width: 40,
+                  height: 4,
                   decoration: BoxDecoration(
-                    color: (_hadSymptoms ? AppColors.red : primary).withOpacity(
-                      0.1,
-                    ),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    Icons.sick_outlined,
-                    color: _hadSymptoms ? AppColors.red : primary,
-                    size: 17,
+                    color: border,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Symptoms During / After',
-                        style: GoogleFonts.nunito(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
+              ),
+
+              // Title row
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 22),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: primary.withOpacity(0.10),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(widget.icon, color: primary, size: 22),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Text(
+                        widget.exerciseName,
+                        style: GoogleFonts.playfairDisplay(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
                           color: text,
                         ),
                       ),
-                      Text(
-                        _hadSymptoms
-                            ? 'Tap to log what you experienced'
-                            : 'No symptoms? Leave this off',
-                        style: GoogleFonts.nunito(
-                          fontSize: 10,
-                          color: textMuted,
+                    ),
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        width: 34,
+                        height: 34,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: border.withOpacity(0.3),
                         ),
+                        child: Icon(Icons.close, size: 18, color: textMuted),
                       ),
-                    ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Duration section
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 22),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Duration',
+                      style: GoogleFonts.nunito(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: text,
+                      ),
+                    ),
+                    Text(
+                      _durationLabel,
+                      style: GoogleFonts.nunito(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: SliderTheme(
+                  data: SliderThemeData(
+                    activeTrackColor: primary,
+                    inactiveTrackColor: border,
+                    thumbColor: primary,
+                    overlayColor: primary.withOpacity(0.12),
+                    trackHeight: 5,
+                    thumbShape: const RoundSliderThumbShape(
+                      enabledThumbRadius: 9,
+                    ),
+                  ),
+                  child: Slider(
+                    value: _duration.toDouble(),
+                    min: 10,
+                    max: 120,
+                    divisions: 22,
+                    onChanged: (v) => setState(() => _duration = v.round()),
                   ),
                 ),
-                Switch.adaptive(
-                  value: _hadSymptoms,
-                  onChanged: (v) {
-                    setState(() {
-                      _hadSymptoms = v;
-                      if (!v) {
-                        _selectedSymptoms.clear();
-                        _symptomSeverity = null;
-                        _symptomNotesController.clear();
-                      }
-                    });
-                  },
-                  activeColor: AppColors.red,
+              ),
+              // Duration labels
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 22),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: ['10m', '30m', '60m', '90m', '120m+'].map((l) {
+                    return Text(
+                      l,
+                      style: GoogleFonts.nunito(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: textMuted,
+                      ),
+                    );
+                  }).toList(),
                 ),
-              ],
-            ),
-          ),
+              ),
 
-          // Expanded section when symptoms toggled on
-          if (_hadSymptoms) ...[
-            Divider(height: 1, color: border),
-            Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Symptom chips
-                  Text(
+              const SizedBox(height: 22),
+
+              // Intensity section
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 22),
+                child: Text(
+                  'Intensity',
+                  style: GoogleFonts.nunito(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: text,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 22),
+                child: Row(
+                  children: [
+                    _intensityChip('Mild', 'mild', primary, surface, border, text, textMuted),
+                    const SizedBox(width: 10),
+                    _intensityChip('Moderate', 'moderate', primary, surface, border, text, textMuted),
+                    const SizedBox(width: 10),
+                    _intensityChip('Severe', 'severe', primary, surface, border, text, textMuted),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Toggle rows
+              _buildToggleRow(
+                Icons.home_rounded,
+                'Indoor Exercise',
+                _isIndoor,
+                (v) => setState(() => _isIndoor = v),
+                surface, border, text, textMuted, primary,
+              ),
+              _buildToggleRow(
+                Icons.medication_outlined,
+                'Used Inhaler Before',
+                _usedInhaler,
+                (v) => setState(() => _usedInhaler = v),
+                surface, border, text, textMuted, primary,
+              ),
+              _buildToggleRow(
+                Icons.sick_outlined,
+                'Symptoms Before',
+                _hadSymptoms,
+                (v) {
+                  setState(() {
+                    _hadSymptoms = v;
+                    if (!v) {
+                      _selectedSymptoms.clear();
+                      _symptomNotesController.clear();
+                    }
+                  });
+                },
+                surface, border, text, textMuted, primary,
+              ),
+
+              // Expandable symptoms section
+              if (_hadSymptoms) ...[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(22, 6, 22, 0),
+                  child: Text(
                     'WHAT DID YOU EXPERIENCE?',
                     style: GoogleFonts.nunito(
                       fontSize: 9,
@@ -549,8 +702,11 @@ class _ExerciseLogScreenState extends State<ExerciseLogScreen> {
                       letterSpacing: 0.7,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Wrap(
+                ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 22),
+                  child: Wrap(
                     spacing: 8,
                     runSpacing: 8,
                     children: _symptomOptions.map((symptom) {
@@ -568,17 +724,17 @@ class _ExerciseLogScreenState extends State<ExerciseLogScreen> {
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 150),
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 7,
+                            horizontal: 14,
+                            vertical: 8,
                           ),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? AppColors.red.withOpacity(0.12)
-                                : border.withOpacity(0.3),
+                                ? primary.withOpacity(0.12)
+                                : surface,
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
                               color: isSelected
-                                  ? AppColors.red.withOpacity(0.6)
+                                  ? primary.withOpacity(0.6)
                                   : border,
                               width: isSelected ? 1.5 : 1,
                             ),
@@ -586,82 +742,20 @@ class _ExerciseLogScreenState extends State<ExerciseLogScreen> {
                           child: Text(
                             symptom,
                             style: GoogleFonts.nunito(
-                              fontSize: 11,
+                              fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: isSelected ? AppColors.red : textMuted,
+                              color: isSelected ? primary : textMuted,
                             ),
                           ),
                         ),
                       );
                     }).toList(),
                   ),
-
-                  // Severity — only show if at least one symptom selected
-                  if (_selectedSymptoms.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    Text(
-                      'HOW SEVERE?',
-                      style: GoogleFonts.nunito(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w800,
-                        color: textMuted,
-                        letterSpacing: 0.7,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: _severityLevels.map((s) {
-                        final isSelected = _symptomSeverity == s['key'];
-                        final col = s['color'] as Color;
-                        return Expanded(
-                          child: GestureDetector(
-                            onTap: () => setState(
-                              () => _symptomSeverity = s['key'] as String,
-                            ),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 150),
-                              margin: EdgeInsets.only(
-                                right: s != _severityLevels.last ? 8 : 0,
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? col.withOpacity(0.12)
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: isSelected ? col : border,
-                                  width: isSelected ? 1.5 : 1,
-                                ),
-                              ),
-                              child: Column(
-                                children: [
-                                  Icon(
-                                    s['icon'] as IconData,
-                                    color: isSelected ? col : textMuted,
-                                    size: 18,
-                                  ),
-                                  const SizedBox(height: 3),
-                                  Text(
-                                    s['key'] as String,
-                                    style: GoogleFonts.nunito(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w700,
-                                      color: isSelected ? col : textMuted,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ],
-
-                  // Optional notes field
-                  const SizedBox(height: 14),
-                  Text(
+                ),
+                const SizedBox(height: 14),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 22),
+                  child: Text(
                     'ADDITIONAL NOTES (OPTIONAL)',
                     style: GoogleFonts.nunito(
                       fontSize: 9,
@@ -670,8 +764,11 @@ class _ExerciseLogScreenState extends State<ExerciseLogScreen> {
                       letterSpacing: 0.7,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  TextField(
+                ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 22),
+                  child: TextField(
                     controller: _symptomNotesController,
                     maxLines: 2,
                     style: GoogleFonts.nunito(fontSize: 13, color: text),
@@ -683,59 +780,139 @@ class _ExerciseLogScreenState extends State<ExerciseLogScreen> {
                         color: textMuted,
                       ),
                       filled: true,
-                      fillColor: border.withOpacity(0.2),
+                      fillColor: surface,
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(color: border),
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(color: border),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(color: primary),
                       ),
                       contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
+                        horizontal: 14,
+                        vertical: 12,
                       ),
                     ),
                   ),
-                ],
+                ),
+              ],
+
+              const SizedBox(height: 24),
+
+              // Save button
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 22),
+                child: GestureDetector(
+                  onTap: () {
+                    widget.onSave({
+                      'duration': _duration,
+                      'intensity': _intensity,
+                      'isIndoor': _isIndoor,
+                      'usedInhaler': _usedInhaler,
+                      'hadSymptoms': _hadSymptoms,
+                    });
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      gradient: AppColors.primaryGradient,
+                      boxShadow: [
+                        BoxShadow(
+                          color: primary.withOpacity(0.3),
+                          blurRadius: 14,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.save_outlined, color: Colors.white, size: 18),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Save to Log',
+                            style: GoogleFonts.nunito(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 10),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _intensityChip(
+    String label,
+    String value,
+    Color primary,
+    Color surface,
+    Color border,
+    Color text,
+    Color textMuted,
+  ) {
+    final isSelected = _intensity == value;
+    final chipColor = _intensityColor(value);
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _intensity = value),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? chipColor : surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected ? chipColor : border,
+              width: 1.5,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: GoogleFonts.nunito(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: isSelected ? Colors.white : textMuted,
               ),
             ),
-          ],
-        ],
+          ),
+        ),
       ),
     );
   }
 
-  Widget _sectionLabel(String label, Color color) {
-    return Text(
-      label,
-      style: GoogleFonts.nunito(
-        fontSize: 10,
-        fontWeight: FontWeight.w800,
-        color: color,
-        letterSpacing: 0.8,
-      ),
-    );
-  }
-
-  Widget _toggleTile({
-    required IconData icon,
-    required String label,
-    required String sublabel,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-    required Color surface,
-    required Color border,
-    required Color text,
-    required Color textMuted,
-    required Color primary,
-  }) {
+  Widget _buildToggleRow(
+    IconData icon,
+    String label,
+    bool value,
+    ValueChanged<bool> onChanged,
+    Color surface,
+    Color border,
+    Color text,
+    Color textMuted,
+    Color primary,
+  ) {
     return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 22, vertical: 5),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: surface,
@@ -755,22 +932,13 @@ class _ExerciseLogScreenState extends State<ExerciseLogScreen> {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: GoogleFonts.nunito(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: text,
-                  ),
-                ),
-                Text(
-                  sublabel,
-                  style: GoogleFonts.nunito(fontSize: 10, color: textMuted),
-                ),
-              ],
+            child: Text(
+              label,
+              style: GoogleFonts.nunito(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: text,
+              ),
             ),
           ),
           Switch.adaptive(
