@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import Sidebar from './AdminDashboard/Components/Sidebar'
+import { useState, useEffect } from 'react';
+import Sidebar from './AdminDashboard/Components/Sidebar';
 import UtilitySidebar from './AdminDashboard/Components/UtilitySidebar';
 import Overview from './AdminDashboard/Pages/AdminDashboard';
 import UserManagement from './AdminDashboard/Pages/UserManagement';
@@ -8,10 +8,19 @@ import PatientManagement from './AdminDashboard/Pages/PatientManagement';
 import EnvironmentalMonitor from './AdminDashboard/Pages/EnvironmentalMonitor';
 import AIMonitoring from './AdminDashboard/Pages/AIMonitoring';
 import Settings from './AdminDashboard/Pages/Settings';
-import AdminMessages from './AdminDashboard/Pages/AdminMessages'
+import AdminMessages from './AdminDashboard/Pages/AdminMessages';
 
 export default function AdminDashboard() {
   const [activeModule, setActiveModule] = useState('dashboard');
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [showUtility, setShowUtility] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1000);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1000);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const renderModule = () => {
     switch (activeModule) {
@@ -33,38 +42,137 @@ export default function AdminDashboard() {
         return <AdminMessages />;
       default:
         return (
-          <div style={{ padding: '40px', backgroundColor: '#F8FAFC', minHeight: '100vh' }}>
-            <h1 style={{ fontSize: '28px', fontWeight: '700', color: '#1E293B', margin: '0 0 16px 0' }}>
-              Module: {activeModule}
-            </h1>
-            <p style={{ color: '#64748B' }}>This module is under construction.</p>
+          <div style={{ padding: '40px', backgroundColor: '#F8FAFC' }}>
+            <h1>Module: {activeModule}</h1>
           </div>
         );
     }
   };
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        width: '100%',
-        height: '100vh',
-        backgroundColor: '#F8FAFC',
-      }}
-    >
-      <Sidebar
-        activeModule={activeModule}
-        onModuleChange={setActiveModule}
-      />
+    <div style={{ display: 'flex', width: '100%', height: '100vh', backgroundColor: '#F8FAFC' }}>
+
+      {/* ================= HAMBURGER ================= */}
+      <button
+        onClick={() => setIsExpanded(prev => !prev)}
+        style={{
+          position: 'fixed',
+          top: '16px',
+          left: isExpanded ? '200px' : '14px',
+          zIndex: 1400,
+          width: '34px',
+          height: '34px',
+          borderRadius: '50%',
+          background: 'white',
+          border: 'none',
+          boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
+          cursor: 'pointer',
+        }}
+      >
+        {isExpanded ? '✕' : '☰'}
+      </button>
+
+      {/* ================= LEFT SIDEBAR ================= */}
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          height: '100%',
+          width: isExpanded ? '250px' : '70px',
+          backgroundColor: 'white',
+          zIndex: 1300,
+          paddingTop: '60px',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          transition: '0.3s'
+        }}
+      >
+        <Sidebar
+          activeModule={activeModule}
+          isExpanded={isExpanded}
+          isMobile={isMobile}
+          onOpenUtility={() => setShowUtility(true)}
+          onModuleChange={(module) => {
+            setActiveModule(module);
+            setIsExpanded(false);
+          }}
+        />
+      </div>
+
+      {/* ================= MAIN ================= */}
       <main
         style={{
           flex: 1,
+          marginLeft: '70px',
+          marginRight: !isMobile ? '280px' : '0px',
           overflowY: 'auto',
+          overflowX: 'hidden',
         }}
       >
         {renderModule()}
       </main>
-      <UtilitySidebar />
+
+      {/* ================= RIGHT UTILITY (DESKTOP ONLY) ================= */}
+      {!isMobile && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          right: 0,
+          width: '280px',
+          height: '100%',
+          background: '#fff',
+          zIndex: 1200,
+          overflowY: 'auto'
+        }}>
+          <UtilitySidebar />
+        </div>
+      )}
+
+      {/* ================= MOBILE UTILITY DRAWER ================= */}
+      {isMobile && showUtility && (
+        <>
+          <div
+            onClick={() => setShowUtility(false)}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              background: 'rgba(0,0,0,0.35)',
+              zIndex: 1400
+            }}
+          />
+
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            right: 0,
+            width: '280px',
+            height: '100%',
+            background: '#fff',
+            zIndex: 1500,
+            overflowY: 'auto'
+          }}>
+            <button
+              onClick={() => setShowUtility(false)}
+              style={{
+                position: 'absolute',
+                top: 10,
+                right: 10,
+                background: 'transparent',
+                border: 'none',
+                fontSize: '18px'
+              }}
+            >
+              ✕
+            </button>
+
+            <UtilitySidebar />
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -3,7 +3,7 @@
   height: 100vh;
   background-color: #FFFFFF; 
   border-right: 1px solid #E2E8F0;
-  padding: 24px 16px;
+  padding: 24px 8px;
   display: flex;
   flex-direction: column;
 }

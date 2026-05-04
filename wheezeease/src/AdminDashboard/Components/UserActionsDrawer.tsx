@@ -117,7 +117,7 @@ export default function UserActionsDrawer({ isOpen, user, onClose }: UserActions
               <h4>Quick Actions</h4>
             </div>
             <div className="actions-grid">
-              <button className="action-btn status" onClick={handleToggleStatus}>
+              <button className="action-btn-usermanagement status-user" onClick={handleToggleStatus}>
                 {user.status === 'Active' ? (
                   <>
                     <UserX size={18} />
@@ -130,11 +130,11 @@ export default function UserActionsDrawer({ isOpen, user, onClose }: UserActions
                   </>
                 )}
               </button>
-              <button className="action-btn reset" onClick={handleResetPassword}>
+              <button className="action-btn-usermanagement reset" onClick={handleResetPassword}>
                 <Key size={18} />
                 Reset Password
               </button>
-              <button className="action-btn delete" onClick={handleDeactivate}>
+              <button className="action-btn-usermanagement delete" onClick={handleDeactivate}>
                 <Trash2 size={18} />
                 Deactivate User
               </button>

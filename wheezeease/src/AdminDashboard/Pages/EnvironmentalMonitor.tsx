@@ -186,7 +186,7 @@ export default function EnvironmentalMonitor() {
             </div>
             <div className="stat-info">
               <span className="stat-label">PM2.5</span>
-              <span className="stat-value">{environmentalData.pm25} µg/m³</span>
+              <span className="stat-value-environmental">{environmentalData.pm25} µg/m³</span>
             </div>
           </div>
 
@@ -196,7 +196,7 @@ export default function EnvironmentalMonitor() {
             </div>
             <div className="stat-info">
               <span className="stat-label">Pollen Count</span>
-              <span className="stat-value">{environmentalData.pollenCount}</span>
+              <span className="stat-value-environmental">{environmentalData.pollenCount}</span>
             </div>
           </div>
 
@@ -206,7 +206,7 @@ export default function EnvironmentalMonitor() {
             </div>
             <div className="stat-info">
               <span className="stat-label">Humidity</span>
-              <span className="stat-value">{environmentalData.humidity}%</span>
+              <span className="stat-value-environmental">{environmentalData.humidity}%</span>
             </div>
           </div>
 
@@ -216,7 +216,7 @@ export default function EnvironmentalMonitor() {
             </div>
             <div className="stat-info">
               <span className="stat-label">Temperature</span>
-              <span className="stat-value">{environmentalData.temperature}°C</span>
+              <span className="stat-value-environmental">{environmentalData.temperature}°C</span>
             </div>
           </div>
         </div>

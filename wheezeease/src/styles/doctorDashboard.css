@@ -723,8 +723,9 @@ body {
 }
 
 .send-btn {
-    width: 40px;
-    height: 40px;
+    width: 26px;
+    height: 26px;
+    flex-shrink: 0;
     border-radius: 50%;
     background: #7C3AED;
     border: none;
@@ -797,7 +798,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    z-index: 9999;
 }
 
 .modal-content {
@@ -826,7 +827,7 @@ body {
    RIGHT UTILITY BAR
    ============================================ */
 .right-utility-bar {
-    width: 380px;
+    width: 280px;
     background: #ffffff;
     border-left: 1px solid #eef2ff;
     height: 100vh;
@@ -853,7 +854,7 @@ body {
 }
 
 .utility-inner {
-    padding: 24px 20px;
+    padding: 18px;
     display: flex;
     flex-direction: column;
     gap: 28px;
@@ -1302,7 +1303,7 @@ body {
 .aqi-label {
     font-size: 0.7rem;
     font-weight: 500;
-    color: #94a3b8;
+    color: white;
 }
 
 .aqi-status-badge {
@@ -2382,7 +2383,7 @@ body {
         grid-template-columns: repeat(2, 1fr);
     }
     .right-utility-bar {
-        width: 320px;
+        width: 280px;
     }
 }
 

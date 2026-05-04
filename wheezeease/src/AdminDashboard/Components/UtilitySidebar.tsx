@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import '../Admin.module.css/UtilitySidebar.css'
+import '../Admin.module.css/UtilitySidebar.css';
+
 const UtilityBar: React.FC = () => {
   const [msg, setMsg] = useState('');
   const [showEmoji, setShowEmoji] = useState(false);
@@ -30,7 +31,8 @@ const UtilityBar: React.FC = () => {
 
   return (
     <div className="ub-container">
-      {/* PROFILE SECTION (Back to image_4966a0 style) */}
+
+      {/* PROFILE SECTION */}
       <div className="ub-profile-card">
         <div className="ub-avatar-box">
           <div className="ub-avatar">A</div>
@@ -47,7 +49,7 @@ const UtilityBar: React.FC = () => {
 
       <div className="ub-divider">Activity</div>
 
-      {/* ACTIVITY FEED */}
+      {/* FEED */}
       <div className="ub-feed-area">
         {list.map(item => (
           <div key={item.id} className={`ub-msg-card ${item.type}`}>
@@ -60,7 +62,7 @@ const UtilityBar: React.FC = () => {
         ))}
       </div>
 
-      {/* INPUT AREA WITH WHATSAPP-STYLE EMOJI PICKER */}
+      {/* INPUT */}
       <div className="ub-input-footer">
         {showEmoji && (
           <div className="ub-emoji-dropdown">
@@ -69,11 +71,12 @@ const UtilityBar: React.FC = () => {
             ))}
           </div>
         )}
+
         <div className="ub-input-row">
           <button className="emoji-trigger" onClick={() => setShowEmoji(!showEmoji)}>😊</button>
-          <input 
-            placeholder="Type a message..." 
-            value={msg} 
+          <input
+            placeholder="Type a message..."
+            value={msg}
             onChange={(e) => setMsg(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && send()}
           />

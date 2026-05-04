@@ -72,7 +72,7 @@
 /* Utility Area - Fixed width on the right */
 .utility-area {
     flex-shrink: 0;
-    width: 380px;
+    width: 280px;
     background: #F8F7FF;
     border-left: 1px solid rgba(124, 58, 237, 0.1);
     overflow-y: auto;
@@ -91,7 +91,7 @@
 /* Responsive Design */
 @media (max-width: 1024px) {
     .utility-area {
-        width: 400px;
+        width: 280px;
     }
     
 }
@@ -125,7 +125,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    z-index: 9999;
 }
 
 .modal-content {

@@ -1,5 +1,5 @@
 import React, { useState, useRef, type ChangeEvent } from 'react';
-import '../Admin.module.css/Settings.css'
+import '../Admin.module.css/Settings.css';
 
 interface SettingsFormData {
   name: string;
@@ -19,7 +19,6 @@ const Settings: React.FC = () => {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Original Data (Backup for Discard)
   const initialData: SettingsFormData = {
     name: "Dr. Ahmad",
     email: "m.usman@uog.edu.pk",
@@ -33,12 +32,17 @@ const Settings: React.FC = () => {
     sessionTimeout: "30",
   };
 
-  // Current State
   const [formData, setFormData] = useState<SettingsFormData>(initialData);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value, type } = e.target;
-    const val = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
+    const val =
+      type === 'checkbox'
+        ? (e.target as HTMLInputElement).checked
+        : value;
+
     setFormData(prev => ({ ...prev, [name]: val }));
   };
 
@@ -51,120 +55,185 @@ const Settings: React.FC = () => {
     }
   };
 
-  // FUNCTIONAL BUTTONS
   const handleDiscard = () => {
-    if (window.confirm("Are you sure? All unsaved changes will be lost.")) {
+    if (window.confirm("Discard changes?")) {
       setFormData(initialData);
       setProfileImage(null);
-      alert("Changes discarded!");
     }
   };
 
   const handleSave = () => {
-    // Yahan aap apni Axios/Fetch call laga sakte hain
-    console.log("Saving Data to Database...", formData);
-    alert("Success! Settings updated properly.");
+    console.log("Saving:", formData);
+    alert("Settings saved!");
   };
 
   return (
-    <div className="settings-wrapper">
-      <div className="settings-glass-card">
+    <div className="settingsRoot">
+      <div className="settingsCard">
+
         {/* SIDEBAR */}
-        <aside className="settings-nav-pane">
-          <div className="nav-brand">
-            <div className="brand-dot"></div>
+        <aside className="settingsSidebar">
+          <div className="settingsBrand">
+            <div className="brandDot"></div>
             <span>WheezeEase</span>
           </div>
-          <nav>
-            <button className={activeTab === 'profile' ? 'active' : ''} onClick={() => setActiveTab('profile')}>
-              <span className="nav-icon">👤</span> Profile
+
+          <nav className="settingsNav">
+            <button
+              className={`settingsNavBtn ${activeTab === 'profile' ? 'activeNavBtn' : ''}`}
+              onClick={() => setActiveTab('profile')}
+            >
+              👤 Profile
             </button>
-            <button className={activeTab === 'notifications' ? 'active' : ''} onClick={() => setActiveTab('notifications')}>
-              <span className="nav-icon">🔔</span> Notifications
+
+            <button
+              className={`settingsNavBtn ${activeTab === 'notifications' ? 'activeNavBtn' : ''}`}
+              onClick={() => setActiveTab('notifications')}
+            >
+              🔔 Notifications
             </button>
-            <button className={activeTab === 'security' ? 'active' : ''} onClick={() => setActiveTab('security')}>
-              <span className="nav-icon">🛡️</span> Security
+
+            <button
+              className={`settingsNavBtn ${activeTab === 'security' ? 'activeNavBtn' : ''}`}
+              onClick={() => setActiveTab('security')}
+            >
+              🛡️ Security
             </button>
           </nav>
         </aside>
 
-        {/* MAIN CONTENT */}
-        <section className="settings-workspace">
-          <div className="workspace-header">
+        {/* MAIN */}
+        <section className="settingsMain">
+
+          {/* HEADER */}
+          <div className="settingsHeader">
             <div>
-              <h1>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</h1>
-              <p>Manage your account settings and preferences.</p>
+              <h1>{activeTab.toUpperCase()}</h1>
+              <p>Manage your settings</p>
             </div>
-            <div className="header-btns">
-              <button className="btn-cancel" onClick={handleDiscard}>Discard</button>
-              <button className="btn-save" onClick={handleSave}>Save Changes</button>
+
+            <div className="settingsActions">
+              <button className="btnSecondary" onClick={handleDiscard}>
+                Discard
+              </button>
+              <button className="btnPrimary" onClick={handleSave}>
+                Save
+              </button>
             </div>
           </div>
 
-          <div className="workspace-content">
+          {/* CONTENT */}
+          <div className="settingsContent">
+
+            {/* PROFILE */}
             {activeTab === 'profile' && (
-              <div className="fade-in">
-                <div className="photo-section">
-                  <div className="photo-container">
-                    {profileImage ? <img src={profileImage} alt="Profile" className="avatar-img" /> : <div className="avatar-placeholder">{formData.name.charAt(0)}</div>}
-                    <button className="edit-badge" onClick={() => fileInputRef.current?.click()}>✎</button>
+              <>
+                <div className="profileSection">
+                  <div className="avatarWrap">
+                    {profileImage ? (
+                      <img src={profileImage} className="avatarImg" />
+                    ) : (
+                      <div className="avatarPlaceholder">
+                        {formData.name.charAt(0)}
+                      </div>
+                    )}
+
+                    <div
+                      className="editBtn-settings"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      ✎
+                    </div>
                   </div>
-                  <input type="file" ref={fileInputRef} onChange={handlePhotoUpload} hidden accept="image/*" />
-                  <div className="photo-info">
-                    <h3>Your Photo</h3>
-                    <p>This will be displayed on your public profile.</p>
+
+                  <input
+                    type="file"
+                    hidden
+                    ref={fileInputRef}
+                    onChange={handlePhotoUpload}
+                  />
+                </div>
+
+                <div className="formGrid">
+                  <div className="field">
+                    <label>Name</label>
+                    <input name="name" value={formData.name} onChange={handleInputChange} />
+                  </div>
+
+                  <div className="field">
+                    <label>Email</label>
+                    <input name="email" value={formData.email} onChange={handleInputChange} />
+                  </div>
+
+                  <div className="field">
+                    <label>Specialization</label>
+                    <input name="specialization" value={formData.specialization} onChange={handleInputChange} />
+                  </div>
+
+                  <div className="field">
+                    <label>Reg No</label>
+                    <input name="regNo" value={formData.regNo} onChange={handleInputChange} />
                   </div>
                 </div>
-                <div className="settings-grid">
-                  <div className="input-box"><label>Full Name</label><input name="name" type="text" value={formData.name} onChange={handleInputChange} /></div>
-                  <div className="input-box"><label>Email Address</label><input name="email" type="email" value={formData.email} onChange={handleInputChange} /></div>
-                  <div className="input-box"><label>Specialization</label><input name="specialization" type="text" value={formData.specialization} onChange={handleInputChange} /></div>
-                  <div className="input-box"><label>Reg No</label><input name="regNo" type="text" value={formData.regNo} onChange={handleInputChange} /></div>
-                </div>
-              </div>
+              </>
             )}
 
+            {/* NOTIFICATIONS */}
             {activeTab === 'notifications' && (
-              <div className="fade-in">
+              <>
                 {[
-                  { id: 'emailDigest', title: 'Email Digest', desc: 'Weekly summary reports.' },
-                  { id: 'emergencyAlerts', title: 'Critical Alerts', desc: 'Instant SMS for emergencies.' },
-                  { id: 'patientUpdates', title: 'New Patients', desc: 'Alert when a new patient joins.' },
-                  { id: 'systemNews', title: 'System News', desc: 'New features and updates.' }
-                ].map((item) => (
-                  <div className="toggle-card" key={item.id}>
-                    <div className="toggle-info"><h4>{item.title}</h4><p>{item.desc}</p></div>
-                    <label className="ios-switch">
-                      <input type="checkbox" name={item.id} checked={(formData as any)[item.id]} onChange={handleInputChange} />
-                      <span className="ios-slider"></span>
+                  { id: 'emailDigest', title: 'Email Digest' },
+                  { id: 'emergencyAlerts', title: 'Emergency Alerts' },
+                  { id: 'patientUpdates', title: 'Patient Updates' },
+                  { id: 'systemNews', title: 'System News' },
+                ].map(item => (
+                  <div className="toggleCard" key={item.id}>
+                    <span>{item.title}</span>
+                    <label className="switch">
+                      <input
+                        type="checkbox"
+                        name={item.id}
+                        checked={(formData as any)[item.id]}
+                        onChange={handleInputChange}
+                      />
+                      <span className="slider"></span>
                     </label>
                   </div>
                 ))}
-              </div>
+              </>
             )}
 
+            {/* SECURITY */}
             {activeTab === 'security' && (
-              <div className="fade-in">
-                <div className="toggle-card danger-zone">
-                  <div className="toggle-info">
-                    <h4>Two-Factor Authentication</h4>
-                    <p>Secure your account with an extra layer.</p>
-                  </div>
-                  <label className="ios-switch">
-                    <input type="checkbox" name="twoFactor" checked={formData.twoFactor} onChange={handleInputChange} />
-                    <span className="ios-slider"></span>
+              <>
+                <div className="toggleCard">
+                  <span>Two Factor Authentication</span>
+                  <label className="switch">
+                    <input
+                      type="checkbox"
+                      name="twoFactor"
+                      checked={formData.twoFactor}
+                      onChange={handleInputChange}
+                    />
+                    <span className="slider"></span>
                   </label>
                 </div>
-                <div className="input-box" style={{marginTop: '20px'}}>
-                  <label>Auto-logout (Minutes)</label>
-                  <select name="sessionTimeout" className="custom-select" value={formData.sessionTimeout} onChange={handleInputChange}>
-                    <option value="15">15 Min</option>
-                    <option value="30">30 Min</option>
-                    <option value="60">60 Min</option>
+
+                <div className="field">
+                  <label>Auto Logout</label>
+                  <select
+                    name="sessionTimeout"
+                    value={formData.sessionTimeout}
+                    onChange={handleInputChange}
+                  >
+                    <option value="15">15 min</option>
+                    <option value="30">30 min</option>
+                    <option value="60">60 min</option>
                   </select>
                 </div>
-              </div>
+              </>
             )}
+
           </div>
         </section>
       </div>

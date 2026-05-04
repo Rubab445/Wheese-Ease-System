@@ -22,7 +22,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 24px;
   padding: 1rem 0;
   position: relative;
 }
@@ -133,7 +133,7 @@
 .aqi-hero-section {
   background: white;
   border-radius: 1.5rem;
-  padding: 1.5rem;
+  padding: 18px;
   margin-bottom: 1.5rem;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
   border: 1px solid rgba(226, 232, 240, 0.6);
@@ -174,7 +174,7 @@
 
 .aqi-label {
   font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: white;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
@@ -320,11 +320,11 @@
   letter-spacing: 0.5px;
 }
 
-.stat-value {
+.stat-value-environmental {
   display: block;
-  font-size: 1rem;
+  font-size: 24px !important;
   font-weight: 800;
-  color: #0f172a;
+  color: black !important;
 }
 
 /* ============================================
@@ -343,14 +343,14 @@
     min-width: auto;
   }
 }
-
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .environmental-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
   }
-
+}
+@media (max-width: 768px) {
   .header-actions {
     flex-wrap: wrap;
   }
@@ -363,6 +363,12 @@
 @media (max-width: 480px) {
   .quick-stats-grid {
     grid-template-columns: 1fr;
+  }
+   .aqi-gauge-container {
+    flex-direction: column;
+  }
+  .aqi-details {
+    text-align: center;
   }
 }
 
@@ -402,6 +408,7 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.25rem;
+  flex-wrap: wrap;
 }
 
 .section-title {
@@ -515,6 +522,7 @@
 .legend {
   display: flex;
   gap: 1.5rem;
+  flex-wrap: wrap;
 }
 
 .legend-item {
@@ -535,11 +543,13 @@
 .legend-dot.smog {
   background: #f59e0b;
   box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+  flex-shrink: 0;
 }
 
 .legend-dot.pollen {
   background: #8b5cf6;
   box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+  flex-shrink: 0;
 }
 
 .trend-canvas {
@@ -659,7 +669,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 9999;
   animation: fadeIn 0.2s ease;
 }
 

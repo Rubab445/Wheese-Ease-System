@@ -41,7 +41,7 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-container add-user-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="add-user-modal-container add-user-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2 className="modal-title">Add New User</h2>
           <button className="modal-close-btn" onClick={onClose}>
@@ -49,7 +49,7 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
           </button>
         </div>
 
-        <div className="modal-content">
+        <div className="add-user-modal-content">
           <form onSubmit={handleSubmit} className="add-user-form">
             <div className="form-grid">
               <div className="form-group">

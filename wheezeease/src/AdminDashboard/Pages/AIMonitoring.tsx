@@ -104,9 +104,9 @@ const AIMonitoring: React.FC = () => {
         </div>
       </div>
 
-      <div className="layout-body-grid">
+      <div className='ai-monitoring-cards'>
         {/* Graph Card */}
-        <div className="card-wrapper viz-span">
+        <div className="card-wrapper">
           <div className="card-inner-header">
             <h3>📈 Correlation Analysis: Smog vs. Attack Risk</h3>
             <div className="viz-legend-custom">

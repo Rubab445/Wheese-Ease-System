@@ -17,12 +17,13 @@
   display: flex;
   box-shadow: 0 10px 30px rgba(0,0,0,0.1);
   overflow: hidden;
+  border-radius: 16px;
 }
 
 /* --- SIDEBAR SECTION --- */
 .admin-wa-aside {
   width: 30%;
-  min-width: 350px;
+  min-width: 280px;
   border-right: 1px solid #d1d7db;
   display: flex;
   flex-direction: column;
@@ -172,7 +173,7 @@
   display: flex; align-items: center; gap: 15px; position: relative;
 }
 
-.control-group { display: flex; gap: 15px; color: #54656f; position: relative; }
+.control-group { display: flex; gap: 5px; color: #54656f; position: relative; }
 .clickable-icon { cursor: pointer; transition: 0.2s; }
 .active-icon { color: #2d8f5a !important; }
 
@@ -221,3 +222,46 @@
 /* Scrollbar Customization */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-thumb { background: #ced3d6; border-radius: 10px; }
+
+
+/* ================= MOBILE RESPONSIVE ================= */
+.mobile-back-btn {
+  display: none;
+}
+@media (max-width: 850px) {
+
+  .admin-wa-container {
+    width: 100%;
+    height: 100vh;
+  }
+
+  /* default mobile view = only sidebar */
+  .admin-wa-aside {
+    width: 100%;
+  }
+
+  .admin-wa-chat-window {
+    display: none;
+  }
+
+  /* when chat opens */
+  .admin-wa-container.chat-open .admin-wa-aside {
+    display: none;
+  }
+
+  .admin-wa-container.chat-open .admin-wa-chat-window {
+    display: flex;
+    width: 100%;
+  }
+
+  /* back button */
+  .mobile-back-btn {
+    display: block !important;
+    font-size: 22px;
+    margin-right: 10px;
+    cursor: pointer;
+    color: #54656f;
+  }
+}
+
+
