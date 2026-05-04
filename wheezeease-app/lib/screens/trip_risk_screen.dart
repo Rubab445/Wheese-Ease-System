@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
-import '../services/api_service.dart';
-import '../utils/patient_profile.dart';
 
 class TripRiskScreen extends StatefulWidget {
   const TripRiskScreen({super.key});
@@ -13,9 +11,7 @@ class TripRiskScreen extends StatefulWidget {
 
 class _TripRiskScreenState extends State<TripRiskScreen> {
   final _controller = TextEditingController();
-  Map<String, dynamic>? _result;
   bool _loading = false;
-  String? _error;
 
   // Supported Pakistan cities
   final List<String> _suggestedCities = [
@@ -25,67 +21,44 @@ class _TripRiskScreenState extends State<TripRiskScreen> {
     'Bahawalpur', 'Abbottabad',
   ];
 
-  Future<void> _checkTrip(String city) async {
+  Future<void> _logTrip(String city) async {
     if (city.trim().isEmpty) return;
 
-    setState(() {
-      _loading = true;
-      _error   = null;
-      _result  = null;
-    });
+    setState(() => _loading = true);
 
-    try {
-      final result = await ApiService.checkTripRisk(
-        destination:    city.trim(),
-        patientProfile: PatientProfile.clinicalProfile,
-      );
+    // Simulate logging delay
+    await Future.delayed(const Duration(milliseconds: 500));
 
-      if (result != null) {
-        setState(() {
-          _result  = result;
-          _loading = false;
-        });
-      } else {
-        setState(() {
-          _error   = 'Could not fetch data for $city. Check your connection.';
-          _loading = false;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _error   = 'Something went wrong. Please try again.';
-        _loading = false;
-      });
-    }
-  }
+    if (!mounted) return;
 
-  // ── Colors based on verdict ──
-  Color _verdictColor(String? verdict) {
-    if (verdict == null) return AppColors.blue;
-    if (verdict == 'NOT RECOMMENDED')    return AppColors.red;
-    if (verdict == 'PROCEED WITH CAUTION') return AppColors.yellow;
-    return AppColors.green;
-  }
+    setState(() => _loading = false);
 
-  Color _verdictDim(String? verdict) {
-    if (verdict == null) return AppColors.blueDim;
-    if (verdict == 'NOT RECOMMENDED')    return AppColors.redDim;
-    if (verdict == 'PROCEED WITH CAUTION') return AppColors.yellowDim;
-    return AppColors.greenDim;
-  }
+    // Show success snackbar
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_outline, color: Colors.white, size: 18),
+            const SizedBox(width: 10),
+            Text(
+              'Trip logged successfully',
+              style: GoogleFonts.nunito(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppColors.green,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 2),
+      ),
+    );
 
-  LinearGradient _verdictGradient(String? verdict) {
-    if (verdict == null) return AppColors.primaryGradient;
-    if (verdict == 'NOT RECOMMENDED')    return AppColors.redGradient;
-    if (verdict == 'PROCEED WITH CAUTION') return AppColors.orangeGradient;
-    return AppColors.greenGradient;
-  }
-
-  IconData _verdictIconData(String? verdict) {
-    if (verdict == null) return Icons.map_outlined;
-    if (verdict == 'NOT RECOMMENDED')    return Icons.error_outline;
-    if (verdict == 'PROCEED WITH CAUTION') return Icons.warning_amber_rounded;
-    return Icons.check_circle_outline;
+    Navigator.pop(context);
   }
 
   @override
@@ -99,7 +72,6 @@ class _TripRiskScreenState extends State<TripRiskScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = isDark ? AppColors.primaryDark : AppColors.primary;
     final surface = isDark ? AppColors.surfaceDark : AppColors.surface;
-    final surface3 = isDark ? AppColors.surface2Dark : AppColors.surface3;
     final bg = isDark ? AppColors.bgDark : AppColors.bg;
     final text = isDark ? AppColors.textDark : AppColors.text;
     final textMuted = isDark ? AppColors.textMutedDark : AppColors.textMuted;
@@ -117,7 +89,7 @@ class _TripRiskScreenState extends State<TripRiskScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Trip Safety Check',
+          'Trip Logging',
           style: GoogleFonts.playfairDisplay(
             fontSize: 18,
             fontWeight: FontWeight.w800,
@@ -160,7 +132,7 @@ class _TripRiskScreenState extends State<TripRiskScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Enter your destination and we will check if the air quality is safe for you before you travel.',
+                    'Log your destination so we can track your environment exposure and give you personalized insights later.',
                     style: GoogleFonts.nunito(
                       fontSize: 13,
                       color: Colors.white.withValues(alpha: 0.85),
@@ -216,7 +188,7 @@ class _TripRiskScreenState extends State<TripRiskScreen> {
                           vertical: 14,
                         ),
                       ),
-                      onSubmitted: _checkTrip,
+                      onSubmitted: _logTrip,
                     ),
                   ),
                 ),
@@ -224,7 +196,7 @@ class _TripRiskScreenState extends State<TripRiskScreen> {
                 GestureDetector(
                   onTap: _loading
                       ? null
-                      : () => _checkTrip(_controller.text),
+                      : () => _logTrip(_controller.text),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     width: 52,
@@ -249,7 +221,7 @@ class _TripRiskScreenState extends State<TripRiskScreen> {
                               ),
                             )
                           : const Icon(
-                              Icons.search_rounded,
+                              Icons.check_rounded,
                               color: Colors.white,
                               size: 22,
                             ),
@@ -278,7 +250,7 @@ class _TripRiskScreenState extends State<TripRiskScreen> {
                 return GestureDetector(
                   onTap: () {
                     _controller.text = city;
-                    _checkTrip(city);
+                    _logTrip(city);
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -300,382 +272,11 @@ class _TripRiskScreenState extends State<TripRiskScreen> {
                 );
               }).toList(),
             ),
-            const SizedBox(height: 24),
-
-            // ── Error state ──
-            if (_error != null)
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.redDim,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                      color: AppColors.red.withValues(alpha: 0.3)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.cancel_outlined, color: AppColors.red, size: 18),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        _error!,
-                        style: GoogleFonts.nunito(
-                          fontSize: 13,
-                          color: AppColors.red,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-            // ── Result card ──
-            if (_result != null) ...[
-              // Verdict banner
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient:
-                      _verdictGradient(_result!['trip_verdict'] as String?),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          _verdictIconData(_result!['trip_verdict'] as String?),
-                          color: Colors.white,
-                          size: 28,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _result!['destination']
-                                    .toString()
-                                    .toUpperCase(),
-                                style: GoogleFonts.nunito(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white.withValues(alpha: 0.75),
-                                  letterSpacing: 0.8,
-                                ),
-                              ),
-                              Text(
-                                _result!['trip_verdict'] ?? '',
-                                style: GoogleFonts.playfairDisplay(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      _result!['trip_advice'] ?? '',
-                      style: GoogleFonts.nunito(
-                        fontSize: 13,
-                        color: Colors.white.withValues(alpha: 0.9),
-                        height: 1.6,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Environment data at destination
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: surface,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: border),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'LIVE CONDITIONS IN ${(_result!['destination'] ?? '').toString().toUpperCase()}',
-                      style: GoogleFonts.nunito(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: textMuted,
-                        letterSpacing: 0.7,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    _buildEnvGrid(_result!['destination_environment']
-                        as Map<String, dynamic>, surface3, border, text, textDim, primary),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Reasons
-              if ((_result!['reasons'] as List).isNotEmpty) ...[
-                Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: surface,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: border),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'WHY THIS VERDICT?',
-                        style: GoogleFonts.nunito(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: textMuted,
-                          letterSpacing: 0.7,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      ...(_result!['reasons'] as List).map(
-                        (r) => Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                width: 6,
-                                height: 6,
-                                margin: const EdgeInsets.only(top: 6, right: 10),
-                                decoration: BoxDecoration(
-                                  color: _verdictColor(
-                                      _result!['trip_verdict'] as String?),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              Expanded(
-                                child: Text(
-                                  r.toString(),
-                                  style: GoogleFonts.nunito(
-                                    fontSize: 13,
-                                    color: text,
-                                    height: 1.5,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-
-              // Alerts
-              if ((_result!['alerts'] as List).isNotEmpty) ...[
-                Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: AppColors.yellowDim,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                        color: AppColors.yellow.withValues(alpha: 0.3)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'ALERTS FOR THIS DESTINATION',
-                        style: GoogleFonts.nunito(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.yellow,
-                          letterSpacing: 0.7,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      ...(_result!['alerts'] as List).map(
-                        (a) => Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Icon(Icons.warning_amber_rounded,
-                                  color: AppColors.yellow, size: 16),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  a.toString(),
-                                  style: GoogleFonts.nunito(
-                                    fontSize: 13,
-                                    color: text,
-                                    height: 1.5,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-
-              // Travel tips
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: primary.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                      color: primary.withValues(alpha: 0.2)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'TRAVEL TIPS',
-                      style: GoogleFonts.nunito(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: primary,
-                        letterSpacing: 0.7,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    ..._getTravelTips(
-                            _result!['trip_verdict'] as String?,
-                            _result!['destination_environment']
-                                as Map<String, dynamic>)
-                        .map(
-                      (tip) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(Icons.lightbulb_outline,
-                                color: primary, size: 16),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                tip,
-                                style: GoogleFonts.nunito(
-                                  fontSize: 13,
-                                  color: text,
-                                  height: 1.5,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
 
             const SizedBox(height: 40),
           ],
         ),
       ),
     );
-  }
-
-  // ── Environment grid ──
-  Widget _buildEnvGrid(Map<String, dynamic> env, Color surface3, Color border, Color text, Color textDim, Color primary) {
-    final items = [
-      {'icon': Icons.thermostat_outlined,    'label': 'Temp',    'value': '${env['temperature']}°C'},
-      {'icon': Icons.water_drop_outlined,    'label': 'Humidity', 'value': '${env['humidity']}%'},
-      {'icon': Icons.cloud_outlined,         'label': 'AQI',      'value': '${env['AQI']}'},
-      {'icon': Icons.factory_outlined,       'label': 'PM2.5',    'value': '${env['PM2_5']} μg'},
-      {'icon': Icons.directions_car_outlined,'label': 'NO2',      'value': '${env['NO2']} μg'},
-      {'icon': Icons.local_florist_outlined, 'label': 'Pollen',   'value': '${env['pollen_count'] ?? '--'}'},
-    ];
-
-    return GridView.count(
-      crossAxisCount: 3,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 10,
-      mainAxisSpacing: 10,
-      childAspectRatio: 1.15,
-      children: items.map((item) {
-        return Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: surface3,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: border),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(item['icon'] as IconData,
-                  color: primary, size: 18),
-              const SizedBox(height: 4),
-              Text(
-                item['value'] as String,
-                style: GoogleFonts.nunito(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                  color: text,
-                ),
-              ),
-              Text(
-                item['label'] as String,
-                style: GoogleFonts.nunito(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w700,
-                  color: textDim,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  // ── Travel tips based on verdict ──
-  List<String> _getTravelTips(
-      String? verdict, Map<String, dynamic> env) {
-    final aqi = (env['AQI'] as num?)?.toInt() ?? 50;
-
-    if (verdict == 'NOT RECOMMENDED') {
-      return [
-        'Pack your rescue inhaler (blue one) in your front pocket — easy access',
-        'Wear an N95 mask outdoors — a regular surgical mask is not enough',
-        'Plan indoor activities only and avoid busy roads and markets',
-        'Share your location with Dr. Rahman before you travel',
-      ];
-    } else if (verdict == 'PROCEED WITH CAUTION') {
-      return [
-        'Carry both your preventer and rescue inhaler',
-        'Take your preventer inhaler before leaving home',
-        'Limit time outdoors especially between 12pm and 4pm',
-        'Stay hydrated — dehydration worsens airway irritation',
-      ];
-    } else {
-      return [
-        'Continue your normal medication routine while travelling',
-        'Still carry your inhaler — conditions can change quickly',
-        if (aqi > 50)
-          'Air quality is acceptable but keep an eye on it during your trip',
-        'Enjoy your trip — conditions look good for you today',
-      ];
-    }
   }
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
-import '../services/api_service.dart';
 
 class HouseholdActivityScreen extends StatefulWidget {
   const HouseholdActivityScreen({super.key});
@@ -11,15 +10,14 @@ class HouseholdActivityScreen extends StatefulWidget {
       _HouseholdActivityScreenState();
 }
 
-class _HouseholdActivityScreenState extends State<HouseholdActivityScreen>
-    with SingleTickerProviderStateMixin {
+class _HouseholdActivityScreenState extends State<HouseholdActivityScreen> {
   // Form state
   String _activityType = 'cleaning';
   int _duration = 30;
   bool _woreMask = false;
 
-  // Symptom state — replaces the old _hadSymptoms bool
-  bool _hadSymptoms = false; // controls expansion
+  // Symptom state
+  bool _hadSymptoms = false;
   final List<String> _selectedSymptoms = [];
   String? _symptomSeverity;
   final TextEditingController _symptomNotesController =
@@ -27,11 +25,6 @@ class _HouseholdActivityScreenState extends State<HouseholdActivityScreen>
 
   // Submission state
   bool _loading = false;
-  Map<String, dynamic>? _result;
-  String? _error;
-
-  late AnimationController _resultAnimController;
-  late Animation<double> _resultAnim;
 
   final List<Map<String, dynamic>> _activityTypes = [
     {
@@ -87,89 +80,47 @@ class _HouseholdActivityScreenState extends State<HouseholdActivityScreen>
   ];
 
   @override
-  void initState() {
-    super.initState();
-    _resultAnimController = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-    _resultAnim = CurvedAnimation(
-      parent: _resultAnimController,
-      curve: Curves.easeOutCubic,
-    );
-  }
-
-  @override
   void dispose() {
-    _resultAnimController.dispose();
     _symptomNotesController.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-      _result = null;
-    });
+    setState(() => _loading = true);
 
-    try {
-      final result = await ApiService.logHouseholdActivity(
-        activityType: _activityType,
-        duration: _duration,
-        woreMask: _woreMask,
-        // Updated: pass structured symptom data instead of bool
-        symptomsReported: _hadSymptoms ? _selectedSymptoms : [],
-        symptomSeverity: _hadSymptoms && _selectedSymptoms.isNotEmpty
-            ? _symptomSeverity
-            : null,
-        symptomNotes: _hadSymptoms && _symptomNotesController.text.isNotEmpty
-            ? _symptomNotesController.text.trim()
-            : null,
-      );
+    // Simulate logging delay
+    await Future.delayed(const Duration(milliseconds: 500));
 
-      if (result != null && mounted) {
-        setState(() {
-          _result = result;
-          _loading = false;
-        });
-        _resultAnimController.forward(from: 0.0);
-      } else {
-        setState(() {
-          _error = 'Could not get recommendation. Check your connection.';
-          _loading = false;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _error = 'Something went wrong. Please try again.';
-        _loading = false;
-      });
-    }
-  }
+    if (!mounted) return;
 
-  Color _riskColor(String? riskLevel) {
-    if (riskLevel == 'HIGH') return AppColors.red;
-    if (riskLevel == 'MEDIUM') return AppColors.yellow;
-    return AppColors.green;
-  }
+    setState(() => _loading = false);
 
-  LinearGradient _riskGradient(String? riskLevel) {
-    if (riskLevel == 'HIGH') return AppColors.redGradient;
-    if (riskLevel == 'MEDIUM') return AppColors.orangeGradient;
-    return AppColors.greenGradient;
-  }
+    // Show success snackbar
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_outline, color: Colors.white, size: 18),
+            const SizedBox(width: 10),
+            Text(
+              'Activity logged successfully',
+              style: GoogleFonts.nunito(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppColors.green,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 2),
+      ),
+    );
 
-  IconData _riskIcon(String? riskLevel) {
-    if (riskLevel == 'HIGH') return Icons.error_outline;
-    if (riskLevel == 'MEDIUM') return Icons.warning_amber_rounded;
-    return Icons.check_circle_outline;
-  }
-
-  String _riskLabel(String? riskLevel) {
-    if (riskLevel == 'HIGH') return 'HIGH RISK';
-    if (riskLevel == 'MEDIUM') return 'MODERATE RISK';
-    return 'LOW RISK';
+    Navigator.pop(context);
   }
 
   Map<String, dynamic> get _currentActivity =>
@@ -241,7 +192,7 @@ class _HouseholdActivityScreenState extends State<HouseholdActivityScreen>
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Log your home activities and get trigger-aware safety recommendations.',
+                    'Log your home activities to track potential asthma triggers.',
                     style: GoogleFonts.nunito(
                       fontSize: 13,
                       color: Colors.white.withOpacity(0.9),
@@ -393,7 +344,7 @@ class _HouseholdActivityScreenState extends State<HouseholdActivityScreen>
             ),
             const SizedBox(height: 22),
 
-            // ── SYMPTOMS SECTION (replaces the old toggle) ──
+            // ── SYMPTOMS SECTION ──
             _sectionLabel('SYMPTOMS AFTER ACTIVITY', textMuted),
             const SizedBox(height: 10),
             _buildSymptomsSection(
@@ -432,7 +383,7 @@ class _HouseholdActivityScreenState extends State<HouseholdActivityScreen>
                               color: Colors.white, strokeWidth: 2),
                         )
                       : Text(
-                          'Get Safety Recommendation',
+                          'Log Activity',
                           style: GoogleFonts.nunito(
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
@@ -442,50 +393,6 @@ class _HouseholdActivityScreenState extends State<HouseholdActivityScreen>
                 ),
               ),
             ),
-            const SizedBox(height: 20),
-
-            // ── ERROR ──
-            if (_error != null)
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppColors.redDim,
-                  borderRadius: BorderRadius.circular(14),
-                  border:
-                      Border.all(color: AppColors.red.withOpacity(0.3)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.cancel_outlined,
-                        color: AppColors.red, size: 18),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        _error!,
-                        style: GoogleFonts.nunito(
-                          fontSize: 13,
-                          color: AppColors.red,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-            // ── RESULT ──
-            if (_result != null)
-              FadeTransition(
-                opacity: _resultAnim,
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, 0.1),
-                    end: Offset.zero,
-                  ).animate(_resultAnim),
-                  child: _buildResultCard(
-                      isDark, primary, surface, text, textMuted, border),
-                ),
-              ),
 
             const SizedBox(height: 40),
           ],
@@ -494,7 +401,7 @@ class _HouseholdActivityScreenState extends State<HouseholdActivityScreen>
     );
   }
 
-  // ── NEW: Symptoms section widget ──────────────────────────────────
+  // ── Symptoms section widget ──
   Widget _buildSymptomsSection(Color surface, Color border, Color text,
       Color textMuted, Color textDim, Color primary) {
     return Container(
@@ -739,272 +646,6 @@ class _HouseholdActivityScreenState extends State<HouseholdActivityScreen>
               ),
             ),
           ],
-        ],
-      ),
-    );
-  }
-
-  // ── Result card ───────────────────────────────────────────────────
-  Widget _buildResultCard(bool isDark, Color primary, Color surface,
-      Color text, Color textMuted, Color border) {
-    final riskLevel = _result!['risk_level'] as String? ?? 'LOW';
-    final riskCol = _riskColor(riskLevel);
-    final trigger = _result!['trigger'] as String? ?? '';
-    final triggerDesc = _result!['trigger_description'] as String? ?? '';
-    final aiRec =
-        _result!['ai_recommendation'] as Map<String, dynamic>? ?? {};
-    final recData = aiRec['data'] as Map<String, dynamic>? ?? {};
-    final conditionSummary = recData['condition_summary'] as String? ?? '';
-    final immediateActions =
-        (recData['immediate_actions'] as List?)?.cast<String>() ?? [];
-    final preventiveSteps =
-        (recData['preventive_steps'] as List?)?.cast<String>() ?? [];
-    final doctorAlert = recData['doctor_alert'] == true;
-    final doctorAlertReason = recData['doctor_alert_reason'] as String?;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: _riskGradient(riskLevel),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(_riskIcon(riskLevel), color: Colors.white, size: 28),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _riskLabel(riskLevel),
-                          style: GoogleFonts.playfairDisplay(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
-                        if (trigger.isNotEmpty)
-                          Text(
-                            'Trigger: $trigger',
-                            style: GoogleFonts.nunito(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white.withOpacity(0.75),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              if (conditionSummary.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Text(
-                  conditionSummary,
-                  style: GoogleFonts.nunito(
-                    fontSize: 13,
-                    color: Colors.white.withOpacity(0.9),
-                    height: 1.6,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-        const SizedBox(height: 14),
-
-        if (triggerDesc.isNotEmpty)
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: border),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'ABOUT THIS TRIGGER',
-                  style: GoogleFonts.nunito(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: textMuted,
-                    letterSpacing: 0.7,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.info_outline_rounded,
-                        color: _riskColor(riskLevel), size: 16),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        triggerDesc,
-                        style: GoogleFonts.nunito(
-                            fontSize: 12, color: text, height: 1.5),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        if (triggerDesc.isNotEmpty) const SizedBox(height: 14),
-
-        if (immediateActions.isNotEmpty)
-          _recommendationSection(
-            title: 'IMMEDIATE ACTIONS',
-            icon: Icons.flash_on_rounded,
-            items: immediateActions,
-            accentColor: riskCol,
-            surface: surface,
-            border: border,
-            text: text,
-            textMuted: textMuted,
-          ),
-        if (immediateActions.isNotEmpty) const SizedBox(height: 14),
-
-        if (preventiveSteps.isNotEmpty)
-          _recommendationSection(
-            title: 'PREVENTIVE STEPS',
-            icon: Icons.shield_outlined,
-            items: preventiveSteps,
-            accentColor: primary,
-            surface: surface,
-            border: border,
-            text: text,
-            textMuted: textMuted,
-          ),
-        if (preventiveSteps.isNotEmpty) const SizedBox(height: 14),
-
-        if (doctorAlert)
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.redDim,
-              borderRadius: BorderRadius.circular(16),
-              border:
-                  Border.all(color: AppColors.red.withOpacity(0.3)),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.medical_services_outlined,
-                    color: AppColors.red, size: 20),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'DOCTOR VISIT RECOMMENDED',
-                        style: GoogleFonts.nunito(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.red,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        doctorAlertReason ??
-                            'Please consult your doctor about this activity.',
-                        style: GoogleFonts.nunito(
-                            fontSize: 12, color: text, height: 1.5),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _recommendationSection({
-    required String title,
-    required IconData icon,
-    required List<String> items,
-    required Color accentColor,
-    required Color surface,
-    required Color border,
-    required Color text,
-    required Color textMuted,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border(left: BorderSide(color: accentColor, width: 3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: accentColor, size: 16),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: GoogleFonts.nunito(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  color: accentColor,
-                  letterSpacing: 0.7,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          ...items.asMap().entries.map(
-            (entry) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 20,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      color: accentColor.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Center(
-                      child: Text(
-                        '${entry.key + 1}',
-                        style: GoogleFonts.nunito(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: accentColor,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      entry.value,
-                      style: GoogleFonts.nunito(
-                          fontSize: 12, color: text, height: 1.5),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
         ],
       ),
     );

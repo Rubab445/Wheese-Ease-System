@@ -142,7 +142,7 @@ class _AppShellState extends State<AppShell> {
     {'icon': Icons.home_rounded, 'label': 'Home'},
     {'icon': Icons.add_circle_outline, 'label': 'Check-In'},
     {'icon': Icons.directions_run_rounded, 'label': 'Activities'},
-    {'icon': Icons.show_chart_rounded, 'label': 'History'},
+    {'icon': Icons.insights_rounded, 'label': 'Insights'},
     {'icon': Icons.medication_outlined, 'label': 'Meds'},
     {'icon': Icons.medical_services_outlined, 'label': 'Doctor'},
     {'icon': Icons.person_outline_rounded, 'label': 'Profile'},

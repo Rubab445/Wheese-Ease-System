@@ -10,6 +10,7 @@ class MedicationsScreen extends StatefulWidget {
 }
 
 class _MedicationsScreenState extends State<MedicationsScreen> {
+  // Existing medications
   final List<Map<String, dynamic>> _meds = [
     {
       'name': 'Salbutamol (Ventolin)',
@@ -44,6 +45,35 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
     },
   ];
 
+  // Inhaler usage form state
+  String _inhalerType = 'Relief/Rescue inhaler';
+  int _puffs = 2;
+  DateTime _selectedDate = DateTime.now();
+  TimeOfDay _selectedTime = TimeOfDay.now();
+  String _reason = 'Scheduled dose';
+
+  // Inhaler usage history (in-memory)
+  final List<Map<String, dynamic>> _inhalerHistory = [
+    {
+      'type': 'Relief/Rescue inhaler',
+      'puffs': 2,
+      'dateTime': DateTime.now().subtract(const Duration(hours: 3)),
+      'reason': 'Sudden symptoms',
+    },
+    {
+      'type': 'Controller/Preventer inhaler',
+      'puffs': 1,
+      'dateTime': DateTime.now().subtract(const Duration(hours: 8)),
+      'reason': 'Scheduled dose',
+    },
+    {
+      'type': 'Relief/Rescue inhaler',
+      'puffs': 1,
+      'dateTime': DateTime.now().subtract(const Duration(days: 1, hours: 2)),
+      'reason': 'Before exercise',
+    },
+  ];
+
   void _takeMed(int index) {
     if (_meds[index]['taken'] == true) return;
     setState(() {
@@ -56,6 +86,62 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
         behavior: SnackBarBehavior.floating,
       ),
     );
+  }
+
+  void _logInhalerUsage() {
+    final entry = {
+      'type': _inhalerType,
+      'puffs': _puffs,
+      'dateTime': DateTime(
+        _selectedDate.year, _selectedDate.month, _selectedDate.day,
+        _selectedTime.hour, _selectedTime.minute,
+      ),
+      'reason': _reason,
+    };
+    setState(() {
+      _inhalerHistory.insert(0, entry);
+      _puffs = 2;
+      _selectedDate = DateTime.now();
+      _selectedTime = TimeOfDay.now();
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_outline, color: Colors.white, size: 18),
+            const SizedBox(width: 10),
+            Text('Inhaler usage logged', style: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
+          ],
+        ),
+        backgroundColor: AppColors.green,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
+  Future<void> _pickDate() async {
+    final d = await showDatePicker(
+      context: context, initialDate: _selectedDate,
+      firstDate: DateTime.now().subtract(const Duration(days: 30)),
+      lastDate: DateTime.now(),
+    );
+    if (d != null) setState(() => _selectedDate = d);
+  }
+
+  Future<void> _pickTime() async {
+    final t = await showTimePicker(context: context, initialTime: _selectedTime);
+    if (t != null) setState(() => _selectedTime = t);
+  }
+
+  String _formatDateTime(DateTime dt) {
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inDays == 1) return 'Yesterday';
+    return '${dt.day}/${dt.month} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -73,132 +159,225 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
         children: [
           // Header
           Container(
-            padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top + 22,
-              left: 22,
-              right: 22,
-              bottom: 28,
-            ),
+            padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 22, left: 22, right: 22, bottom: 28),
             decoration: BoxDecoration(
-              gradient: isDark
-                  ? AppColors.primaryGradientDark
-                  : AppColors.primaryGradient,
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(34),
-                bottomRight: Radius.circular(34),
-              ),
+              gradient: isDark ? AppColors.primaryGradientDark : AppColors.primaryGradient,
+              borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(34), bottomRight: Radius.circular(34)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Medications',
-                      style: GoogleFonts.playfairDisplay(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                      ),
-                    ),
-                    Text(
-                      'Your schedule & reminders',
-                      style: GoogleFonts.nunito(
-                        fontSize: 12,
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ],
-                ),
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Medications', style: GoogleFonts.playfairDisplay(fontSize: 24, fontWeight: FontWeight.w800, color: Colors.white)),
+                  Text('Your schedule & reminders', style: GoogleFonts.nunito(fontSize: 12, color: Colors.white70)),
+                ]),
                 const Icon(Icons.medication_outlined, color: Colors.white, size: 34),
               ],
             ),
           ),
 
-          // Next dose
+          // Next dose card
           Container(
             margin: const EdgeInsets.fromLTRB(18, 16, 18, 0),
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              gradient: isDark
-                  ? AppColors.primaryGradientDark
-                  : AppColors.primaryGradient,
+              gradient: isDark ? AppColors.primaryGradientDark : AppColors.primaryGradient,
               borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: primary.withValues(alpha: 0.3),
-                  blurRadius: 26,
-                  offset: const Offset(0, 8),
-                ),
-              ],
+              boxShadow: [BoxShadow(color: primary.withValues(alpha: 0.3), blurRadius: 26, offset: const Offset(0, 8))],
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.access_time_outlined, color: Colors.white70, size: 12),
-                          const SizedBox(width: 4),
-                          Text(
-                            'NEXT DOSE DUE',
-                            style: GoogleFonts.nunito(
-                              fontSize: 11,
-                              color: Colors.white70,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.7,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 5),
-                      Text(
-                        'Fluticasone',
-                        style: GoogleFonts.playfairDisplay(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Today at 2:00 PM · in 4h 19m',
-                        style: GoogleFonts.nunito(
-                          fontSize: 13,
-                          color: Colors.white.withValues(alpha: 0.9),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.medication_outlined,
-                  size: 38,
-                  color: Colors.white.withValues(alpha: 0.4),
-                ),
-              ],
-            ),
+            child: Row(children: [
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  const Icon(Icons.access_time_outlined, color: Colors.white70, size: 12),
+                  const SizedBox(width: 4),
+                  Text('NEXT DOSE DUE', style: GoogleFonts.nunito(fontSize: 11, color: Colors.white70, fontWeight: FontWeight.w600, letterSpacing: 0.7)),
+                ]),
+                const SizedBox(height: 5),
+                Text('Fluticasone', style: GoogleFonts.playfairDisplay(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white)),
+                const SizedBox(height: 2),
+                Text('Today at 2:00 PM · in 4h 19m', style: GoogleFonts.nunito(fontSize: 13, color: Colors.white.withValues(alpha: 0.9), fontWeight: FontWeight.w600)),
+              ])),
+              Icon(Icons.medication_outlined, size: 38, color: Colors.white.withValues(alpha: 0.4)),
+            ]),
           ),
 
           // Med cards
           Padding(
             padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
-            child: Text(
-              'All Medications',
-              style: GoogleFonts.nunito(
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-                color: text,
-              ),
-            ),
+            child: Text('All Medications', style: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w800, color: text)),
           ),
           ...List.generate(_meds.length, (i) => _buildMedCard(i, surface, text, textMuted, border, primary, isDark)),
+
+          const SizedBox(height: 24),
+
+          // ══════════════════════════════════════
+          // INHALER USAGE SECTION
+          // ══════════════════════════════════════
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 0, 18, 10),
+            child: Text('Log Inhaler Usage', style: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w800, color: text)),
+          ),
+          _buildInhalerForm(surface, text, textMuted, border, primary, isDark),
+
+          const SizedBox(height: 20),
+
+          // Inhaler history
+          if (_inhalerHistory.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 0, 18, 10),
+              child: Text('Recent Inhaler Usage', style: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w800, color: text)),
+            ),
+            ..._inhalerHistory.map((e) => _buildInhalerHistoryCard(e, surface, text, textMuted, border, primary, isDark)),
+          ],
+
           const SizedBox(height: 100),
         ],
+      ),
+    );
+  }
+
+  Widget _buildInhalerForm(Color surface, Color text, Color textMuted, Color border, Color primary, bool isDark) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 18),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: border),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.05), blurRadius: 24, offset: const Offset(0, 4))],
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Inhaler type dropdown
+        Text('INHALER TYPE', style: GoogleFonts.nunito(fontSize: 10, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 0.7)),
+        const SizedBox(height: 6),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(color: border.withOpacity(0.2), borderRadius: BorderRadius.circular(12), border: Border.all(color: border)),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _inhalerType, isExpanded: true,
+              dropdownColor: surface,
+              style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w600, color: text),
+              items: ['Relief/Rescue inhaler', 'Controller/Preventer inhaler'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+              onChanged: (v) => setState(() => _inhalerType = v!),
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // Number of puffs
+        Text('NUMBER OF PUFFS', style: GoogleFonts.nunito(fontSize: 10, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 0.7)),
+        const SizedBox(height: 6),
+        Row(children: [
+          _counterBtn('−', () => setState(() => _puffs = (_puffs - 1).clamp(1, 10)), primary, border, text),
+          const SizedBox(width: 16),
+          Text('$_puffs', style: GoogleFonts.playfairDisplay(fontSize: 24, fontWeight: FontWeight.w800, color: text)),
+          const SizedBox(width: 16),
+          _counterBtn('+', () => setState(() => _puffs = (_puffs + 1).clamp(1, 10)), primary, border, text),
+        ]),
+        const SizedBox(height: 14),
+
+        // Date and time
+        Text('DATE & TIME', style: GoogleFonts.nunito(fontSize: 10, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 0.7)),
+        const SizedBox(height: 6),
+        Row(children: [
+          Expanded(child: GestureDetector(
+            onTap: _pickDate,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(color: border.withOpacity(0.2), borderRadius: BorderRadius.circular(12), border: Border.all(color: border)),
+              child: Row(children: [
+                Icon(Icons.calendar_today_outlined, size: 16, color: primary),
+                const SizedBox(width: 8),
+                Text('${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}', style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w600, color: text)),
+              ]),
+            ),
+          )),
+          const SizedBox(width: 10),
+          Expanded(child: GestureDetector(
+            onTap: _pickTime,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(color: border.withOpacity(0.2), borderRadius: BorderRadius.circular(12), border: Border.all(color: border)),
+              child: Row(children: [
+                Icon(Icons.access_time_outlined, size: 16, color: primary),
+                const SizedBox(width: 8),
+                Text(_selectedTime.format(context), style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w600, color: text)),
+              ]),
+            ),
+          )),
+        ]),
+        const SizedBox(height: 14),
+
+        // Reason dropdown
+        Text('REASON FOR USE', style: GoogleFonts.nunito(fontSize: 10, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 0.7)),
+        const SizedBox(height: 6),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(color: border.withOpacity(0.2), borderRadius: BorderRadius.circular(12), border: Border.all(color: border)),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _reason, isExpanded: true,
+              dropdownColor: surface,
+              style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w600, color: text),
+              items: ['Scheduled dose', 'Sudden symptoms', 'Before exercise', 'Other'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+              onChanged: (v) => setState(() => _reason = v!),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Log button
+        GestureDetector(
+          onTap: _logInhalerUsage,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), gradient: AppColors.greenGradient),
+            child: Center(child: Text('Log Inhaler Usage', style: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white))),
+          ),
+        ),
+      ]),
+    );
+  }
+
+  Widget _buildInhalerHistoryCard(Map<String, dynamic> entry, Color surface, Color text, Color textMuted, Color border, Color primary, bool isDark) {
+    final dt = entry['dateTime'] as DateTime;
+    final isRescue = (entry['type'] as String).contains('Rescue');
+    return Container(
+      margin: const EdgeInsets.fromLTRB(18, 0, 18, 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: surface, borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: border),
+      ),
+      child: Row(children: [
+        Container(
+          width: 38, height: 38,
+          decoration: BoxDecoration(
+            color: (isRescue ? AppColors.blue : primary).withOpacity(0.12),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(isRescue ? Icons.air_rounded : Icons.cyclone_outlined, color: isRescue ? AppColors.blue : primary, size: 18),
+        ),
+        const SizedBox(width: 12),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(entry['type'] as String, style: GoogleFonts.nunito(fontSize: 12, fontWeight: FontWeight.w700, color: text)),
+          const SizedBox(height: 2),
+          Text('${entry['puffs']} puffs · ${entry['reason']}', style: GoogleFonts.nunito(fontSize: 11, color: textMuted)),
+        ])),
+        Text(_formatDateTime(dt), style: GoogleFonts.nunito(fontSize: 10, fontWeight: FontWeight.w600, color: textMuted)),
+      ]),
+    );
+  }
+
+  Widget _counterBtn(String label, VoidCallback onTap, Color primary, Color border, Color text) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 36, height: 36,
+        decoration: BoxDecoration(shape: BoxShape.circle, color: primary.withOpacity(0.1), border: Border.all(color: border, width: 2)),
+        child: Center(child: Text(label, style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.w700, color: text))),
       ),
     );
   }
@@ -210,173 +389,67 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
       margin: const EdgeInsets.fromLTRB(18, 10, 18, 0),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.05),
-            blurRadius: 24,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: surface, borderRadius: BorderRadius.circular(18), border: Border.all(color: border),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.05), blurRadius: 24, offset: const Offset(0, 4))],
       ),
-      child: Column(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      med['name'] as String,
-                      style: GoogleFonts.nunito(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: text,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      med['type'] as String,
-                      style: GoogleFonts.nunito(
-                        fontSize: 11,
-                        color: textMuted,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(med['icon'] as IconData, size: 24, color: primary),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  color: primary.withOpacity(0.12),
-                  border: Border.all(color: primary.withValues(alpha: 0.2)),
-                ),
-                child: Text(
-                  med['badge'] as String,
-                  style: GoogleFonts.nunito(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: primary,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  color: AppColors.blueDim,
-                  border: Border.all(color: AppColors.blue.withValues(alpha: 0.2)),
-                ),
-                child: Text(
-                  med['time'] as String,
-                  style: GoogleFonts.nunito(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.blue,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          GestureDetector(
-            onTap: () => _takeMed(index),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 11),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(13),
-                color: taken ? AppColors.green : AppColors.greenDim,
-                border: Border.all(color: AppColors.green, width: 2),
-              ),
-              child: Center(
-                child: Text(
-                  taken
-                      ? 'Taken at ${med['takenTime'] ?? ''}'
-                      : 'Mark as ${index == 0 ? 'Used' : 'Taken'}',
-                  style: GoogleFonts.nunito(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: taken ? Colors.white : AppColors.green,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 11),
+      child: Column(children: [
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(med['name'] as String, style: GoogleFonts.nunito(fontSize: 15, fontWeight: FontWeight.w800, color: text)),
+            const SizedBox(height: 2),
+            Text(med['type'] as String, style: GoogleFonts.nunito(fontSize: 11, color: textMuted)),
+          ])),
+          Icon(med['icon'] as IconData, size: 24, color: primary),
+        ]),
+        const SizedBox(height: 10),
+        Row(children: [
           Container(
-            padding: const EdgeInsets.only(top: 11),
-            decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: border)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Flexible(
-                  child: Text(
-                    med['note'] as String,
-                    style: GoogleFonts.nunito(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: textMuted,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: () =>
-                      setState(() => med['toggle'] = !(med['toggle'] as bool)),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    width: 48,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(14),
-                      color: (med['toggle'] as bool) ? primary : border,
-                    ),
-                    child: AnimatedAlign(
-                      duration: const Duration(milliseconds: 250),
-                      alignment: (med['toggle'] as bool)
-                          ? Alignment.centerRight
-                          : Alignment.centerLeft,
-                      child: Container(
-                        margin: const EdgeInsets.all(3),
-                        width: 22,
-                        height: 22,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.15),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color: primary.withOpacity(0.12), border: Border.all(color: primary.withValues(alpha: 0.2))),
+            child: Text(med['badge'] as String, style: GoogleFonts.nunito(fontSize: 11, fontWeight: FontWeight.w700, color: primary)),
           ),
-        ],
-      ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color: AppColors.blueDim, border: Border.all(color: AppColors.blue.withValues(alpha: 0.2))),
+            child: Text(med['time'] as String, style: GoogleFonts.nunito(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.blue)),
+          ),
+        ]),
+        const SizedBox(height: 12),
+        GestureDetector(
+          onTap: () => _takeMed(index),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: double.infinity, padding: const EdgeInsets.symmetric(vertical: 11),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(13), color: taken ? AppColors.green : AppColors.greenDim, border: Border.all(color: AppColors.green, width: 2)),
+            child: Center(child: Text(taken ? 'Taken at ${med['takenTime'] ?? ''}' : 'Mark as ${index == 0 ? 'Used' : 'Taken'}', style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w800, color: taken ? Colors.white : AppColors.green))),
+          ),
+        ),
+        const SizedBox(height: 11),
+        Container(
+          padding: const EdgeInsets.only(top: 11),
+          decoration: BoxDecoration(border: Border(top: BorderSide(color: border))),
+          child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            Flexible(child: Text(med['note'] as String, style: GoogleFonts.nunito(fontSize: 12, fontWeight: FontWeight.w600, color: textMuted), overflow: TextOverflow.ellipsis)),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () => setState(() => med['toggle'] = !(med['toggle'] as bool)),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 250), width: 48, height: 28,
+                decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), color: (med['toggle'] as bool) ? primary : border),
+                child: AnimatedAlign(
+                  duration: const Duration(milliseconds: 250),
+                  alignment: (med['toggle'] as bool) ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Container(
+                    margin: const EdgeInsets.all(3), width: 22, height: 22,
+                    decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 6, offset: const Offset(0, 2))]),
+                  ),
+                ),
+              ),
+            ),
+          ]),
+        ),
+      ]),
     );
   }
 }

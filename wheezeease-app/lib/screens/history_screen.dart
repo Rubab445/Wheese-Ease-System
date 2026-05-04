@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
-import '../models/history_data.dart';
+import 'recommendation_detail_screen.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -11,484 +11,303 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
-  final List<HistoryDay> _data = HistoryDay.sampleData;
-  int _selectedDay = 6;
+  int _filterIndex = 0; // 0=All, 1=Symptoms, 2=Exercise, 3=Household, 4=Trip
+  final List<String> _filters = ['All', 'Symptoms', 'Exercise', 'Household', 'Trip'];
+
+  // Sample data simulating logged entries
+  final List<Map<String, dynamic>> _entries = [
+    {
+      'type': 'symptoms',
+      'date': DateTime.now().subtract(const Duration(hours: 1)),
+      'data': {
+        'symptoms': ['Coughing', 'Wheezing'],
+        'severity': 'Moderate',
+        'mood': 3,
+        'notes': 'Worse after going outside this morning',
+        'intensity': 'mod',
+      },
+    },
+    {
+      'type': 'exercise',
+      'date': DateTime.now().subtract(const Duration(hours: 4)),
+      'data': {
+        'exercise_type': 'walking',
+        'duration': 30,
+        'intensity': 'moderate',
+        'indoor': false,
+        'used_inhaler': true,
+      },
+    },
+    {
+      'type': 'household',
+      'date': DateTime.now().subtract(const Duration(hours: 8)),
+      'data': {
+        'activity_type': 'cleaning',
+        'duration': 45,
+        'wore_mask': true,
+        'trigger': 'Dust',
+      },
+    },
+    {
+      'type': 'trip',
+      'date': DateTime.now().subtract(const Duration(days: 1)),
+      'data': {
+        'destination': 'Lahore',
+      },
+    },
+    {
+      'type': 'symptoms',
+      'date': DateTime.now().subtract(const Duration(days: 1, hours: 6)),
+      'data': {
+        'symptoms': ['Shortness of Breath'],
+        'severity': 'Severe',
+        'mood': 4,
+        'notes': 'Air quality was very poor today',
+        'intensity': 'sev',
+      },
+    },
+    {
+      'type': 'exercise',
+      'date': DateTime.now().subtract(const Duration(days: 2)),
+      'data': {
+        'exercise_type': 'running',
+        'duration': 20,
+        'intensity': 'intense',
+        'indoor': false,
+        'used_inhaler': false,
+      },
+    },
+    {
+      'type': 'household',
+      'date': DateTime.now().subtract(const Duration(days: 2, hours: 5)),
+      'data': {
+        'activity_type': 'cooking',
+        'duration': 60,
+        'wore_mask': false,
+        'trigger': 'Smoke',
+      },
+    },
+    {
+      'type': 'trip',
+      'date': DateTime.now().subtract(const Duration(days: 3)),
+      'data': {
+        'destination': 'Islamabad',
+      },
+    },
+    {
+      'type': 'symptoms',
+      'date': DateTime.now().subtract(const Duration(days: 3, hours: 2)),
+      'data': {
+        'symptoms': ['Fatigue'],
+        'severity': 'Mild',
+        'mood': 1,
+        'notes': '',
+        'intensity': 'mild',
+      },
+    },
+    {
+      'type': 'exercise',
+      'date': DateTime.now().subtract(const Duration(days: 4)),
+      'data': {
+        'exercise_type': 'cycling',
+        'duration': 45,
+        'intensity': 'moderate',
+        'indoor': true,
+        'used_inhaler': false,
+      },
+    },
+  ];
+
+  List<Map<String, dynamic>> get _filteredEntries {
+    if (_filterIndex == 0) return _entries;
+    final typeKey = _filters[_filterIndex].toLowerCase();
+    return _entries.where((e) => e['type'] == typeKey).toList();
+  }
+
+  IconData _typeIcon(String type) {
+    switch (type) {
+      case 'symptoms': return Icons.monitor_heart_outlined;
+      case 'exercise': return Icons.directions_run_rounded;
+      case 'household': return Icons.home_work_rounded;
+      case 'trip': return Icons.location_on_outlined;
+      default: return Icons.circle;
+    }
+  }
+
+  String _typeLabel(String type) {
+    switch (type) {
+      case 'symptoms': return 'Symptoms Check-in';
+      case 'exercise': return 'Exercise';
+      case 'household': return 'Household Activity';
+      case 'trip': return 'Trip';
+      default: return type;
+    }
+  }
+
+  Color _typeColor(String type) {
+    switch (type) {
+      case 'symptoms': return AppColors.red;
+      case 'exercise': return AppColors.blue;
+      case 'household': return AppColors.yellow;
+      case 'trip': return AppColors.green;
+      default: return AppColors.primary;
+    }
+  }
+
+  String _preview(Map<String, dynamic> entry) {
+    final data = entry['data'] as Map<String, dynamic>;
+    switch (entry['type']) {
+      case 'symptoms':
+        return 'Severity: ${data['severity'] ?? 'Unknown'}';
+      case 'exercise':
+        final exType = (data['exercise_type'] as String?)?.substring(0, 1).toUpperCase();
+        final fullType = exType != null ? exType + (data['exercise_type'] as String).substring(1) : '';
+        return '$fullType · ${data['duration']} mins';
+      case 'household':
+        final actType = (data['activity_type'] as String?)?.substring(0, 1).toUpperCase();
+        final fullAct = actType != null ? actType + (data['activity_type'] as String).substring(1) : '';
+        return fullAct;
+      case 'trip':
+        return data['destination'] ?? '';
+      default:
+        return '';
+    }
+  }
+
+  String _formatDate(DateTime dt) {
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inDays == 1) return 'Yesterday';
+    return '${diff.inDays}d ago';
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = isDark ? AppColors.primaryDark : AppColors.primary;
     final surface = isDark ? AppColors.surfaceDark : AppColors.surface;
-    final surface2 = isDark ? AppColors.surface2Dark : AppColors.surface2;
-    final surface3 = isDark ? AppColors.surface2Dark : AppColors.surface3;
     final text = isDark ? AppColors.textDark : AppColors.text;
     final textMuted = isDark ? AppColors.textMutedDark : AppColors.textMuted;
-    final textDim = isDark ? AppColors.textDimDark : AppColors.textDim;
     final border = isDark ? AppColors.borderDark : AppColors.border;
-    final selected = _data[_selectedDay];
+    final filtered = _filteredEntries;
 
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Container(
-            padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top + 22,
-              left: 22,
-              right: 22,
-              bottom: 28,
-            ),
-            decoration: BoxDecoration(
-              gradient: isDark
-                  ? AppColors.primaryGradientDark
-                  : AppColors.primaryGradient,
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(34),
-                bottomRight: Radius.circular(34),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Health History',
-                      style: GoogleFonts.playfairDisplay(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                      ),
-                    ),
-                    Text(
-                      '7-day risk trend & symptom log',
-                      style: GoogleFonts.nunito(
-                        fontSize: 12,
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ],
-                ),
-                const Icon(Icons.trending_up_outlined, color: Colors.white, size: 34),
-              ],
-            ),
-          ),
-
-          // Chart
-          Container(
-            margin: const EdgeInsets.fromLTRB(18, 18, 18, 0),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: surface,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: border),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.05),
-                  blurRadius: 24,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Daily Risk Score — Last 7 Days',
-                  style: GoogleFonts.nunito(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: text,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  height: 95,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: List.generate(_data.length, (i) {
-                      final d = _data[i];
-                      final h = (d.risk / 80 * 60).roundToDouble();
-                      final isSelected = i == _selectedDay;
-                      return Expanded(
-                        child: GestureDetector(
-                          onTap: () => setState(() => _selectedDay = i),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              AnimatedContainer(
-                                duration: const Duration(milliseconds: 400),
-                                height: h,
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: d.color,
-                                  borderRadius: const BorderRadius.only(
-                                    topLeft: Radius.circular(5),
-                                    topRight: Radius.circular(5),
-                                  ),
-                                  border: isSelected
-                                      ? Border.all(
-                                          color: primary,
-                                          width: 3,
-                                        )
-                                      : null,
-                                ),
-                              ),
-                              const SizedBox(height: 5),
-                              Text(
-                                d.day.length > 3
-                                    ? d.day.substring(0, 3)
-                                    : d.day,
-                                style: GoogleFonts.nunito(
-                                  fontSize: 9,
-                                  fontWeight: i == 6
-                                      ? FontWeight.w900
-                                      : FontWeight.w700,
-                                  color: i == 6
-                                      ? primary
-                                      : textDim,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    _legendDot(AppColors.green, 'Low', textMuted),
-                    const SizedBox(width: 10),
-                    _legendDot(AppColors.yellow, 'Moderate', textMuted),
-                    const SizedBox(width: 10),
-                    _legendDot(AppColors.red, 'High', textMuted),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          // Day detail
-          Container(
-            margin: const EdgeInsets.fromLTRB(18, 14, 18, 0),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: surface,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: border),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.05),
-                  blurRadius: 24,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  HistoryDay.dayNames[_selectedDay],
-                  style: GoogleFonts.nunito(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: textMuted,
-                  ),
-                ),
-                const SizedBox(height: 9),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _detailItem('${selected.risk}%', 'Risk Score', selected.color, surface2, textMuted),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _detailItem('${selected.inhaler}', 'Inhalers', primary, surface2, textMuted),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _detailItem('${selected.aqi}', 'AQI', AppColors.yellow, surface2, textMuted),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: surface3,
-                    borderRadius: BorderRadius.circular(11),
-                  ),
-                  child: Text(
-                    'Symptoms: ${selected.symptoms}',
-                    style: GoogleFonts.nunito(
-                      fontSize: 12,
-                      color: textMuted,
-                      height: 1.7,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Best/Worst
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: AppColors.greenDim,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: AppColors.green.withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.emoji_events_outlined, color: AppColors.green, size: 12),
-                            const SizedBox(width: 4),
-                            Text(
-                              'BEST DAY',
-                              style: GoogleFonts.nunito(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.green,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          'Monday',
-                          style: GoogleFonts.playfairDisplay(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: text,
-                          ),
-                        ),
-                        Text(
-                          'Risk: 18%',
-                          style: GoogleFonts.nunito(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.green,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: AppColors.redDim,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: AppColors.red.withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.warning_amber_rounded, color: AppColors.red, size: 12),
-                            const SizedBox(width: 4),
-                            Text(
-                              'TOUGHEST',
-                              style: GoogleFonts.nunito(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.red,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          'Today',
-                          style: GoogleFonts.playfairDisplay(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: text,
-                          ),
-                        ),
-                        Text(
-                          'Risk: 78%',
-                          style: GoogleFonts.nunito(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.red,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Inhaler usage chart
-          Container(
-            margin: const EdgeInsets.fromLTRB(18, 14, 18, 8),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: surface,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: border),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.05),
-                  blurRadius: 24,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Inhaler Usage This Week',
-                  style: GoogleFonts.nunito(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: text,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  height: 75,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: _data.map((d) {
-                      final h = (d.inhaler / 5 * 42).clamp(3.0, 42.0);
-                      return Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Container(
-                              height: h,
-                              margin: const EdgeInsets.symmetric(horizontal: 3),
-                              decoration: BoxDecoration(
-                                color: primary.withValues(alpha: 0.85),
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(3),
-                                  topRight: Radius.circular(3),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              d.day.length > 3 ? d.day.substring(0, 3) : d.day,
-                              style: GoogleFonts.nunito(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w700,
-                                color: textDim,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-                const SizedBox(height: 9),
-                Center(
-                  child: RichText(
-                    text: TextSpan(
-                      style: GoogleFonts.nunito(
-                        fontSize: 12,
-                        color: textMuted,
-                      ),
-                      children: [
-                        const TextSpan(text: 'Total this week: '),
-                        TextSpan(
-                          text: '14 uses',
-                          style: GoogleFonts.nunito(
-                            color: primary,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 100),
-        ],
-      ),
-    );
-  }
-
-  Widget _legendDot(Color color, String label, Color muted) {
-    return Row(
+    return Column(
       children: [
+        // Header
         Container(
-          width: 8,
-          height: 8,
+          padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 22, left: 22, right: 22, bottom: 20),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(2),
-            color: color,
+            gradient: isDark ? AppColors.primaryGradientDark : AppColors.primaryGradient,
+            borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(34), bottomRight: Radius.circular(34)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('My Insights', style: GoogleFonts.playfairDisplay(fontSize: 24, fontWeight: FontWeight.w800, color: Colors.white)),
+                Text('Your logged activities & health data', style: GoogleFonts.nunito(fontSize: 12, color: Colors.white70)),
+              ]),
+              const Icon(Icons.insights_rounded, color: Colors.white, size: 34),
+            ],
           ),
         ),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: GoogleFonts.nunito(fontSize: 10, color: muted),
+
+        // Filter tabs
+        Container(
+          height: 48,
+          margin: const EdgeInsets.fromLTRB(18, 14, 18, 6),
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: _filters.length,
+            itemBuilder: (context, i) {
+              final isActive = i == _filterIndex;
+              return GestureDetector(
+                onTap: () => setState(() => _filterIndex = i),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isActive ? primary.withOpacity(0.15) : surface,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: isActive ? primary : border, width: isActive ? 2 : 1),
+                  ),
+                  child: Center(
+                    child: Text(
+                      _filters[i],
+                      style: GoogleFonts.nunito(fontSize: 12, fontWeight: FontWeight.w700, color: isActive ? primary : textMuted),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+
+        // Entry list
+        Expanded(
+          child: filtered.isEmpty
+              ? Center(
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.inbox_outlined, size: 48, color: textMuted),
+                    const SizedBox(height: 12),
+                    Text('No entries yet', style: GoogleFonts.nunito(fontSize: 15, fontWeight: FontWeight.w700, color: textMuted)),
+                  ]),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(18, 8, 18, 100),
+                  itemCount: filtered.length,
+                  itemBuilder: (context, i) {
+                    final entry = filtered[i];
+                    final type = entry['type'] as String;
+                    final color = _typeColor(type);
+                    return GestureDetector(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => RecommendationDetailScreen(
+                            entryType: type,
+                            entryData: entry['data'] as Map<String, dynamic>,
+                            entryDate: entry['date'] as DateTime,
+                          ),
+                        ),
+                      ),
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: surface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: border),
+                          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.12 : 0.04), blurRadius: 12, offset: const Offset(0, 2))],
+                        ),
+                        child: Row(children: [
+                          Container(
+                            width: 42, height: 42,
+                            decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
+                            child: Icon(_typeIcon(type), color: color, size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Row(children: [
+                              Text(_typeLabel(type), style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w800, color: text)),
+                              const Spacer(),
+                              Text(_formatDate(entry['date'] as DateTime), style: GoogleFonts.nunito(fontSize: 10, fontWeight: FontWeight.w600, color: textMuted)),
+                            ]),
+                            const SizedBox(height: 3),
+                            Text(_preview(entry), style: GoogleFonts.nunito(fontSize: 12, color: textMuted, fontWeight: FontWeight.w600)),
+                          ])),
+                          const SizedBox(width: 8),
+                          Icon(Icons.arrow_forward_ios_rounded, size: 12, color: textMuted),
+                        ]),
+                      ),
+                    );
+                  },
+                ),
         ),
       ],
-    );
-  }
-
-  Widget _detailItem(String value, String label, Color color, Color bg, Color muted) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(11),
-      ),
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: GoogleFonts.playfairDisplay(
-              fontSize: 19,
-              fontWeight: FontWeight.w800,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: GoogleFonts.nunito(
-              fontSize: 9,
-              color: muted,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
