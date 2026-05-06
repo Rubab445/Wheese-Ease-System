@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
@@ -17,9 +18,10 @@ class CheckinScreen extends StatefulWidget {
 }
 
 class _CheckinScreenState extends State<CheckinScreen> {
-  bool _loading = false;
   int _selectedMood = 2; // 0-4
   final _notesController = TextEditingController();
+  Timer? _debounceTimer;
+  bool _saving = false;
 
   // Each symptom: icon, name, selected (bool), severity (null, 'mild', 'moderate', 'severe'), expanded (bool)
   final List<Map<String, dynamic>> _symptoms = [
@@ -78,6 +80,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _notesController.dispose();
     super.dispose();
   }
@@ -115,6 +118,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
         symptom['selected'] = true;
       }
     });
+    _triggerAutoSave();
   }
 
   void _selectSeverity(int index, String severity) {
@@ -122,6 +126,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
       _symptoms[index]['severity'] = severity;
       _symptoms[index]['selected'] = true;
     });
+    _triggerAutoSave();
   }
 
   Color _severityBgColor(String severity) {
@@ -163,8 +168,15 @@ class _CheckinScreenState extends State<CheckinScreen> {
     }
   }
 
-  void _submitCheckin() async {
-    setState(() => _loading = true);
+  /// Debounced auto-save: waits 2 seconds after the last toggle before saving.
+  void _triggerAutoSave() {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(seconds: 2), () => _autoSave());
+  }
+
+  Future<void> _autoSave() async {
+    if (_saving) return;
+    setState(() => _saving = true);
 
     // Collect form data
     int coughing = 0, wheezing = 0, breathingDifficulty = 0, chestTightness = 0;
@@ -185,7 +197,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
       }
     }
 
-    // Store patient data for home screen
+    // Build patient data for home screen
     final patientData = {
       'wheezing': wheezing,
       'coughing': coughing,
@@ -204,28 +216,30 @@ class _CheckinScreenState extends State<CheckinScreen> {
       'hay_fever': 0,
       'eczema': 0,
       'dust_exposure': 0.5,
+      'timestamp': DateTime.now().toIso8601String(),
     };
 
-    // Simulate a brief delay for logging
+    // Simulate brief save delay (replace with actual Supabase insert when backend is wired)
     await Future.delayed(const Duration(milliseconds: 400));
 
     if (!mounted) return;
 
     widget.onPatientDataUpdate(patientData);
+    setState(() => _saving = false);
 
-    setState(() => _loading = false);
-
-    // Show success snackbar
+    // Show subtle "Saved ✓" snackbar
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.check_circle_outline, color: Colors.white, size: 18),
-            const SizedBox(width: 10),
+            const Icon(Icons.check_circle_outline, color: Colors.white, size: 16),
+            const SizedBox(width: 8),
             Text(
-              'Symptoms logged successfully',
+              'Saved ✓',
               style: GoogleFonts.nunito(
-                fontSize: 14,
+                fontSize: 13,
                 fontWeight: FontWeight.w700,
                 color: Colors.white,
               ),
@@ -236,17 +250,17 @@ class _CheckinScreenState extends State<CheckinScreen> {
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
-        duration: const Duration(seconds: 2),
+        duration: const Duration(seconds: 1),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       ),
     );
-
-    // Return to home
-    widget.onComplete();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Scaffold(
+      backgroundColor: AppColors.bgColor(context),
+      body: Column(
       children: [
         // Header
         Container(
@@ -293,6 +307,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
 
         Expanded(child: _buildForm()),
       ],
+      ),
     );
   }
 
@@ -438,51 +453,42 @@ class _CheckinScreenState extends State<CheckinScreen> {
             ),
           ),
 
-          // Submit button
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 6),
-            child: GestureDetector(
-              onTap: _loading ? null : _submitCheckin,
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  gradient: _loading
-                      ? const LinearGradient(colors: [Colors.grey, Colors.grey])
-                      : AppColors.primaryGradient,
-                ),
-                child: Center(
-                  child: _loading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Text(
-                          'Complete Check-In',
-                          style: GoogleFonts.nunito(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
-                ),
+          // Auto-save indicator
+          if (_saving)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 6),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.primaryColor(context),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Saving...',
+                    style: GoogleFonts.nunito(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textMutedColor(context),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
 
           // Footer text
           Center(
             child: Padding(
-              padding: const EdgeInsets.only(top: 8, bottom: 10),
+              padding: const EdgeInsets.only(top: 12, bottom: 10),
               child: Text(
-                'Logged data is shared with your clinical team.',
+                'Symptoms auto-save after selection.',
                 style: GoogleFonts.nunito(
                   fontSize: 11,
                   color: AppColors.textMutedColor(context),

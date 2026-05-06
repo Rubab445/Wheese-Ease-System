@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:fl_chart/fl_chart.dart';
 import '../theme/app_colors.dart';
 import '../services/api_service.dart';
 import '../models/prediction_result.dart';
@@ -30,6 +31,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   PredictionResult? _prediction;
   Map<String, dynamic>? _environment;
   bool _loading = true;
+
+  // Symptom history graph state
+  List<Map<String, dynamic>> _symptomHistory = [];
+  String _graphPeriod = 'week'; // 'week' or 'month'
+  bool _historyLoading = true;
 
   @override
   void initState() {
@@ -63,6 +69,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         _loading = false;
       });
       _arcController.forward(from: 0.0);
+    }
+
+    // Fetch symptom history for graphs
+    final history = await ApiService.getSymptomHistory(period: _graphPeriod);
+    if (history != null && mounted) {
+      setState(() {
+        _symptomHistory = List<Map<String, dynamic>>.from(history);
+        _historyLoading = false;
+      });
+    } else if (mounted) {
+      setState(() => _historyLoading = false);
     }
   }
 
@@ -141,19 +158,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                     ),
                   ],
-                ),
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.assignment_outlined,
-                    color: Colors.white,
-                    size: 22,
-                  ),
                 ),
               ],
             ),
@@ -356,6 +360,143 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ],
                   ),
           ),
+
+          // ── SYMPTOM HISTORY GRAPHS ──
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 20, 18, 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'SYMPTOM HISTORY',
+                  style: GoogleFonts.nunito(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    color: textMuted,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                // Week / Month toggle
+                Container(
+                  decoration: BoxDecoration(
+                    color: surface,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: border),
+                  ),
+                  child: Row(
+                    children: ['week', 'month'].map((p) {
+                      final selected = _graphPeriod == p;
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _graphPeriod = p;
+                            _historyLoading = true;
+                          });
+                          _loadInitialData();
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: selected ? primary : Colors.transparent,
+                            borderRadius: BorderRadius.circular(7),
+                          ),
+                          child: Text(
+                            p[0].toUpperCase() + p.substring(1),
+                            style: GoogleFonts.nunito(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: selected ? Colors.white : textMuted,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          _historyLoading
+              ? SizedBox(
+                  height: 160,
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation(primary),
+                    ),
+                  ),
+                )
+              : _symptomHistory.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 20,
+                  ),
+                  child: Center(
+                    child: Text(
+                      'No symptom data yet.\nLog your first check-in!',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.nunito(
+                        fontSize: 13,
+                        color: textMuted,
+                        height: 1.6,
+                      ),
+                    ),
+                  ),
+                )
+              : SizedBox(
+                  height: 200,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    children: [
+                      _symptomGraph(
+                        'Wheezing',
+                        'wheezing',
+                        AppColors.red,
+                        surface,
+                        border,
+                        isDark,
+                      ),
+                      _symptomGraph(
+                        'Coughing',
+                        'coughing',
+                        AppColors.yellow,
+                        surface,
+                        border,
+                        isDark,
+                      ),
+                      _symptomGraph(
+                        'Chest',
+                        'chest_tightness',
+                        AppColors.blue,
+                        surface,
+                        border,
+                        isDark,
+                      ),
+                      _symptomGraph(
+                        'Breathing',
+                        'breathing_difficulty',
+                        primary,
+                        surface,
+                        border,
+                        isDark,
+                      ),
+                      _symptomGraph(
+                        'Inhaler Use',
+                        'inhaler_usage',
+                        AppColors.green,
+                        surface,
+                        border,
+                        isDark,
+                      ),
+                    ],
+                  ),
+                ),
 
           // ── QUICK ACTIONS ──
           Padding(
@@ -806,6 +947,126 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+  // ── Symptom Graph Widget ──
+  Widget _symptomGraph(
+    String label,
+    String key,
+    Color color,
+    Color surface,
+    Color border,
+    bool isDark,
+  ) {
+    final text = isDark ? AppColors.textDark : AppColors.text;
+    final textMuted = isDark ? AppColors.textMutedDark : AppColors.textMuted;
+
+    // Build spots from history data
+    final spots = <FlSpot>[];
+    for (int i = 0; i < _symptomHistory.length; i++) {
+      final val = (_symptomHistory[i][key] ?? 0);
+      spots.add(FlSpot(i.toDouble(), (val as num).toDouble()));
+    }
+
+    // If all zeros, still show flat line
+    final hasData = spots.any((s) => s.y > 0);
+
+    return Container(
+      width: 160,
+      margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 6),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: border, width: 0.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.15 : 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: GoogleFonts.nunito(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: text,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            hasData
+                ? 'Detected ${spots.where((s) => s.y > 0).length}x'
+                : 'No episodes',
+            style: GoogleFonts.nunito(fontSize: 9, color: textMuted),
+          ),
+          const SizedBox(height: 10),
+          Expanded(
+            child: spots.isEmpty
+                ? Center(
+                    child: Text(
+                      'No data',
+                      style: GoogleFonts.nunito(fontSize: 10, color: textMuted),
+                    ),
+                  )
+                : LineChart(
+                    LineChartData(
+                      gridData: const FlGridData(show: false),
+                      borderData: FlBorderData(show: false),
+                      titlesData: const FlTitlesData(show: false),
+                      lineTouchData: const LineTouchData(enabled: false),
+                      minY: 0,
+                      maxY: key == 'breathing_difficulty'
+                          ? 3
+                          : key == 'inhaler_usage'
+                          ? 5
+                          : 1,
+                      lineBarsData: [
+                        LineChartBarData(
+                          spots: spots,
+                          isCurved: true,
+                          color: color,
+                          barWidth: 2.5,
+                          isStrokeCapRound: true,
+                          dotData: FlDotData(
+                            show: true,
+                            getDotPainter: (spot, _, __, ___) =>
+                                FlDotCirclePainter(
+                                  radius: spot.y > 0 ? 3 : 1.5,
+                                  color: spot.y > 0
+                                      ? color
+                                      : color.withOpacity(0.3),
+                                  strokeWidth: 0,
+                                  strokeColor: Colors.transparent,
+                                ),
+                          ),
+                          belowBarData: BarAreaData(
+                            show: true,
+                            color: color.withOpacity(0.08),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ── Record Dose Bottom Sheet ──
   void _showRecordDoseSheet(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -846,9 +1107,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           padding: const EdgeInsets.fromLTRB(22, 12, 22, 28),
           decoration: BoxDecoration(
             color: surface,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(28),
-            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -866,8 +1125,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               // Title
               Row(
                 children: [
-                  Icon(Icons.medication_outlined,
-                      color: primary, size: 22),
+                  Icon(Icons.medication_outlined, color: primary, size: 22),
                   const SizedBox(width: 10),
                   Text(
                     'Record a Dose',
@@ -884,10 +1142,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   'Select the medication you just took',
-                  style: GoogleFonts.nunito(
-                    fontSize: 12,
-                    color: textMuted,
-                  ),
+                  style: GoogleFonts.nunito(fontSize: 12, color: textMuted),
                 ),
               ),
               const SizedBox(height: 18),
@@ -908,8 +1163,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                         content: Row(
                           children: [
-                            const Icon(Icons.check_circle_outline,
-                                color: Colors.white, size: 18),
+                            const Icon(
+                              Icons.check_circle_outline,
+                              color: Colors.white,
+                              size: 18,
+                            ),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
@@ -940,8 +1198,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           width: 42,
                           height: 42,
                           decoration: BoxDecoration(
-                            color: (med['color'] as Color)
-                                .withOpacity(0.12),
+                            color: (med['color'] as Color).withOpacity(0.12),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
@@ -953,8 +1210,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         const SizedBox(width: 14),
                         Expanded(
                           child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 med['name'] as String,
@@ -974,8 +1230,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             ],
                           ),
                         ),
-                        Icon(Icons.add_circle_outline,
-                            color: primary, size: 22),
+                        Icon(
+                          Icons.add_circle_outline,
+                          color: primary,
+                          size: 22,
+                        ),
                       ],
                     ),
                   ),

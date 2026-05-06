@@ -282,6 +282,22 @@ class ApiService {
     }
   }
 
+  // SYMPTOM HISTORY (for graphs)
+  static Future<List<dynamic>?> getSymptomHistory({String period = 'week'}) async {
+    try {
+      final res = await http
+          .get(Uri.parse('$_baseUrl/checkin/history?period=$period'))
+          .timeout(_timeout);
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body);
+      }
+      return null;
+    } catch (e) {
+      print('Symptom history error: $e');
+      return null;
+    }
+  }
+
   // TRIP RISK CHECK
   static Future<Map<String, dynamic>?> checkTripRisk({
     required String destination,

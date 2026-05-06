@@ -57,11 +57,17 @@ class _AuthScreenState extends State<AuthScreen>
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFFE8F6F3),
-            const Color(0xFFF0F8FF),
-            const Color(0xFFEEF9F6),
-          ],
+          colors: Theme.of(context).brightness == Brightness.dark
+              ? [
+                  AppColors.bgDark,
+                  const Color(0xFF102A20),
+                  AppColors.bgDark,
+                ]
+              : [
+                  const Color(0xFFE8F6F3),
+                  const Color(0xFFF0F8FF),
+                  const Color(0xFFEEF9F6),
+                ],
         ),
       ),
       child: SafeArea(
@@ -103,7 +109,7 @@ class _AuthScreenState extends State<AuthScreen>
             const SizedBox(height: 16),
             // Logo
             Image.asset(
-              'images/logo.png',
+              'assets/images/logo.png',
               height: 60,
               width: 60,
               fit: BoxFit.contain,
@@ -127,7 +133,7 @@ class _AuthScreenState extends State<AuthScreen>
                     ],
                   ),
                 ),
-                child: Image.asset('images/welcome.png', fit: BoxFit.contain),
+                child: Image.asset('assets/images/welcome.png', fit: BoxFit.contain),
               ),
             ),
             const SizedBox(height: 16),
@@ -213,7 +219,7 @@ class _AuthScreenState extends State<AuthScreen>
             const SizedBox(height: 16),
             // Logo
             Image.asset(
-              'images/logo.png',
+              'assets/images/logo.png',
               height: 50,
               width: 50,
               fit: BoxFit.contain,
@@ -251,11 +257,11 @@ class _AuthScreenState extends State<AuthScreen>
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surfaceColor(context),
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF006B5E).withOpacity(0.06),
+                    color: AppColors.primaryColor(context).withOpacity(0.06),
                     blurRadius: 20,
                     offset: const Offset(0, 4),
                   ),
@@ -424,7 +430,7 @@ class _AuthScreenState extends State<AuthScreen>
             const SizedBox(height: 16),
             // Logo
             Image.asset(
-              'images/logo.png',
+              'assets/images/logo.png',
               height: 50,
               width: 50,
               fit: BoxFit.contain,
@@ -455,11 +461,11 @@ class _AuthScreenState extends State<AuthScreen>
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surfaceColor(context),
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF006B5E).withOpacity(0.06),
+                    color: AppColors.primaryColor(context).withOpacity(0.06),
                     blurRadius: 20,
                     offset: const Offset(0, 4),
                   ),
@@ -703,7 +709,7 @@ class _AuthScreenState extends State<AuthScreen>
           vertical: 14,
         ),
         filled: true,
-        fillColor: const Color(0xFFF5FAF8),
+        fillColor: AppColors.surface2Color(context),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(
@@ -735,10 +741,10 @@ class _AuthScreenState extends State<AuthScreen>
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          color: const Color(0xFF15504A),
+          color: AppColors.primaryColor(context),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF006B5E).withOpacity(0.3),
+              color: AppColors.primaryColor(context).withOpacity(0.3),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -766,7 +772,7 @@ class _AuthScreenState extends State<AuthScreen>
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
-          color: Colors.white,
+          color: AppColors.surfaceColor(context),
           border: Border.all(
             color: AppColors.borderColor(context).withOpacity(0.5),
           ),

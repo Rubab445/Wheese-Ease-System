@@ -17,12 +17,28 @@ import 'screens/medications_screen.dart';
 import 'screens/doctor_detail_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/activities_screen.dart';
+import 'screens/notifications_screen.dart';
+import 'services/notification_service.dart';
 
 import 'widgets/message_modal.dart';
 
-void main() {
+final GlobalKey<_AppShellState> appShellKey = GlobalKey<_AppShellState>();
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+
+  // Initialize local notifications & schedule daily check-in reminders
+  await NotificationService.init();
+  await NotificationService.scheduleDailyNotifications();
+
+  // When user taps a notification, navigate to the check-in tab
+  NotificationService.onNotificationTap = (payload) {
+    if (payload == 'checkin') {
+      appShellKey.currentState?.switchToCheckin();
+    }
+  };
+
   runApp(const WheezeEaseApp());
 }
 
@@ -44,7 +60,7 @@ class WheezeEaseApp extends StatelessWidget {
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
       debugShowCheckedModeBanner: false,
-      home: const AppShell(),
+      home: AppShell(key: appShellKey),
       builder: (context, child) {
         if (!WheezeEaseApp.isDesktopOrWeb) return child!;
         final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -104,9 +120,30 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   AppFlow _flow = AppFlow.auth;
   int _currentTab = 0;
+
+  /// Called by notification tap handler to navigate to check-in screen
+  void switchToCheckin() {
+    if (_flow == AppFlow.main) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => CheckinScreen(
+            onComplete: () => Navigator.pop(context),
+            onPatientDataUpdate: (data) {
+              setState(() => _lastPatientData = data);
+            },
+          ),
+        ),
+      );
+    }
+  }
+
   String _userName = 'Sara Ahmed';
 
   bool _showMessage = false;
+
+  // Track more menu selection
+  String? _moreMenuSelection; // 'medications', 'doctor', or 'profile'
 
   // Last check-in data (used by HomeScreen for predictions)
   Map<String, dynamic> _lastPatientData = {
@@ -131,12 +168,9 @@ class _AppShellState extends State<AppShell> {
 
   final List<Map<String, dynamic>> _tabs = [
     {'icon': Icons.home_rounded, 'label': 'Home'},
-    {'icon': Icons.add_circle_outline, 'label': 'Check-In'},
-    {'icon': Icons.directions_run_rounded, 'label': 'Activities'},
+    {'icon': Icons.local_activity_outlined, 'label': 'Activities'},
     {'icon': Icons.insights_rounded, 'label': 'Insights'},
-    {'icon': Icons.medication_outlined, 'label': 'Meds'},
-    {'icon': Icons.medical_services_outlined, 'label': 'Doctor'},
-    {'icon': Icons.person_outline_rounded, 'label': 'Profile'},
+    {'icon': Icons.notifications_outlined, 'label': 'Notifications'},
   ];
 
   void _onAuthComplete() {
@@ -186,8 +220,6 @@ class _AppShellState extends State<AppShell> {
         children: [
           _buildCurrentFlow(),
 
-
-
           if (_showMessage)
             MessageModal(onClose: () => setState(() => _showMessage = false)),
         ],
@@ -207,6 +239,7 @@ class _AppShellState extends State<AppShell> {
         return OnboardingScreen(
           onComplete: _onOnboardingComplete,
           onNameSet: (name) => setState(() => _userName = name),
+          onSkip: () => setState(() => _flow = AppFlow.main),
         );
       case AppFlow.location:
         return LocationPermissionScreen(
@@ -221,27 +254,55 @@ class _AppShellState extends State<AppShell> {
   }
 
   Widget _buildMainPages() {
+    // Handle more menu selection
+    if (_moreMenuSelection == 'medications') {
+      return const MedicationsScreen();
+    } else if (_moreMenuSelection == 'doctor') {
+      return DoctorDetailScreen(
+        onMessageTap: () => setState(() => _showMessage = true),
+      );
+    } else if (_moreMenuSelection == 'profile') {
+      return ProfileScreen(userName: _userName, onLogout: _logout);
+    }
+
+    // Default: show tab screen
     return IndexedStack(
       index: _currentTab,
       children: [
         HomeScreen(
           userName: _userName,
           patientData: _lastPatientData,
-          onCheckinTap: () => setState(() => _currentTab = 1),
-        ),
-        CheckinScreen(
-          onComplete: () => setState(() => _currentTab = 0),
-          onPatientDataUpdate: (data) {
-            setState(() => _lastPatientData = data);
+          onCheckinTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => CheckinScreen(
+                  onComplete: () => Navigator.pop(context),
+                  onPatientDataUpdate: (data) {
+                    setState(() => _lastPatientData = data);
+                  },
+                ),
+              ),
+            );
           },
         ),
         const ActivitiesScreen(),
         const HistoryScreen(),
-        const MedicationsScreen(),
-        DoctorDetailScreen(
-          onMessageTap: () => setState(() => _showMessage = true),
+        NotificationsScreen(
+          onCheckinTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => CheckinScreen(
+                  onComplete: () => Navigator.pop(context),
+                  onPatientDataUpdate: (data) {
+                    setState(() => _lastPatientData = data);
+                  },
+                ),
+              ),
+            );
+          },
         ),
-        ProfileScreen(userName: _userName, onLogout: _logout),
       ],
     );
   }
@@ -274,11 +335,62 @@ class _AppShellState extends State<AppShell> {
             top: false,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: List.generate(_tabs.length, (i) {
-                final isActive = i == _currentTab;
-                final tab = _tabs[i];
-                return GestureDetector(
-                  onTap: () => setState(() => _currentTab = i),
+              children: [
+                // Main tabs
+                ...List.generate(_tabs.length, (i) {
+                  final isActive =
+                      i == _currentTab && _moreMenuSelection == null;
+                  final tab = _tabs[i];
+                  return GestureDetector(
+                    onTap: () => setState(() {
+                      _currentTab = i;
+                      _moreMenuSelection = null;
+                    }),
+                    behavior: HitTestBehavior.opaque,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        color: isActive
+                            ? primary.withOpacity(0.12)
+                            : Colors.transparent,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AnimatedScale(
+                            scale: isActive ? 1.15 : 1.0,
+                            duration: const Duration(milliseconds: 200),
+                            child: Icon(
+                              tab['icon'] as IconData,
+                              size: 24,
+                              color: isActive ? primary : textMuted,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            tab['label'] as String,
+                            style: GoogleFonts.nunito(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: isActive
+                                  ? primary
+                                  : AppColors.textDimColor(context),
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+                // More menu (3 dots)
+                GestureDetector(
+                  onTap: () => _showMoreMenu(context),
                   behavior: HitTestBehavior.opaque,
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
@@ -288,61 +400,31 @@ class _AppShellState extends State<AppShell> {
                     ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      color: isActive
+                      color: _moreMenuSelection != null
                           ? primary.withOpacity(0.12)
                           : Colors.transparent,
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            AnimatedScale(
-                              scale: isActive ? 1.15 : 1.0,
-                              duration: const Duration(milliseconds: 200),
-                              child: Icon(
-                                tab['icon'] as IconData,
-                                size: 24,
-                                color: isActive ? primary : textMuted,
-                              ),
-                            ),
-                            if (i == 4)
-                              Positioned(
-                                top: -4,
-                                right: -8,
-                                child: Container(
-                                  width: 15,
-                                  height: 15,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: AppColors.red,
-                                    border: Border.all(
-                                      color: surface,
-                                      width: 2,
-                                    ),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      '1',
-                                      style: GoogleFonts.nunito(
-                                        fontSize: 8,
-                                        fontWeight: FontWeight.w800,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                          ],
+                        AnimatedScale(
+                          scale: _moreMenuSelection != null ? 1.15 : 1.0,
+                          duration: const Duration(milliseconds: 200),
+                          child: Icon(
+                            Icons.more_vert_rounded,
+                            size: 24,
+                            color: _moreMenuSelection != null
+                                ? primary
+                                : textMuted,
+                          ),
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          tab['label'] as String,
+                          'More',
                           style: GoogleFonts.nunito(
                             fontSize: 9,
                             fontWeight: FontWeight.w700,
-                            color: isActive
+                            color: _moreMenuSelection != null
                                 ? primary
                                 : AppColors.textDimColor(context),
                             letterSpacing: 0.2,
@@ -351,12 +433,137 @@ class _AppShellState extends State<AppShell> {
                       ],
                     ),
                   ),
-                );
-              }),
+                ),
+              ],
             ),
           ),
         );
       },
+    );
+  }
+
+  void _showMoreMenu(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = isDark ? AppColors.primaryDark : AppColors.primary;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.surfaceDark : AppColors.surface,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(0, 12, 0, 8),
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? AppColors.textMutedDark.withValues(alpha: 0.2)
+                        : AppColors.textMuted.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              // Add Medications
+              _buildMoreMenuItem(
+                context,
+                icon: Icons.medication_outlined,
+                label: 'Add Medications',
+                onTap: () {
+                  Navigator.pop(context);
+                  setState(() {
+                    _moreMenuSelection = 'medications';
+                  });
+                },
+              ),
+              // Contact Doctor
+              _buildMoreMenuItem(
+                context,
+                icon: Icons.message_rounded,
+                label: 'Contact Doctor',
+                onTap: () {
+                  Navigator.pop(context);
+                  setState(() {
+                    _moreMenuSelection = 'doctor';
+                  });
+                },
+              ),
+              // Profile
+              _buildMoreMenuItem(
+                context,
+                icon: Icons.person_rounded,
+                label: 'My Profile',
+                onTap: () {
+                  Navigator.pop(context);
+                  setState(() {
+                    _moreMenuSelection = 'profile';
+                  });
+                },
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMoreMenuItem(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = isDark ? AppColors.primaryDark : AppColors.primary;
+    final border = isDark ? AppColors.borderDark : AppColors.border;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: primary.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: border, width: 0.5),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: primary.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: primary, size: 22),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                label,
+                style: GoogleFonts.nunito(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppColors.textDark : AppColors.text,
+                ),
+              ),
+            ),
+            Icon(Icons.arrow_forward_rounded, color: primary, size: 20),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -67,7 +67,7 @@ class DoctorDetailScreen extends StatelessWidget {
                   ],
                 ),
                 Image.asset(
-                  'images/logo.png',
+                  'assets/images/logo.png',
                   width: 40,
                   height: 40,
                   fit: BoxFit.contain,

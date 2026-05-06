@@ -5,11 +5,13 @@ import '../theme/app_colors.dart';
 class OnboardingScreen extends StatefulWidget {
   final VoidCallback onComplete;
   final Function(String) onNameSet;
+  final VoidCallback? onSkip;
 
   const OnboardingScreen({
     super.key,
     required this.onComplete,
     required this.onNameSet,
+    this.onSkip,
   });
 
   @override
@@ -112,34 +114,62 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Logo ──
+              // ── Logo + Skip ──
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Image.asset(
-                    'images/logo.png',
-                    width: 44,
-                    height: 44,
-                    fit: BoxFit.contain,
-                  ),
-                  const SizedBox(width: 10),
-                  RichText(
-                    text: TextSpan(
-                      style: GoogleFonts.playfairDisplay(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textColor(context),
+                  Row(
+                    children: [
+                      Image.asset(
+                        'assets/images/logo.png',
+                        width: 44,
+                        height: 44,
+                        fit: BoxFit.contain,
                       ),
-                      children: [
-                        const TextSpan(text: 'Wheeze'),
-                        TextSpan(
-                          text: 'Ease',
-                          style: TextStyle(
+                      const SizedBox(width: 10),
+                      RichText(
+                        text: TextSpan(
+                          style: GoogleFonts.playfairDisplay(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textColor(context),
+                          ),
+                          children: [
+                            const TextSpan(text: 'Wheeze'),
+                            TextSpan(
+                              text: 'Ease',
+                              style: TextStyle(
+                                color: AppColors.primaryColor(context),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (widget.onSkip != null)
+                    GestureDetector(
+                      onTap: widget.onSkip,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryColor(context).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: AppColors.primaryColor(context).withOpacity(0.3),
+                          ),
+                        ),
+                        child: Text(
+                          'Skip',
+                          style: GoogleFonts.nunito(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
                             color: AppColors.primaryColor(context),
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
                 ],
               ),
               const SizedBox(height: 24),

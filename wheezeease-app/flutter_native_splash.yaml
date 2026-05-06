@@ -1,0 +1,42 @@
+flutter_native_splash:
+  # This package generates native code to customize Flutter's default white native splash screen
+  # with background color and splash image.
+  # Customize the parameters below, and run the following command in the terminal:
+  # flutter pub run flutter_native_splash:create
+  # To delete the generated files, run the following command:
+  # flutter pub run flutter_native_splash:remove
+
+  # Background color - using white
+  color: "#ffffff"
+
+  # Set the background image that will be used for Android and iOS.
+  image: assets/images/logo.png
+
+  # The color_dark, image_dark, and background_path_dark are parameters that set the background
+  # when the device is in dark mode. If they are not specified, the app will use color and image parameters instead.
+  color_dark: "#0A1812"
+  image_dark: assets/images/logo.png
+
+  # The branding image is used in Android 12+. It is advised to use the same as image if you want consistency.
+  branding: assets/images/logo.png
+
+  # The ios_content_mode is used to set the UIViewContentMode your image will have.
+  # Options are: scaleAspectFill (default), scaleAspectFit, scaleToFill
+  ios_content_mode: scaleAspectFill
+
+  # The android_gravity is used to set the ImageView ScaleType your image will have.
+  # Options are: center, centerCrop (default), centerInside, fitCenter, fitStart, fitEnd, fitXY, top, bottom, left, right, topLeft, topRight, bottomLeft, bottomRight
+  android_gravity: center
+
+  # Specify different duration of the splash screen for Android and iOS is possible
+  # duration: 200
+
+  # The android_user_percep_duration is the duration in milliseconds to display the Android splash screen using the user's perception of the countdown duration.
+  # This can help to prevent users from seeing a white flash when the App changes from the splash screen to the homepage. Set the duration of the flutter splash screen so that the total delay is not too long
+  # android_user_percep_duration: 300
+
+  # Set to false if you do not wish to automatically generate the native splash screen for each platform's folder.
+  # If you change this later, run the following command in order to generate the splash screens:
+  # flutter pub run flutter_native_splash:create
+  # If it is set to false, make sure you have set the splash screen separately for each platform using the platform specific files.
+  web: false
