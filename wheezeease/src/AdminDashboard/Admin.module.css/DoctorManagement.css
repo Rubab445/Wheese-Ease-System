@@ -38,8 +38,8 @@
 
 .page-title {
   font-size: 26px;
-  font-weight: 800;
-  background: linear-gradient(135deg, #0F172A 0%, #7C3AED 100%);
+  font-weight: 700;
+  background: linear-gradient(135deg, #f1f3f5 0%, #3B82F6 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -460,7 +460,7 @@
 /* ============================================
    MODAL OVERLAY - FIXED
    ============================================ */
-.modal-overlay {
+.modal-overlay-doctor {
   position: fixed;
   top: 0;
   left: 0;
@@ -792,6 +792,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  width: 100%;
 }
 
 .action-btn.verify {

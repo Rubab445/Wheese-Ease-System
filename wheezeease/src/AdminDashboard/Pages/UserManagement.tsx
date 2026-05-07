@@ -103,7 +103,7 @@ export default function UserManagement() {
     <div className="user-management-page">
       <div className="user-management-header">
         <div className="header-left">
-          <h1 className="page-title">User Management</h1>
+          <h2 className="page-title">User Management</h2>
           <p className="page-subtitle">Manage users, roles, and access control</p>
         </div>
         <button className="btn-add-user" onClick={() => setIsAddUserModalOpen(true)}>

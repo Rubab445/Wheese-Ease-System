@@ -805,7 +805,6 @@ body {
     background: white;
     border-radius: 24px;
     padding: 28px;
-    max-width: 380px;
     width: 100%;
     text-align: center;
 }
@@ -1702,7 +1701,7 @@ body {
     border: none;
     cursor: pointer;
     transition: all 0.2s;
-    border-radius: 50%;
+    width: 100%;
 }
 
 .action-btn.mark-read {

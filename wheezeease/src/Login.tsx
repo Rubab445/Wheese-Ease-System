@@ -1,28 +1,23 @@
 import React, { useState } from 'react';
+import { Stethoscope } from 'lucide-react';
+import './styles/Login.css'; 
+import LoginImage from './assets/newImage.png'
 
 interface LoginProps {
     onLogin: (role: string) => void;
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
-    // Form States
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
-    const [rememberMe, setRememberMe] = useState(false);
-    const [passwordVisible, setPasswordVisible] = useState(false);
-    
-    // UI States
     const [errors, setErrors] = useState({ email: false, password: false, auth: '' });
     const [isLoading, setIsLoading] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
 
-    const validateUsername = (username: string) => {
-        return username.trim() !== '';
-    };
+    const validateUsername = (user: string) => user.trim() !== '';
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
         let hasError = false;
         const newErrors = { email: false, password: false, auth: '' };
         
@@ -42,176 +37,114 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
         setIsLoading(true);
         
-        // Mock Backend Authentication
         setTimeout(() => {
             let role = '';
-            if (username === 'doctor' && password === '12345678') {
+            if (username === 'doctor@onco.com' && password === '12345678') {
                 role = 'doctor';
-            } else if (username === 'admin' && password === 'admin123') {
+            } else if (username === 'admin@onco.com' && password === 'admin123') {
                 role = 'admin';
             }
 
             if (role !== '') {
                 setIsLoading(false);
                 setShowSuccess(true);
-                
-                // Store authentication state
                 localStorage.setItem('isAuthenticated', 'true');
                 localStorage.setItem('userRole', role);
                 
-                if (rememberMe) {
-                    localStorage.setItem('rememberedUsername', username);
-                }
-
                 setTimeout(() => {
                     setShowSuccess(false);
                     onLogin(role);
                 }, 2000);
             } else {
                 setIsLoading(false);
-                setErrors({ ...newErrors, auth: 'Invalid credentials. Please use doctor or admin' });
+                setErrors({ ...newErrors, auth: 'Invalid credentials. Use doctor@onco.com/12345678 or admin@onco.com/admin123' });
             }
         }, 1500);
     };
 
-    const handleGoogleLogin = () => {
-        setIsLoading(true);
-        setTimeout(() => {
-            setIsLoading(false);
-            setShowSuccess(true);
-            localStorage.setItem('isAuthenticated', 'true');
-            localStorage.setItem('userRole', 'doctor');
-            setTimeout(() => {
-                setShowSuccess(false);
-                onLogin('doctor');
-            }, 2000);
-        }, 1500);
-    };
-
     return (
-        <div className="login-page-wrapper">
-            <div className="login-container">
-                
-                {/* LEFT SIDE */}
-                <div className="login-left">
-                    <div className="blob blob1"></div>
-                    <div className="blob blob2"></div>
-                    <div className="blob blob3"></div>
-                    <div className="glow"></div>
-                    <div className="left-content">
-                        <div className="left-logo">
-                            <div className="logo-icon">🫁</div>
-                            <div>
-                                <div className="logo-name">WheezeEase</div>
-                                <div className="logo-tag">AI-Powered Respiratory Care</div>
-                            </div>
+        <div className="onco-app-viewport">
+            <div className="onco-main-structure">
+                {/* 1. Form Section */}
+                <div className="onco-form-section">
+                    <div className="onco-form-container">
+                        <div className="onco-header-block">
+                            <Stethoscope size={48} strokeWidth={1.5} color="#1f2933" />
+                            <h1 className="onco-page-title">Login</h1>
                         </div>
-                        <div className="left-hero">
-                            <h2>Smart Care for Every<br/><em>Breath Taken</em></h2>
-                            <p>Monitor asthma and allergy patients in real-time with AI-driven insights.</p>
+
+                        {errors.auth && (
+                            <div className="onco-auth-alert">
+                                ⚠ {errors.auth}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSubmit} className="onco-interactive-form">
+                            <div className={`onco-input-group ${errors.email ? 'onco-input-error' : ''}`}>
+                                <div className="onco-icon-adornment">
+                                    <svg width="20" height="16" viewBox="0 0 20 16" fill="none">
+                                        <path d="M18 0H2C0.9 0 0.01 0.9 0.01 2L0 14C0 15.1 0.9 16 2 16H18C19.1 16 20 15.1 20 14V2C20 0.9 19.1 0 18 0ZM18 14H2V4L10 9L18 4V14ZM10 7L2 2H18L10 7Z" fill="#5F6368"/>
+                                    </svg>
+                                </div>
+                                <input 
+                                    type="text" 
+                                    placeholder="Email Address" 
+                                    value={username}
+                                    className="onco-text-input"
+                                    onChange={(e) => {
+                                        setUsername(e.target.value);
+                                        setErrors({ ...errors, email: false, auth: '' });
+                                    }}
+                                />
+                            </div>
+
+                            <div className={`onco-input-group ${errors.password ? 'onco-input-error' : ''}`}>
+                                <div className="onco-icon-adornment">
+                                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                        <path d="M12.91 1.75C10.74 1.75 8.91 3.25 8.41 5.25H1V10.25H3.5V12.75H6V15.25H8.5V17.75H13.5V13.29C15.96 12.83 17.83 10.66 17.83 8.08C17.83 4.58 15.63 1.75 12.91 1.75ZM13.5 9C12.95 9 12.5 8.55 12.5 8C12.5 7.45 12.95 7 13.5 7C14.05 7 14.5 7.45 14.5 8C14.5 8.55 14.5 9 13.5 9Z" fill="#5F6368"/>
+                                    </svg>
+                                </div>
+                                <input 
+                                    type="password" 
+                                    placeholder="Password" 
+                                    value={password}
+                                    className="onco-text-input"
+                                    onChange={(e) => {
+                                        setPassword(e.target.value);
+                                        setErrors({ ...errors, password: false, auth: '' });
+                                    }}
+                                />
+                            </div>
+
+                            <button type="submit" className="onco-submit-button" disabled={isLoading}>
+                                {isLoading ? 'Verifying...' : 'Login'}
+                            </button>
+                        </form>
+
+                        <div className="onco-navigation-row">
+                            Don't have an account? <a href="/signup" className="onco-accent-link">Register</a>
                         </div>
                     </div>
                 </div>
 
-                {/* RIGHT SIDE */}
-                <div className="login-right">
-                    <div className="login-card">
-                        <div className="title-block">
-                            <div className="form-title">Sign In</div>
-                            <div className="form-sub">Welcome back to <span>WheezeEase</span></div>
-                        </div>
-
-                        {errors.auth && (
-                            <div className="auth-error-alert">
-                                ⚠️ {errors.auth}
-                            </div>
-                        )}
-
-                        <form onSubmit={handleSubmit}>
-                            <div className="field">
-                                <label className="field-label">User Name</label>
-                                <div className="input-wrap">
-                                    <span className="i-icon">✉️</span>
-                                    <input 
-                                        type="text" 
-                                        className={errors.email ? 'err' : ''}
-                                        placeholder="John Doe" 
-                                        value={username}
-                                        onChange={(e) => {
-                                            setUsername(e.target.value);
-                                            setErrors({ ...errors, email: false, auth: '' });
-                                        }}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="field">
-                                <label className="field-label">Password</label>
-                                <div className="input-wrap">
-                                    <span className="i-icon">🔐</span>
-                                    <input 
-                                        type={passwordVisible ? 'text' : 'password'}
-                                        className={errors.password ? 'err' : ''}
-                                        placeholder="••••••••" 
-                                        value={password}
-                                        onChange={(e) => {
-                                            setPassword(e.target.value);
-                                            setErrors({ ...errors, password: false, auth: '' });
-                                        }}
-                                    />
-                                    <button 
-                                        type="button" 
-                                        className="pw-eye" 
-                                        onClick={() => setPasswordVisible(!passwordVisible)}
-                                    >
-                                        {passwordVisible ? '🙈' : '👁️'}
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="remember-row">
-                                <label className="check-label">
-                                    <input 
-                                        type="checkbox" 
-                                        checked={rememberMe}
-                                        onChange={(e) => setRememberMe(e.target.checked)}
-                                    />
-                                    <span className="check-text">Remember me</span>
-                                </label>
-                                <a href="#" className="row-forgot">Forgot password?</a>
-                            </div>
-
-                            <button type="submit" className={`submit-btn ${isLoading ? 'spin' : ''}`} disabled={isLoading}>
-                                <span className="btn-txt">
-                                    {isLoading ? 'Verifying...' : 'Sign In →'}
-                                </span>
-                                {isLoading && <div className="loader"></div>}
-                            </button>
-                        </form>
-
-                        <div className="divider-row">
-                            <div className="divider-line"></div>
-                            <span className="divider-text">or continue with</span>
-                            <div className="divider-line"></div>
-                        </div>
-
-                        <button className="google-btn" onClick={handleGoogleLogin} disabled={isLoading}>
-                            Continue with Google
-                        </button>
-
-                        <div className="register-row">
-                            Don't have an account? <a href="/signup">Register Here</a>
-                        </div>
+                {/* 2. Visual Section (Rounded Oval Container) */}
+                <div className="onco-visual-section">
+                    <div className="onco-visual-canvas">
+                        <img 
+                            src={LoginImage}
+                            alt="Medical Staff Illustration" 
+                            className="onco-main-illustration" 
+                        />
                     </div>
                 </div>
             </div>
 
             {showSuccess && (
-                <div className="success-layer show">
-                    <div className="s-circle">✓</div>
-                    <div className="s-title">Login Successful!</div>
-                    <div className="s-sub">Redirecting to Dashboard...</div>
-                    <div className="s-bar"><div className="s-fill"></div></div>
+                <div className="onco-success-overlay">
+                    <div className="onco-success-card">
+                        <div className="onco-success-icon">✓</div>
+                        <div className="onco-success-msg">Success! Redirecting...</div>
+                    </div>
                 </div>
             )}
         </div>

@@ -68,33 +68,33 @@ const Settings: React.FC = () => {
   };
 
   return (
-    <div className="settingsRoot">
-      <div className="settingsCard">
+    <div className="admin-settingsRoot">
+      <div className="admin-settingsCard">
 
         {/* SIDEBAR */}
-        <aside className="settingsSidebar">
-          <div className="settingsBrand">
-            <div className="brandDot"></div>
+        <aside className="admin-settingsSidebar">
+          <div className="admin-settingsBrand">
+            <div className="admin-brandDot"></div>
             <span>WheezeEase</span>
           </div>
 
-          <nav className="settingsNav">
+          <nav className="admin-settingsNav">
             <button
-              className={`settingsNavBtn ${activeTab === 'profile' ? 'activeNavBtn' : ''}`}
+              className={`admin-settingsNavBtn ${activeTab === 'profile' ? 'admin-activeNavBtn' : ''}`}
               onClick={() => setActiveTab('profile')}
             >
               👤 Profile
             </button>
 
             <button
-              className={`settingsNavBtn ${activeTab === 'notifications' ? 'activeNavBtn' : ''}`}
+              className={`admin-settingsNavBtn ${activeTab === 'notifications' ? 'admin-activeNavBtn' : ''}`}
               onClick={() => setActiveTab('notifications')}
             >
               🔔 Notifications
             </button>
 
             <button
-              className={`settingsNavBtn ${activeTab === 'security' ? 'activeNavBtn' : ''}`}
+              className={`admin-settingsNavBtn ${activeTab === 'security' ? 'admin-activeNavBtn' : ''}`}
               onClick={() => setActiveTab('security')}
             >
               🛡️ Security
@@ -103,43 +103,43 @@ const Settings: React.FC = () => {
         </aside>
 
         {/* MAIN */}
-        <section className="settingsMain">
+        <section className="admin-settingsMain">
 
           {/* HEADER */}
-          <div className="settingsHeader">
+          <div className="admin-settingsHeader">
             <div>
               <h1>{activeTab.toUpperCase()}</h1>
-              <p>Manage your settings</p>
+            
             </div>
 
-            <div className="settingsActions">
-              <button className="btnSecondary" onClick={handleDiscard}>
+            <div className="admin-settingsActions">
+              <button className="admin-btnSecondary" onClick={handleDiscard}>
                 Discard
               </button>
-              <button className="btnPrimary" onClick={handleSave}>
+              <button className="admin-btnPrimary" onClick={handleSave}>
                 Save
               </button>
             </div>
           </div>
 
           {/* CONTENT */}
-          <div className="settingsContent">
+          <div className="admin-settingsContent">
 
             {/* PROFILE */}
             {activeTab === 'profile' && (
               <>
-                <div className="profileSection">
-                  <div className="avatarWrap">
+                <div className="admin-profileSection">
+                  <div className="admin-avatarWrap">
                     {profileImage ? (
-                      <img src={profileImage} className="avatarImg" />
+                      <img src={profileImage} className="admin-avatarImg" />
                     ) : (
-                      <div className="avatarPlaceholder">
+                      <div className="admin-avatarPlaceholder">
                         {formData.name.charAt(0)}
                       </div>
                     )}
 
                     <div
-                      className="editBtn-settings"
+                      className="admin-editBtn-settings"
                       onClick={() => fileInputRef.current?.click()}
                     >
                       ✎
@@ -154,23 +154,23 @@ const Settings: React.FC = () => {
                   />
                 </div>
 
-                <div className="formGrid">
-                  <div className="field">
+                <div className="admin-formGrid">
+                  <div className="admin-field">
                     <label>Name</label>
                     <input name="name" value={formData.name} onChange={handleInputChange} />
                   </div>
 
-                  <div className="field">
+                  <div className="admin-field">
                     <label>Email</label>
                     <input name="email" value={formData.email} onChange={handleInputChange} />
                   </div>
 
-                  <div className="field">
+                  <div className="admin-field">
                     <label>Specialization</label>
                     <input name="specialization" value={formData.specialization} onChange={handleInputChange} />
                   </div>
 
-                  <div className="field">
+                  <div className="admin-field">
                     <label>Reg No</label>
                     <input name="regNo" value={formData.regNo} onChange={handleInputChange} />
                   </div>
@@ -187,16 +187,16 @@ const Settings: React.FC = () => {
                   { id: 'patientUpdates', title: 'Patient Updates' },
                   { id: 'systemNews', title: 'System News' },
                 ].map(item => (
-                  <div className="toggleCard" key={item.id}>
+                  <div className="admin-toggleCard" key={item.id}>
                     <span>{item.title}</span>
-                    <label className="switch">
+                    <label className="admin-switch">
                       <input
                         type="checkbox"
                         name={item.id}
                         checked={(formData as any)[item.id]}
                         onChange={handleInputChange}
                       />
-                      <span className="slider"></span>
+                      <span className="admin-slider"></span>
                     </label>
                   </div>
                 ))}
@@ -206,20 +206,20 @@ const Settings: React.FC = () => {
             {/* SECURITY */}
             {activeTab === 'security' && (
               <>
-                <div className="toggleCard">
+                <div className="admin-toggleCard">
                   <span>Two Factor Authentication</span>
-                  <label className="switch">
+                  <label className="admin-switch">
                     <input
                       type="checkbox"
                       name="twoFactor"
                       checked={formData.twoFactor}
                       onChange={handleInputChange}
                     />
-                    <span className="slider"></span>
+                    <span className="admin-slider"></span>
                   </label>
                 </div>
 
-                <div className="field">
+                <div className="admin-field">
                   <label>Auto Logout</label>
                   <select
                     name="sessionTimeout"

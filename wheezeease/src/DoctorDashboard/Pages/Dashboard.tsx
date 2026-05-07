@@ -40,100 +40,100 @@ const PatientViewModal: React.FC<{ patient: Patient; onClose: () => void }> = ({
   const statusBg    = isCritical ? '#fef2f2' : isWarning ? '#fffbeb' : '#f0fdf4';
 
   return (
-    <div className="modal-overlay-final" onClick={onClose}>
-      <div className="modal-content-final patient-view-modal" onClick={e => e.stopPropagation()}>
+    <div className="doctor-modal-overlay-final" onClick={onClose}>
+      <div className="doctor-modal-content-final doctor-patient-view-modal" onClick={e => e.stopPropagation()}>
         {/* Header */}
-        <div className="modal-header-final pv-header">
-          <div className="pv-header-left">
-            <div className="pv-avatar">{patient.patient.charAt(0)}{patient.patient.split(' ')[1]?.charAt(0)}</div>
+        <div className="doctor-modal-header-final doctor-pv-header">
+          <div className="doctor-pv-header-left">
+            <div className="doctor-pv-avatar">{patient.patient.charAt(0)}{patient.patient.split(' ')[1]?.charAt(0)}</div>
             <div>
               <h3>{patient.patient}</h3>
-              <span className="pv-id">{patient.patientId}</span>
+              <span className="doctor-pv-id">{patient.patientId}</span>
             </div>
           </div>
-          <div className="pv-header-right">
-            <span className="pv-status-badge" style={{ color: statusColor, background: statusBg }}>
+          <div className="doctor-pv-header-right">
+            <span className="doctor-pv-status-badge" style={{ color: statusColor, background: statusBg }}>
               {isCritical ? '🔴' : isWarning ? '🟡' : '🟢'} {patient.status.toUpperCase()}
             </span>
-            <button className="modal-close-final" onClick={onClose}><X size={16} /></button>
+            <button className="doctor-modal-close-final" onClick={onClose}><X size={16} /></button>
           </div>
         </div>
 
         {/* Body */}
-        <div className="modal-body-final pv-body">
+        <div className="doctor-modal-body-final doctor-pv-body">
           {/* Alert banner for critical */}
           {isCritical && (
-            <div className="pv-alert-banner">
+            <div className="doctor-pv-alert-banner">
               <AlertTriangle size={16} />
               <span>Critical alert — immediate attention required. Trigger: <strong>{patient.trigger}</strong></span>
             </div>
           )}
 
           {/* Vitals row */}
-          <div className="pv-vitals-row">
-            <div className="pv-vital-card">
-              <div className="pv-vital-icon" style={{ background: '#fef2f2' }}><Heart size={18} color="#ef4444" /></div>
+          <div className="doctor-pv-vitals-row">
+            <div className="doctor-pv-vital-card">
+              <div className="doctor-pv-vital-icon" style={{ background: '#fef2f2' }}><Heart size={18} color="#ef4444" /></div>
               <div>
-                <div className="pv-vital-label">SpO₂</div>
-                <div className="pv-vital-value" style={{ color: (patient.spo2 === '88%' || patient.spo2 === '89%') ? '#ef4444' : '#0f172a' }}>
+                <div className="doctor-pv-vital-label">SpO₂</div>
+                <div className="doctor-pv-vital-value" style={{ color: (patient.spo2 === '88%' || patient.spo2 === '89%') ? '#ef4444' : '#0f172a' }}>
                   {patient.spo2}
                 </div>
               </div>
             </div>
-            <div className="pv-vital-card">
-              <div className="pv-vital-icon" style={{ background: '#f0fdf4' }}><Activity size={18} color="#22c55e" /></div>
+            <div className="doctor-pv-vital-card">
+              <div className="doctor-pv-vital-icon" style={{ background: '#f0fdf4' }}><Activity size={18} color="#22c55e" /></div>
               <div>
-                <div className="pv-vital-label">Peak Flow</div>
-                <div className="pv-vital-value">{patient.pf} L/min</div>
+                <div className="doctor-pv-vital-label">Peak Flow</div>
+                <div className="doctor-pv-vital-value">{patient.pf} L/min</div>
               </div>
             </div>
-            <div className="pv-vital-card">
-              <div className="pv-vital-icon" style={{ background: '#fef3c7' }}><TrendingUp size={18} color="#f59e0b" /></div>
+            <div className="doctor-pv-vital-card">
+              <div className="doctor-pv-vital-icon" style={{ background: '#fef3c7' }}><TrendingUp size={18} color="#f59e0b" /></div>
               <div>
-                <div className="pv-vital-label">AI Confidence</div>
-                <div className="pv-vital-value">{patient.confidence}%</div>
+                <div className="doctor-pv-vital-label">AI Confidence</div>
+                <div className="doctor-pv-vital-value">{patient.confidence}%</div>
               </div>
             </div>
-            <div className="pv-vital-card">
-              <div className="pv-vital-icon" style={{ background: '#eff6ff' }}><Wind size={18} color="#3b82f6" /></div>
+            <div className="doctor-pv-vital-card">
+              <div className="doctor-pv-vital-icon" style={{ background: '#eff6ff' }}><Wind size={18} color="#3b82f6" /></div>
               <div>
-                <div className="pv-vital-label">Trigger</div>
-                <div className="pv-vital-value pv-trigger-val">{patient.trigger}</div>
+                <div className="doctor-pv-vital-label">Trigger</div>
+                <div className="doctor-pv-vital-value doctor-pv-trigger-val">{patient.trigger}</div>
               </div>
             </div>
           </div>
 
           {/* Info grid */}
-          <div className="pv-info-grid">
-            <div className="pv-info-section">
-              <h4 className="pv-section-title">Patient Details</h4>
-              <div className="pv-info-row"><User size={14} /><span className="pv-info-label">Age</span><span>{patient.age} years</span></div>
-              <div className="pv-info-row"><Phone size={14} /><span className="pv-info-label">Contact</span><span>{patient.contact}</span></div>
-              <div className="pv-info-row"><Mail size={14} /><span className="pv-info-label">Email</span><span>{patient.email}</span></div>
-              <div className="pv-info-row"><Clock size={14} /><span className="pv-info-label">Last Visit</span><span>{patient.lastVisit}</span></div>
+          <div className="doctor-pv-info-grid">
+            <div className="doctor-pv-info-section">
+              <h4 className="doctor-pv-section-title">Patient Details</h4>
+              <div className="doctor-pv-info-row"><User size={14} /><span className="doctor-pv-info-label">Age</span><span>{patient.age} years</span></div>
+              <div className="doctor-pv-info-row"><Phone size={14} /><span className="doctor-pv-info-label">Contact</span><span>{patient.contact}</span></div>
+              <div className="doctor-pv-info-row"><Mail size={14} /><span className="doctor-pv-info-label">Email</span><span>{patient.email}</span></div>
+              <div className="doctor-pv-info-row"><Clock size={14} /><span className="doctor-pv-info-label">Last Visit</span><span>{patient.lastVisit}</span></div>
             </div>
-            <div className="pv-info-section">
-              <h4 className="pv-section-title">Medical Info</h4>
-              <div className="pv-info-row"><Activity size={14} /><span className="pv-info-label">Condition</span><span>{patient.condition}</span></div>
-              <div className="pv-info-row">
-                <span className="pv-risk-indicator" style={{ background: statusBg, color: statusColor }}>
+            <div className="doctor-pv-info-section">
+              <h4 className="doctor-pv-section-title">Medical Info</h4>
+              <div className="doctor-pv-info-row"><Activity size={14} /><span className="doctor-pv-info-label">Condition</span><span>{patient.condition}</span></div>
+              <div className="doctor-pv-info-row">
+                <span className="doctor-pv-risk-indicator" style={{ background: statusBg, color: statusColor }}>
                   Risk Level: <strong>{patient.risk}</strong>
                 </span>
               </div>
               {/* Confidence bar */}
-              <div className="pv-conf-section">
-                <div className="pv-conf-label">
+              <div className="doctor-pv-conf-section">
+                <div className="doctor-pv-conf-label">
                   <span>AI Prediction Confidence</span>
                   <span style={{ fontWeight: 700 }}>{patient.confidence}%</span>
                 </div>
-                <div className="pv-conf-track">
-                  <div className="pv-conf-fill" style={{
+                <div className="doctor-pv-conf-track">
+                  <div className="doctor-pv-conf-fill" style={{
                     width: `${patient.confidence}%`,
                     background: patient.confidence > 80 ? '#ef4444' : patient.confidence > 60 ? '#f59e0b' : '#22c55e'
                   }} />
                 </div>
               </div>
-              <div className="pv-last-alert">
+              <div className="doctor-pv-last-alert">
                 <Clock size={12} /> Alert triggered <strong>{patient.time}</strong>
               </div>
             </div>
@@ -141,9 +141,9 @@ const PatientViewModal: React.FC<{ patient: Patient; onClose: () => void }> = ({
         </div>
 
         {/* Footer */}
-        <div className="modal-footer-final">
-          <button className="btn-cancel-final" onClick={onClose}>Close</button>
-          <button className="btn-save-final">📝 Write Prescription</button>
+        <div className="doctor-modal-footer-final">
+          <button className="doctor-btn-cancel-final" onClick={onClose}>Close</button>
+          <button className="doctor-btn-save-final">📝 Write Prescription</button>
         </div>
       </div>
     </div>
@@ -162,36 +162,36 @@ const ViewAllModal: React.FC<{ patients: Patient[]; onClose: () => void; onViewP
   });
 
   return (
-    <div className="modal-overlay-final" onClick={onClose}>
-      <div className="modal-content-final view-all-modal" onClick={e => e.stopPropagation()}>
-        <div className="modal-header-final">
+    <div className="doctor-modal-overlay-final" onClick={onClose}>
+      <div className="doctor-modal-content-final doctor-view-all-modal" onClick={e => e.stopPropagation()}>
+        <div className="doctor-modal-header-final">
           <h3>📋 All AI Prediction Alerts</h3>
-          <button className="modal-close-final" onClick={onClose}><X size={16} /></button>
+          <button className="doctor-modal-close-final" onClick={onClose}><X size={16} /></button>
         </div>
 
         {/* Filters */}
-        <div className="va-filters">
+        <div className="doctor-va-filters">
           <input
-            className="va-search"
+            className="doctor-va-search"
             placeholder="Search patient or condition..."
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
-          <div className="va-risk-filters">
+          <div className="doctor-va-risk-filters">
             {['All', 'High', 'Medium', 'Low'].map(r => (
               <button
                 key={r}
-                className={`va-filter-btn ${filterRisk === r ? 'active' : ''}`}
+                className={`doctor-va-filter-btn ${filterRisk === r ? 'active' : ''}`}
                 onClick={() => setFilterRisk(r)}
               >{r}</button>
             ))}
           </div>
         </div>
 
-        <div className="modal-body-final va-body">
-          <div className="va-count">{filtered.length} patient{filtered.length !== 1 ? 's' : ''} found</div>
+        <div className="doctor-modal-body-final doctor-va-body">
+          <div className="doctor-va-count">{filtered.length} patient{filtered.length !== 1 ? 's' : ''} found</div>
           {filtered.length === 0 ? (
-            <div className="va-empty">No patients match your search.</div>
+            <div className="doctor-va-empty">No patients match your search.</div>
           ) : (
             filtered.map(p => {
               const isCrit = p.status === 'critical';
@@ -199,27 +199,27 @@ const ViewAllModal: React.FC<{ patients: Patient[]; onClose: () => void; onViewP
               const sc = isCrit ? '#ef4444' : isWarn ? '#f59e0b' : '#22c55e';
               const sb = isCrit ? '#fef2f2' : isWarn ? '#fffbeb' : '#f0fdf4';
               return (
-                <div key={p.id} className={`va-patient-row va-row-${p.status}`}>
-                  <div className="va-avatar">{p.patient.charAt(0)}{p.patient.split(' ')[1]?.charAt(0)}</div>
-                  <div className="va-info">
-                    <div className="va-name">{p.patient}</div>
-                    <div className="va-meta">{p.patientId} &bull; {p.condition}</div>
+                <div key={p.id} className={`doctor-va-patient-row doctor-va-row-${p.status}`}>
+                  <div className="doctor-va-avatar">{p.patient.charAt(0)}{p.patient.split(' ')[1]?.charAt(0)}</div>
+                  <div className="doctor-va-info">
+                    <div className="doctor-va-name">{p.patient}</div>
+                    <div className="doctor-va-meta">{p.patientId} &bull; {p.condition}</div>
                   </div>
-                  <div className="va-vitals">
-                    <span className="va-vital">SpO₂ <strong style={{ color: (p.spo2 === '88%' || p.spo2 === '89%') ? '#ef4444' : '#0f172a' }}>{p.spo2}</strong></span>
-                    <span className="va-vital">PF <strong>{p.pf}</strong></span>
+                  <div className="doctor-va-vitals">
+                    <span className="doctor-va-vital">SpO₂ <strong style={{ color: (p.spo2 === '88%' || p.spo2 === '89%') ? '#ef4444' : '#0f172a' }}>{p.spo2}</strong></span>
+                    <span className="doctor-va-vital">PF <strong>{p.pf}</strong></span>
                   </div>
-                  <span className="va-risk-badge" style={{ color: sc, background: sb }}>{p.risk}</span>
-                  <span className="va-time"><Clock size={11} /> {p.time}</span>
-                  <button className="view-patient-btn" onClick={() => { onViewPatient(p); }}>View</button>
+                  <span className="doctor-va-risk-badge" style={{ color: sc, background: sb }}>{p.risk}</span>
+                  <span className="doctor-va-time"><Clock size={11} /> {p.time}</span>
+                  <button className="doctor-view-patient-btn" onClick={() => { onViewPatient(p); }}>View</button>
                 </div>
               );
             })
           )}
         </div>
 
-        <div className="modal-footer-final">
-          <button className="btn-cancel-final" onClick={onClose}>Close</button>
+        <div className="doctor-modal-footer-final">
+          <button className="doctor-btn-cancel-final" onClick={onClose}>Close</button>
         </div>
       </div>
     </div>
@@ -263,71 +263,71 @@ const DoctorDashboard: React.FC = () => {
     <div className="doctor-dashboard-final">
 
       {/* ── Bold Welcome Header ── */}
-      <div className="welcome-header-final">
-        <div className="welcome-text-block">
-          <h1 className="welcome-bold-title">Welcome Doctor!</h1>
-          <p className="welcome-subtitle">Here's what's happening with your patients today.</p>
+      <div className="doctor-welcome-header-final">
+        <div className="doctor-welcome-text-block">
+          <h1 className="doctor-welcome-bold-title">Welcome Doctor!</h1>
+          <p className="doctor-welcome-subtitle">Here's what's happening with your patients today.</p>
         </div>
-        <div className="welcome-date-badge">
-          <span className="welcome-date-day">{new Date().toLocaleDateString('en-US', { weekday: 'long' })}</span>
-          <span className="welcome-date-full">{new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+        <div className="doctor-welcome-date-badge">
+          <span className="doctor-welcome-date-day">{new Date().toLocaleDateString('en-US', { weekday: 'long' })}</span>
+          <span className="doctor-welcome-date-full">{new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
         </div>
       </div>
 
 
       {/* ── 3 Action Cards ── */}
-      <div className="action-cards-final">
-        <div className="action-card-final" onClick={() => navigate('/analytics')}>
-          <div className="action-icon-final">📊</div>
-          <div className="action-details-final">
+      <div className="doctor-action-cards-final">
+        <div className="doctor-action-card-final" onClick={() => navigate('/analytics')}>
+          <div className="doctor-action-icon-final">📊</div>
+          <div className="doctor-action-details-final">
             <h4>View Reports & Analytics</h4>
             <p>AI insights & health analytics</p>
-            <div className="action-meta-final">
+            <div className="doctor-action-meta-final">
               <span>📈 42 new patients</span>
               <span>↑ 12% this month</span>
             </div>
           </div>
-          <div className="action-arrow-final">→</div>
+          <div className="doctor-action-arrow-final">→</div>
         </div>
 
-        <div className="action-card-final" onClick={() => setShowAddPatientModal(true)}>
-          <div className="action-icon-final">👤</div>
-          <div className="action-details-final">
+        <div className="doctor-action-card-final" onClick={() => setShowAddPatientModal(true)}>
+          <div className="doctor-action-icon-final">👤</div>
+          <div className="doctor-action-details-final">
             <h4>Add New Patient</h4>
             <p>Register patient profile</p>
-            <div className="action-meta-final">
+            <div className="doctor-action-meta-final">
               <span>👥 Total: 284</span>
               <span>🆕 +42 this month</span>
             </div>
           </div>
-          <div className="action-arrow-final">→</div>
+          <div className="doctor-action-arrow-final">→</div>
         </div>
 
-        <div className="action-card-final" onClick={() => setShowPrescriptionModal(true)}>
-          <div className="action-icon-final">💊</div>
-          <div className="action-details-final">
+        <div className="doctor-action-card-final" onClick={() => setShowPrescriptionModal(true)}>
+          <div className="doctor-action-icon-final">💊</div>
+          <div className="doctor-action-details-final">
             <h4>Update Prescription</h4>
             <p>Modify patient medications</p>
-            <div className="action-meta-final">
+            <div className="doctor-action-meta-final">
               <span>💊 34 active</span>
               <span>⚠️ 12 due for refill</span>
             </div>
           </div>
-          <div className="action-arrow-final">→</div>
+          <div className="doctor-action-arrow-final">→</div>
         </div>
       </div>
 
-      {/* ── Chart ── */}
-      <div className="chart-section-final">
-        <div className="chart-header-final">
+      {/* ── Chart Section ── */}
+      <div className="doctor-chart-section-final">
+        <div className="doctor-chart-header-final">
           <h3>📈 AQI vs Asthma Attacks Correlation</h3>
-          <div className="chart-legend-final">
-            <span><span className="legend-dot aqi"></span>AQI Index</span>
-            <span><span className="legend-dot attacks"></span>Asthma Attacks</span>
+          <div className="doctor-chart-legend-final">
+            <span><span className="doctor-legend-dot aqi"></span>AQI Index</span>
+            <span><span className="doctor-legend-dot attacks"></span>Asthma Attacks</span>
           </div>
         </div>
-        <div className="chart-container-final">
-          <svg viewBox="0 0 700 200" className="correlation-svg">
+        <div className="doctor-chart-container-final">
+          <svg viewBox="0 0 700 200" className="doctor-correlation-svg">
             <defs>
               <linearGradient id="aqiGrad" x1="0%" y1="0%" x2="0%" y2="100%">
                 <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.35" />
@@ -384,21 +384,21 @@ const DoctorDashboard: React.FC = () => {
             </g>
           </svg>
         </div>
-        <div className="chart-insight-final">
-          <span className="insight-badge">⚠️ High Correlation Detected</span>
+        <div className="doctor-chart-insight-final">
+          <span className="doctor-insight-badge">⚠️ High Correlation Detected</span>
           <p>AQI increase strongly correlates with asthma attacks (+38% risk when AQI &gt; 150)</p>
         </div>
       </div>
 
       {/* ── Predictions Table ── */}
-      <div className="predictions-table-final">
-        <div className="table-header-final">
+      <div className="doctor-predictions-table-final">
+        <div className="doctor-table-header-final">
           <h3>📋 Recent AI Predictions & Alerts</h3>
           {/* View All — opens modal */}
-          <button className="view-all-final" onClick={() => setShowViewAllModal(true)}>View All</button>
+          <button className="doctor-view-all-final" onClick={() => setShowViewAllModal(true)}>View All</button>
         </div>
-        <div className="table-wrapper-final">
-          <table className="predictions-data-table">
+        <div className="doctor-table-wrapper-final">
+          <table className="doctor-predictions-data-table">
             <thead>
               <tr>
                 <th>Patient</th><th>Trigger</th><th>Confidence</th><th>Risk Level</th>
@@ -407,25 +407,25 @@ const DoctorDashboard: React.FC = () => {
             </thead>
             <tbody>
               {RECENT_PREDICTIONS.map(pred => (
-                <tr key={pred.id} className={`pred-row-${pred.status}`}>
-                  <td className="patient-cell">{pred.patient}</td>
+                <tr key={pred.id} className={`doctor-pred-row-${pred.status}`}>
+                  <td className="doctor-patient-cell">{pred.patient}</td>
                   <td>{pred.trigger}</td>
                   <td>
-                    <div className="conf-bar">
-                      <div className="conf-fill" style={{
+                    <div className="doctor-conf-bar">
+                      <div className="doctor-conf-fill" style={{
                         width: `${pred.confidence}%`,
                         background: pred.confidence > 80 ? '#ef4444' : pred.confidence > 60 ? '#f59e0b' : '#10b981'
                       }} />
                       <span>{pred.confidence}%</span>
                     </div>
                   </td>
-                  <td><span className={`risk-badge-${pred.risk.toLowerCase()}`}>{pred.risk}</span></td>
-                  <td className={pred.spo2 === '88%' || pred.spo2 === '89%' ? 'critical-value' : ''}>{pred.spo2}</td>
+                  <td><span className={`doctor-risk-badge-${pred.risk.toLowerCase()}`}>{pred.risk}</span></td>
+                  <td className={pred.spo2 === '88%' || pred.spo2 === '89%' ? 'doctor-critical-value' : ''}>{pred.spo2}</td>
                   <td>{pred.pf} L/min</td>
-                  <td className="time-cell">{pred.time}</td>
+                  <td className="doctor-time-cell">{pred.time}</td>
                   <td>
                     {/* View — opens patient detail modal, no navigation */}
-                    <button className="view-patient-btn" onClick={() => setViewedPatient(pred)}>View</button>
+                    <button className="doctor-view-patient-btn" onClick={() => setViewedPatient(pred)}>View</button>
                   </td>
                 </tr>
               ))}
@@ -450,27 +450,27 @@ const DoctorDashboard: React.FC = () => {
 
       {/* ── Add Patient Modal ── */}
       {showAddPatientModal && (
-        <div className="modal-overlay-final" onClick={() => setShowAddPatientModal(false)}>
-          <div className="modal-content-final" onClick={e => e.stopPropagation()}>
-            <div className="modal-header-final">
+        <div className="doctor-modal-overlay-final" onClick={() => setShowAddPatientModal(false)}>
+          <div className="doctor-modal-content-final" onClick={e => e.stopPropagation()}>
+            <div className="doctor-modal-header-final">
               <h3>➕ Add New Patient</h3>
-              <button className="modal-close-final" onClick={() => setShowAddPatientModal(false)}><X size={16} /></button>
+              <button className="doctor-modal-close-final" onClick={() => setShowAddPatientModal(false)}><X size={16} /></button>
             </div>
-            <div className="modal-body-final">
-              <div className="form-row-final">
-                <div className="form-group-final full"><label>Full Name *</label><input type="text" placeholder="Enter patient name" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} /></div>
+            <div className="doctor-modal-body-final">
+              <div className="doctor-form-row-final">
+                <div className="doctor-form-group-final full"><label>Full Name *</label><input type="text" placeholder="Enter patient name" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} /></div>
               </div>
-              <div className="form-row-final">
-                <div className="form-group-final"><label>Age *</label><input type="number" placeholder="Age" value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} /></div>
-                <div className="form-group-final"><label>DOB</label><input type="date" value={formData.dob} onChange={e => setFormData({...formData, dob: e.target.value})} /></div>
+              <div className="doctor-form-row-final">
+                <div className="doctor-form-group-final"><label>Age *</label><input type="number" placeholder="Age" value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} /></div>
+                <div className="doctor-form-group-final"><label>DOB</label><input type="date" value={formData.dob} onChange={e => setFormData({...formData, dob: e.target.value})} /></div>
               </div>
-              <div className="form-row-final">
-                <div className="form-group-final"><label>Contact *</label><input type="tel" placeholder="+92 XXX XXXXXXX" value={formData.contact} onChange={e => setFormData({...formData, contact: e.target.value})} /></div>
-                <div className="form-group-final"><label>Email</label><input type="email" placeholder="patient@email.com" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} /></div>
+              <div className="doctor-form-row-final">
+                <div className="doctor-form-group-final"><label>Contact *</label><input type="tel" placeholder="+92 XXX XXXXXXX" value={formData.contact} onChange={e => setFormData({...formData, contact: e.target.value})} /></div>
+                <div className="doctor-form-group-final"><label>Email</label><input type="email" placeholder="patient@email.com" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} /></div>
               </div>
-              <div className="form-row-final">
-                <div className="form-group-final"><label>Condition</label><input type="text" placeholder="Primary condition" value={formData.condition} onChange={e => setFormData({...formData, condition: e.target.value})} /></div>
-                <div className="form-group-final"><label>Severity</label>
+              <div className="doctor-form-row-final">
+                <div className="doctor-form-group-final"><label>Condition</label><input type="text" placeholder="Primary condition" value={formData.condition} onChange={e => setFormData({...formData, condition: e.target.value})} /></div>
+                <div className="doctor-form-group-final"><label>Severity</label>
                   <select value={formData.severity} onChange={e => setFormData({...formData, severity: e.target.value})}>
                     <option value="stable">Stable</option>
                     <option value="warning">Warning</option>
@@ -478,14 +478,14 @@ const DoctorDashboard: React.FC = () => {
                   </select>
                 </div>
               </div>
-              <div className="form-row-final">
-                <div className="form-group-final"><label>SpO₂ (%)</label><input type="text" placeholder="e.g., 95%" value={formData.spo2} onChange={e => setFormData({...formData, spo2: e.target.value})} /></div>
-                <div className="form-group-final"><label>Peak Flow</label><input type="text" placeholder="e.g., 350" value={formData.peakFlow} onChange={e => setFormData({...formData, peakFlow: e.target.value})} /></div>
+              <div className="doctor-form-row-final">
+                <div className="doctor-form-group-final"><label>SpO₂ (%)</label><input type="text" placeholder="e.g., 95%" value={formData.spo2} onChange={e => setFormData({...formData, spo2: e.target.value})} /></div>
+                <div className="doctor-form-group-final"><label>Peak Flow</label><input type="text" placeholder="e.g., 350" value={formData.peakFlow} onChange={e => setFormData({...formData, peakFlow: e.target.value})} /></div>
               </div>
             </div>
-            <div className="modal-footer-final">
-              <button className="btn-cancel-final" onClick={() => setShowAddPatientModal(false)}>Cancel</button>
-              <button className="btn-save-final" onClick={handleAddPatient}>Save Patient</button>
+            <div className="doctor-modal-footer-final">
+              <button className="doctor-btn-cancel-final" onClick={() => setShowAddPatientModal(false)}>Cancel</button>
+              <button className="doctor-btn-save-final" onClick={handleAddPatient}>Save Patient</button>
             </div>
           </div>
         </div>
@@ -493,29 +493,29 @@ const DoctorDashboard: React.FC = () => {
 
       {/* ── Prescription Patient Selection Modal ── */}
       {showPrescriptionModal && (
-        <div className="modal-overlay-final" onClick={() => setShowPrescriptionModal(false)}>
-          <div className="modal-content-final small" onClick={e => e.stopPropagation()}>
-            <div className="modal-header-final">
+        <div className="doctor-modal-overlay-final" onClick={() => setShowPrescriptionModal(false)}>
+          <div className="doctor-modal-content-final small" onClick={e => e.stopPropagation()}>
+            <div className="doctor-modal-header-final">
               <h3>📝 Select Patient</h3>
-              <button className="modal-close-final" onClick={() => setShowPrescriptionModal(false)}><X size={16} /></button>
+              <button className="doctor-modal-close-final" onClick={() => setShowPrescriptionModal(false)}><X size={16} /></button>
             </div>
-            <div className="modal-body-final">
-              <div className="patient-list-final">
+            <div className="doctor-modal-body-final">
+              <div className="doctor-patient-list-final">
                 {patientsList.map(patient => (
-                  <div key={patient.id} className={`patient-item-final ${selectedPatient?.id === patient.id ? 'selected' : ''}`} onClick={() => setSelectedPatient(patient)}>
-                    <div className="patient-avatar-final">{patient.patient.charAt(0)}{patient.patient.split(' ')[1]?.charAt(0)}</div>
-                    <div className="patient-info-final">
-                      <div className="patient-name-final">{patient.patient}</div>
-                      <div className="patient-id-final">{patient.patientId} • {patient.condition}</div>
+                  <div key={patient.id} className={`doctor-patient-item-final ${selectedPatient?.id === patient.id ? 'selected' : ''}`} onClick={() => setSelectedPatient(patient)}>
+                    <div className="doctor-patient-avatar-final">{patient.patient.charAt(0)}{patient.patient.split(' ')[1]?.charAt(0)}</div>
+                    <div className="doctor-patient-info-final">
+                      <div className="doctor-patient-name-final">{patient.patient}</div>
+                      <div className="doctor-patient-id-final">{patient.patientId} • {patient.condition}</div>
                     </div>
-                    {selectedPatient?.id === patient.id && <div className="check-mark">✓</div>}
+                    {selectedPatient?.id === patient.id && <div className="doctor-check-mark">✓</div>}
                   </div>
                 ))}
               </div>
             </div>
-            <div className="modal-footer-final">
-              <button className="btn-cancel-final" onClick={() => setShowPrescriptionModal(false)}>Cancel</button>
-              <button className="btn-save-final" onClick={handleProceedToPrescription}>Continue to Prescription →</button>
+            <div className="doctor-modal-footer-final">
+              <button className="doctor-btn-cancel-final" onClick={() => setShowPrescriptionModal(false)}>Cancel</button>
+              <button className="doctor-btn-save-final" onClick={handleProceedToPrescription}>Continue to Prescription →</button>
             </div>
           </div>
         </div>

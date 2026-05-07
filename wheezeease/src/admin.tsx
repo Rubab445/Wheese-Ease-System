@@ -4,7 +4,7 @@ import UtilitySidebar from './AdminDashboard/Components/UtilitySidebar';
 import Overview from './AdminDashboard/Pages/AdminDashboard';
 import UserManagement from './AdminDashboard/Pages/UserManagement';
 import DoctorManagement from './AdminDashboard/Pages/DoctorManagement';
-import PatientManagement from './AdminDashboard/Pages/PatientManagement';
+import ReportDetailPanel from './AdminDashboard/Pages/Reportdetailpanel';
 import EnvironmentalMonitor from './AdminDashboard/Pages/EnvironmentalMonitor';
 import AIMonitoring from './AdminDashboard/Pages/AIMonitoring';
 import Settings from './AdminDashboard/Pages/Settings';
@@ -15,12 +15,22 @@ export default function AdminDashboard() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showUtility, setShowUtility] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1000);
+  const [selectedReport, setSelectedReport] = useState(null);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 1000);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  const handleReportStatusChange = (reportId: string, newStatus: string) => {
+    // TODO: Implement status change logic
+    console.log(`Report ${reportId} status changed to ${newStatus}`);
+  };
+
+  const handleCloseReportDetail = () => {
+    setSelectedReport(null);
+  };
 
   const renderModule = () => {
     switch (activeModule) {
@@ -30,8 +40,8 @@ export default function AdminDashboard() {
         return <UserManagement />;
       case 'doctor-management':
         return <DoctorManagement />;
-      case 'patient-directory':
-        return <PatientManagement />;
+      case 'report-details':
+        return <ReportDetailPanel report={selectedReport} onStatusChange={handleReportStatusChange} onClose={handleCloseReportDetail} />;
       case 'settings':
         return <Settings />;
       case 'environmental-monitor':

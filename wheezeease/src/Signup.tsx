@@ -1,198 +1,108 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
-  User, Mail, Lock, Eye, EyeOff, ShieldCheck, 
-  ChevronDown, CheckCircle2, ArrowRight 
+  Eye, 
+  EyeOff, 
+  LayoutGrid,
+  ChevronDown
 } from "lucide-react"; 
 import './styles/Signup.css';
-
-type Role = "patient" | "admin" | "";
+import image from './assets/stethoscope.png';
 
 const SignUp: React.FC = () => {
   const navigate = useNavigate();
-  const [form, setForm] = useState({
-    name: "", 
-    email: "", 
-    password: "", 
-    confirmPassword: "", 
-    role: "" as Role
-  });
-  
-  const [errors, setErrors] = useState<any>({});
   const [showPass, setShowPass] = useState(false);
-  const [showConfirmPass, setShowConfirmPass] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => { 
-    setMounted(true); 
-  }, []);
-
-  const handleChange = (field: string, value: string) => {
-    setForm(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) setErrors((prev: any) => ({ ...prev, [field]: undefined }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Validation
-    const newErrors: any = {};
-    if (!form.name) newErrors.name = "Name is required";
-    if (!form.email) newErrors.email = "Email is required";
-    if (!form.role) newErrors.role = "Please select a role";
-    if (form.password.length < 8) newErrors.password = "Password must be 8+ chars";
-    if (form.password !== form.confirmPassword) newErrors.confirmPassword = "Passwords do not match";
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
-    setSubmitted(true);
-  };
 
   return (
-    <div className={`signup-container ${mounted ? "fade-in" : ""}`}>
-      {/* LEFT SIDE: FORM PANEL */}
-      <div className="signup-left-panel">
-        <div className="form-wrapper">
-          <div className="brand-logo" onClick={() => navigate("/")}>
-            <div className="logo-sq">W</div>
-            <span>WheezeEase</span>
+    <div className="signup-page">
+      {/* LEFT SIDEBAR: AESTHETIC PANEL */}
+      <div className="sidebar-container">
+        <div className="sidebar-header">
+          <div className="app-icon-box">
+            <LayoutGrid size={22} color="#5c6bc0" fill="#5c6bc0" fillOpacity={0.2} />
           </div>
-
-          {submitted ? (
-            <div className="success-state">
-              <CheckCircle2 size={60} color="#2d8f5a" />
-              <h2>Verify your email</h2>
-              <p>We've sent an activation link to <strong>{form.email}</strong>.</p>
-              <button className="main-btn" onClick={() => navigate("/login")}>Go to Login</button>
-            </div>
-          ) : (
-            <div className="form-content">
-              <div className="header-text">
-                <h1>Create Account</h1>
-                <p>Join the AI-powered respiratory care platform.</p>
-              </div>
-
-              <form onSubmit={handleSubmit} className="modern-form">
-                {/* Full Name */}
-                <div className="input-group">
-                  <label>User Name</label>
-                  <div className={`input-box ${errors.name ? "input-error" : ""}`}>
-                    <User className="icon" size={18} />
-                    <input 
-                      type="text" placeholder="Ahmad Ali" 
-                      value={form.name}
-                      onChange={(e) => handleChange("name", e.target.value)}
-                    />
-                  </div>
-                  {errors.name && <span className="err-txt">{errors.name}</span>}
-                </div>
-
-                {/* Email */}
-                <div className="input-group">
-                  <label>Email Address</label>
-                  <div className={`input-box ${errors.email ? "input-error" : ""}`}>
-                    <Mail className="icon" size={18} />
-                    <input 
-                      type="email" placeholder="name@example.com" 
-                      value={form.email}
-                      onChange={(e) => handleChange("email", e.target.value)}
-                    />
-                  </div>
-                  {errors.email && <span className="err-txt">{errors.email}</span>}
-                </div>
-
-                {/* Role Dropdown */}
-                <div className="input-group">
-                  <label>Join as</label>
-                  <div className={`input-box select-box ${errors.role ? "input-error" : ""}`}>
-                    <ShieldCheck className="icon" size={18} />
-                    <select 
-                      value={form.role} 
-                      onChange={(e) => handleChange("role", e.target.value)}
-                    >
-                      <option value="" disabled>Select your role</option>
-                      <option value="doctor">Doctor</option>
-                      <option value="admin">Administrator</option>
-                    </select>
-                    <ChevronDown className="select-arrow" size={16} />
-                  </div>
-                  {errors.role && <span className="err-txt">{errors.role}</span>}
-                </div>
-
-                {/* Password */}
-                <div className="input-group">
-                  <label>Password</label>
-                  <div className={`input-box ${errors.password ? "input-error" : ""}`}>
-                    <Lock className="icon" size={18} />
-                    <input 
-                      type={showPass ? "text" : "password"} 
-                      placeholder="Min. 8 characters" 
-                      value={form.password}
-                      onChange={(e) => handleChange("password", e.target.value)}
-                    />
-                    <div className="eye-toggle" onClick={() => setShowPass(!showPass)}>
-                      {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Confirm Password */}
-                <div className="input-group">
-                  <label>Confirm Password</label>
-                  <div className={`input-box ${errors.confirmPassword ? "input-error" : ""}`}>
-                    <ShieldCheck className="icon" size={18} />
-                    <input 
-                      type={showConfirmPass ? "text" : "password"} 
-                      placeholder="Re-enter password" 
-                      value={form.confirmPassword}
-                      onChange={(e) => handleChange("confirmPassword", e.target.value)}
-                    />
-                    <div className="eye-toggle" onClick={() => setShowConfirmPass(!showConfirmPass)}>
-                      {showConfirmPass ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </div>
-                  </div>
-                  {errors.confirmPassword && <span className="err-txt">{errors.confirmPassword}</span>}
-                </div>
-
-                <button type="submit" className="main-btn">
-                  Create Account <ArrowRight size={18} style={{marginLeft: '8px'}} />
-                </button>
-              </form>
-
-              <p className="footer-link">
-                Already have an account? <span onClick={() => navigate("/")}>Sign in</span>
-              </p>
-            </div>
-          )}
+        </div>
+        
+        <div className="sidebar-body">
+          <h2 className="sidebar-headline">
+            We at MediCare are <br/> always fully focused on <br/> helping your child.
+          </h2>
+          
+          <div className="graphic-stage">
+               {/* 3D Stethoscope Image or Illustration should go here */}
+               <div className="stethoscope-placeholder">
+                <img src={image} alt="Stethoscope"/>
+               </div>
+          </div>
         </div>
       </div>
 
-      {/* RIGHT SIDE: HERO PANEL (Filled Color) */}
-      <div className="signup-right-panel">
-        <div className="hero-content">
-          <div className="hero-info">
-            <span className="pill">WheezeEase AI</span>
-            <h1 style={{fontSize:'46px', marginTop:'20px'}}>Intelligent care for every breath.</h1>
-            <p>Experience the future of respiratory health with real-time AI insights and environmental monitoring.</p>
-            
-            <div className="feature-list">
-              <div className="f-item">
-                <CheckCircle2 size={20} className="f-icon" />
-                <span>98% Prediction Accuracy</span>
-              </div>
-              <div className="f-item">
-                <CheckCircle2 size={20} className="f-icon" />
-                <span>Real-time Air Quality Data</span>
-              </div>
-              <div className="f-item">
-                <CheckCircle2 size={20} className="f-icon" />
-                <span>Secure Patient-Admin Portal</span>
-              </div>
+      {/* RIGHT SIDE: FORM PORTAL */}
+      <div className="form-portal">
+        <div className="top-nav">
+          <span className="lang-text">English(US) <ChevronDown size={14} style={{marginLeft: '4px'}} /></span>
+        </div>
+
+        <div className="form-scroll-container">
+          <div className="form-wrapper">
+            <h1 className="main-title">Create Account</h1>
+
+            <div className="social-actions">
+              <button className="social-pill">
+                {/* Colorful Google Icon using custom SVG for brand accuracy */}
+                <svg width="18" height="18" viewBox="0 0 24 24">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 12-4.53z" fill="#EA4335"/>
+                </svg>
+                <span>Sign up with Google</span>
+              </button>
+              
+              <button className="social-pill">
+                {/* Official Blue Facebook Icon */}
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="#1877F2">
+                   <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                </svg>
+                <span>Sign up with Facebook</span>
+              </button>
             </div>
+
+            <div className="text-divider">-OR-</div>
+
+            <form className="auth-form" onSubmit={(e) => e.preventDefault()}>
+              <div className="underline-input">
+                <input type="text" name="name" placeholder="Full Name:" required />
+              </div>
+
+              <div className="underline-input">
+                <input type="email" name="email" placeholder="Email:" required />
+              </div>
+
+              <div className="underline-input">
+                <input 
+                  type={showPass ? "text" : "password"} 
+                  name="password" 
+                  placeholder="Password:" 
+                  required 
+                />
+                <button 
+                  type="button" 
+                  className="toggle-visibility" 
+                  onClick={() => setShowPass(!showPass)}
+                >
+                  {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+
+              <button type="submit" className="submit-action-btn">
+                Create Account
+              </button>
+            </form>
+
+            <p className="redirect-text">
+              Already have an Account? <span onClick={() => navigate("/login")}>Log in</span>
+            </p>
           </div>
         </div>
       </div>

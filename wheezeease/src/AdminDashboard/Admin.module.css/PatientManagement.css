@@ -136,9 +136,9 @@
 }
 
 .page-title {
-  font-size: 32px;
+  font-size: 26px;
   font-weight: 700;
-  color: #1E293B;
+  background: linear-gradient(135deg, #1E3A5F 0%, #3B82F6 100%);
   margin: 0;
 }
 

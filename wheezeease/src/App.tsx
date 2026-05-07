@@ -1,19 +1,20 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useState } from 'react';
-import Login from './Login';
 import AdminDashboard from './admin';
 import SignUp from './Signup';
 import './styles/Login.css';
 import "./styles/Signup.css";
 import Layout from './DoctorDashboard/Components/layout/Layout';
+import DoctorDashboard from './DoctorDashboard/Pages/Dashboard';
 import Analytics from './DoctorDashboard/Pages/Analytics';
 import PatientDirectory from './DoctorDashboard/Pages/PatientDirectory';
 import PatientDetail from './DoctorDashboard/Pages/PatientDetail';
 import AlertsHub from './DoctorDashboard/Pages/AlertsHub';
-import Settings from './AdminDashboard/Pages/Settings';
+import Settings from './DoctorDashboard/Pages/Settings';
 import Prescriptions from './DoctorDashboard/Pages/Prescriptions';
 import Messages from './DoctorDashboard/Pages/Messages';
-import DoctorDashboard from './DoctorDashboard/Pages/Dashboard';
+import { LandingPage } from './LandingPage/LandingPage';
+import Login from './Login';
 
 function App() {
     // Authentication aur Role ko localStorage se initial load karna
@@ -37,6 +38,10 @@ function App() {
             
             <Routes>
                 {/* Auth Routes: Agar login hai to dashboard bhejo, warna login dikhao */}
+                <Route
+                    path="/"
+                    element={<LandingPage/>}
+                />
                 <Route
                     path="/login"
                     element={<Login onLogin={handleLogin} />}

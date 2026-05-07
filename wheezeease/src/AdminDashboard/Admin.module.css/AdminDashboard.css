@@ -78,9 +78,9 @@
 }
 
 .admin-header-title {
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 800;
-  background: linear-gradient(135deg, #0f2b3d 0%, #1e5a3a 100%);
+  background: linear-gradient(135deg, #1E3A5F 0%, #3B82F6 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;

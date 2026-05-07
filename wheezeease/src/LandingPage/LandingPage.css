@@ -1,0 +1,147 @@
+/* --- Base Styles --- */
+:root {
+  --primary-green: #4caf50; /* Adjust to match the exact shade in image_2a7842.jpg */
+  --dark-text: #1f2933;
+  --bg-white: #ffffff;
+  --btn-radius: 12px;
+}
+
+.landing-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 40px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Inter', -apple-system, sans-serif;
+}
+
+/* --- Header --- */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30px 0;
+  width: 100%;
+}
+
+.nav-links-landing {
+  display: flex;
+  gap: 25px;
+  align-items: center;
+  width: min-content;
+  flex-direction: row !important;
+}
+
+.text-btn {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--dark-text);
+}
+
+.register-btn {
+  background-color: var(--dark-text);
+  color: white;
+  padding: 12px 30px;
+  border-radius: var(--btn-radius);
+  border: none;
+  font-weight: 600;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+/* --- Main Content --- */
+.hero-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  gap: 50px;
+}
+
+.content-left {
+  flex: 1;
+  max-width: 550px;
+}
+
+.title {
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 1.1;
+  margin-bottom: 25px;
+  color: var(--dark-text);
+}
+
+.text-green {
+  color: var(--primary-green);
+}
+
+.hospital-details {
+  margin-bottom: 40px;
+  line-height: 1.6;
+  font-size: 1.2rem;
+  color: #333;
+}
+
+.unit-name {
+  font-weight: 700;
+}
+
+.main-login-btn {
+  background-color: var(--primary-green);
+  color: white;
+  padding: 14px 45px;
+  border-radius: var(--btn-radius);
+  border: none;
+  font-weight: 600;
+  font-size: 1.3rem;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(76, 175, 80, 0.2);
+}
+.content-right {
+  flex: 1;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  max-height: 400px;
+}
+.content-right img{
+    object-fit: contain;
+}
+.hero-illustration {
+  max-width: 100%;
+  height: auto;
+}
+
+/* --- Footer --- */
+.footer-section {
+  padding: 40px 0;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.footer-section p {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+/* --- Responsiveness --- */
+@media (max-width: 992px) {
+  .hero-section {
+    flex-direction: column;
+    text-align: center;
+    padding-top: 50px;
+  }
+
+  .content-right {
+    order: -1; /* Image appears above text on mobile */
+  }
+
+  .title {
+    font-size: 2.8rem;
+  }
+}

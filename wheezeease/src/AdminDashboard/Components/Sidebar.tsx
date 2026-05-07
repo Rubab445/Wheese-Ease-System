@@ -24,7 +24,7 @@ export default function Sidebar({
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'user-management', label: 'User Management', icon: Users },
     { id: 'doctor-management', label: 'Doctors', icon: UserCog },
-    { id: 'patient-directory', label: 'Patients', icon: FileText },
+    { id: 'patient-directory', label: 'Reports', icon: FileText },
     { id: 'environmental-monitor', label: 'Environmental Monitor', icon: Cloud },
     { id: 'analytics', label: 'AI Monitoring', icon: BarChart3 },
     { id: 'messages', label: 'Messages', icon: Mail },
