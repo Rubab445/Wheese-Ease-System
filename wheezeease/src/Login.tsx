@@ -10,23 +10,33 @@ interface LoginProps {
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
-    const [errors, setErrors] = useState({ email: false, password: false, auth: '' });
+    const [errors, setErrors] = useState({ email: '', password: '', auth: '' });
     const [isLoading, setIsLoading] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
 
-    const validateUsername = (user: string) => user.trim() !== '';
+    const validateEmail = (email: string) => {
+        if (!email.trim()) return 'Email is required';
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) return 'Please enter a valid email address';
+        return '';
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         let hasError = false;
-        const newErrors = { email: false, password: false, auth: '' };
+        const newErrors = { email: '', password: '', auth: '' };
         
-        if (!validateUsername(username)) {
-            newErrors.email = true;
+        const emailError = validateEmail(username);
+        if (emailError) {
+            newErrors.email = emailError;
             hasError = true;
         }
-        if (password.length < 6) {
-            newErrors.password = true;
+
+        if (!password) {
+            newErrors.password = 'Password is required';
+            hasError = true;
+        } else if (password.length < 6) {
+            newErrors.password = 'Password must be at least 6 characters';
             hasError = true;
         }
         
@@ -93,10 +103,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                                     className="onco-text-input"
                                     onChange={(e) => {
                                         setUsername(e.target.value);
-                                        setErrors({ ...errors, email: false, auth: '' });
+                                        setErrors({ ...errors, email: '', auth: '' });
                                     }}
                                 />
                             </div>
+                            {errors.email && <div className="onco-error-text">{errors.email}</div>}
 
                             <div className={`onco-input-group ${errors.password ? 'onco-input-error' : ''}`}>
                                 <div className="onco-icon-adornment">
@@ -111,10 +122,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                                     className="onco-text-input"
                                     onChange={(e) => {
                                         setPassword(e.target.value);
-                                        setErrors({ ...errors, password: false, auth: '' });
+                                        setErrors({ ...errors, password: '', auth: '' });
                                     }}
                                 />
                             </div>
+                            {errors.password && <div className="onco-error-text">{errors.password}</div>}
 
                             <button type="submit" className="onco-submit-button" disabled={isLoading}>
                                 {isLoading ? 'Verifying...' : 'Login'}

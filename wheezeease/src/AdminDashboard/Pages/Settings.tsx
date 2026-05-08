@@ -1,242 +1,115 @@
-import React, { useState, useRef, type ChangeEvent } from 'react';
+import React, { useState, useEffect } from 'react';
+import { CheckCircle2 } from 'lucide-react';
 import '../Admin.module.css/Settings.css';
+import SettingsSidebar, { type SettingsSection } from '../Components/Settings/SettingsSidebar';
+import SettingsContent from '../Components/Settings/SettingsContent';
 
-interface SettingsFormData {
-  name: string;
-  email: string;
-  specialization: string;
-  regNo: string;
-  emailDigest: boolean;
-  emergencyAlerts: boolean;
-  patientUpdates: boolean;
-  systemNews: boolean;
-  twoFactor: boolean;
-  sessionTimeout: string;
-}
+const DEFAULT_SETTINGS = {
+  // General
+  platformName: "WheezeEase",
+  tagline: "Asthma Management & Prediction System",
+  defaultCity: "Lahore",
+  defaultLat: 31.5204,
+  defaultLng: 74.3587,
+  // API Config
+  owmApiKey: "••••••••••••••••••••••••",
+  apiPlan: "Free",
+  apiLimit: 1000,
+  // Notifications
+  pushNotifications: true,
+  emailNotifications: true,
+  alertCooldown: 60,
+  adminEnvAlerts: true,
+  adminQuotaAlerts: true,
+  // Thresholds
+  aqiWarning: 100,
+  aqiDanger: 150,
+  tempWarning: 40,
+  humWarning: 70,
+  seasonalMode: false,
+  // AI Module
+  aiEnabled: true,
+  aiFrequency: "6",
+  aiConfidence: 0.75,
+  aiInputAQI: true,
+  aiInputHistory: true,
+  // Security
+  twoFactor: false,
+  sessionTimeout: 30,
+};
 
 const Settings: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('profile');
-  const [profileImage, setProfileImage] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [activeSection, setActiveSection] = useState<SettingsSection>('general');
+  const [formData, setFormData] = useState<Record<string, any>>(DEFAULT_SETTINGS);
+  const [showToast, setShowToast] = useState(false);
 
-  const initialData: SettingsFormData = {
-    name: "Dr. Ahmad",
-    email: "m.usman@uog.edu.pk",
-    specialization: "Pulmonologist",
-    regNo: "PMDC-44821",
-    emailDigest: true,
-    emergencyAlerts: true,
-    patientUpdates: false,
-    systemNews: true,
-    twoFactor: false,
-    sessionTimeout: "30",
-  };
+  // Load from local storage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('wheezeEase_settings');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+          setFormData({ ...DEFAULT_SETTINGS, ...parsed });
+        }
+      } catch (e) {
+        console.error("Failed to parse settings");
+      }
+    }
+  }, []);
 
-  const [formData, setFormData] = useState<SettingsFormData>(initialData);
+  if (!formData) return null;
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
-    const val =
-      type === 'checkbox'
-        ? (e.target as HTMLInputElement).checked
-        : value;
-
+    let val: any = value;
+    
+    if (type === 'checkbox') {
+      val = (e.target as HTMLInputElement).checked;
+    } else if (type === 'number' || type === 'range') {
+      val = Number(value);
+    }
+    
     setFormData(prev => ({ ...prev, [name]: val }));
   };
 
-  const handlePhotoUpload = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setProfileImage(reader.result as string);
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleDiscard = () => {
-    if (window.confirm("Discard changes?")) {
-      setFormData(initialData);
-      setProfileImage(null);
-    }
-  };
-
   const handleSave = () => {
-    console.log("Saving:", formData);
-    alert("Settings saved!");
+    localStorage.setItem('wheezeEase_settings', JSON.stringify(formData));
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
+  };
+
+  const handleReset = () => {
+    if (window.confirm("Are you sure you want to reset all settings to their defaults?")) {
+      setFormData(DEFAULT_SETTINGS);
+      localStorage.setItem('wheezeEase_settings', JSON.stringify(DEFAULT_SETTINGS));
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    }
   };
 
   return (
-    <div className="admin-settingsRoot">
-      <div className="admin-settingsCard">
-
-        {/* SIDEBAR */}
-        <aside className="admin-settingsSidebar">
-          <div className="admin-settingsBrand">
-            <div className="admin-brandDot"></div>
-            <span>WheezeEase</span>
-          </div>
-
-          <nav className="admin-settingsNav">
-            <button
-              className={`admin-settingsNavBtn ${activeTab === 'profile' ? 'admin-activeNavBtn' : ''}`}
-              onClick={() => setActiveTab('profile')}
-            >
-              👤 Profile
-            </button>
-
-            <button
-              className={`admin-settingsNavBtn ${activeTab === 'notifications' ? 'admin-activeNavBtn' : ''}`}
-              onClick={() => setActiveTab('notifications')}
-            >
-              🔔 Notifications
-            </button>
-
-            <button
-              className={`admin-settingsNavBtn ${activeTab === 'security' ? 'admin-activeNavBtn' : ''}`}
-              onClick={() => setActiveTab('security')}
-            >
-              🛡️ Security
-            </button>
-          </nav>
-        </aside>
-
-        {/* MAIN */}
-        <section className="admin-settingsMain">
-
-          {/* HEADER */}
-          <div className="admin-settingsHeader">
-            <div>
-              <h1>{activeTab.toUpperCase()}</h1>
-            
-            </div>
-
-            <div className="admin-settingsActions">
-              <button className="admin-btnSecondary" onClick={handleDiscard}>
-                Discard
-              </button>
-              <button className="admin-btnPrimary" onClick={handleSave}>
-                Save
-              </button>
-            </div>
-          </div>
-
-          {/* CONTENT */}
-          <div className="admin-settingsContent">
-
-            {/* PROFILE */}
-            {activeTab === 'profile' && (
-              <>
-                <div className="admin-profileSection">
-                  <div className="admin-avatarWrap">
-                    {profileImage ? (
-                      <img src={profileImage} className="admin-avatarImg" />
-                    ) : (
-                      <div className="admin-avatarPlaceholder">
-                        {formData.name.charAt(0)}
-                      </div>
-                    )}
-
-                    <div
-                      className="admin-editBtn-settings"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      ✎
-                    </div>
-                  </div>
-
-                  <input
-                    type="file"
-                    hidden
-                    ref={fileInputRef}
-                    onChange={handlePhotoUpload}
-                  />
-                </div>
-
-                <div className="admin-formGrid">
-                  <div className="admin-field">
-                    <label>Name</label>
-                    <input name="name" value={formData.name} onChange={handleInputChange} />
-                  </div>
-
-                  <div className="admin-field">
-                    <label>Email</label>
-                    <input name="email" value={formData.email} onChange={handleInputChange} />
-                  </div>
-
-                  <div className="admin-field">
-                    <label>Specialization</label>
-                    <input name="specialization" value={formData.specialization} onChange={handleInputChange} />
-                  </div>
-
-                  <div className="admin-field">
-                    <label>Reg No</label>
-                    <input name="regNo" value={formData.regNo} onChange={handleInputChange} />
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* NOTIFICATIONS */}
-            {activeTab === 'notifications' && (
-              <>
-                {[
-                  { id: 'emailDigest', title: 'Email Digest' },
-                  { id: 'emergencyAlerts', title: 'Emergency Alerts' },
-                  { id: 'patientUpdates', title: 'Patient Updates' },
-                  { id: 'systemNews', title: 'System News' },
-                ].map(item => (
-                  <div className="admin-toggleCard" key={item.id}>
-                    <span>{item.title}</span>
-                    <label className="admin-switch">
-                      <input
-                        type="checkbox"
-                        name={item.id}
-                        checked={(formData as any)[item.id]}
-                        onChange={handleInputChange}
-                      />
-                      <span className="admin-slider"></span>
-                    </label>
-                  </div>
-                ))}
-              </>
-            )}
-
-            {/* SECURITY */}
-            {activeTab === 'security' && (
-              <>
-                <div className="admin-toggleCard">
-                  <span>Two Factor Authentication</span>
-                  <label className="admin-switch">
-                    <input
-                      type="checkbox"
-                      name="twoFactor"
-                      checked={formData.twoFactor}
-                      onChange={handleInputChange}
-                    />
-                    <span className="admin-slider"></span>
-                  </label>
-                </div>
-
-                <div className="admin-field">
-                  <label>Auto Logout</label>
-                  <select
-                    name="sessionTimeout"
-                    value={formData.sessionTimeout}
-                    onChange={handleInputChange}
-                  >
-                    <option value="15">15 min</option>
-                    <option value="30">30 min</option>
-                    <option value="60">60 min</option>
-                  </select>
-                </div>
-              </>
-            )}
-
-          </div>
-        </section>
+    <div className="st-layout">
+      <SettingsSidebar 
+        activeSection={activeSection} 
+        onSectionChange={setActiveSection} 
+      />
+      
+      <div className="st-content-wrapper">
+        <SettingsContent 
+          activeSection={activeSection}
+          formData={formData}
+          onChange={handleChange}
+          onSave={handleSave}
+          onReset={handleReset}
+        />
       </div>
+
+      {showToast && (
+        <div className="st-toast">
+          <CheckCircle2 size={18} /> Settings saved successfully
+        </div>
+      )}
     </div>
   );
 };

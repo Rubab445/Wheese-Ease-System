@@ -5,7 +5,7 @@
 import React, { useState, useEffect } from "react";
 import '../../Admin.module.css/AIMonitoring.css'
 
-// ─── Types ────────────────────────────────────────────────────
+import { Database, Calendar, Target, Percent, Bell, AlertTriangle } from 'lucide-react';
 
 interface Stats {
   totalPredictions: number;
@@ -24,7 +24,7 @@ interface MetricCard {
   value: string | number;
   sub: string;
   color: string;
-  icon: string;
+  icon: React.ReactNode;
 }
 
 interface RiskSegment {
@@ -78,7 +78,7 @@ const AIPerformanceMetrics: React.FC<AIPerformanceMetricsProps> = () => {
       return () => clearTimeout(updateTimer);
     }, 8000);
 
-    return () => clearInterval(interval);
+      return () => clearInterval(interval);
   }, []);
 
   // Derived values
@@ -92,43 +92,43 @@ const AIPerformanceMetrics: React.FC<AIPerformanceMetricsProps> = () => {
       label: "Total Predictions",
       value: stats.totalPredictions.toLocaleString(),
       sub: "All time",
-      color: "#339af0",
-      icon: "◈",
+      color: "#3B82F6", // blue-500
+      icon: <Database size={20} />,
     },
     {
       label: "Today",
       value: stats.todayPredictions,
       sub: "predictions today",
-      color: "#00c9a7",
-      icon: "◉",
+      color: "#10B981", // emerald-500
+      icon: <Calendar size={20} />,
     },
     {
       label: "Model Accuracy",
       value: `${stats.accuracy}%`,
       sub: "on validation set",
-      color: "#845ef7",
-      icon: "◎",
+      color: "#8B5CF6", // violet-500
+      icon: <Target size={20} />,
     },
     {
       label: "Avg Confidence",
       value: `${stats.avgConfidence}%`,
       sub: "prediction confidence",
-      color: "#fcc419",
-      icon: "◐",
+      color: "#F59E0B", // amber-500
+      icon: <Percent size={20} />,
     },
     {
       label: "Alerts Sent",
       value: stats.alertsSent,
       sub: `${falseRate}% false rate`,
-      color: "#ff6b6b",
-      icon: "◆",
+      color: "#EF4444", // red-500
+      icon: <Bell size={20} />,
     },
     {
       label: "High Risk Cases",
       value: stats.highRisk,
       sub: "flagged patients",
-      color: "#ff6b6b",
-      icon: "▲",
+      color: "#DC2626", // red-600
+      icon: <AlertTriangle size={20} />,
     },
   ];
 

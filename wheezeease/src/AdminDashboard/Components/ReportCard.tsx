@@ -1,37 +1,15 @@
 
 
 import React from "react";
+import { Mailbox } from "lucide-react";
 import '../Admin.module.css/Reports.css'
 
-// ─── Types ────────────────────────────────────────────────────
+import { 
+  type Report, 
+  type ReportStatus, 
+  type ReportSeverity as Severity 
+} from '../types';
 
-export type Severity = "critical" | "high" | "medium" | "low";
-export type ReportStatus = "open" | "inprogress" | "resolved" | "closed";
-export type ReporterRole = "patient" | "doctor";
-
-export type ReportType =
-  | "App Bug / Technical Issue"
-  | "Wrong AI Recommendation"
-  | "Incorrect Symptom Data"
-  | "Prescription/Medication Error"
-  | "Account or Access Problem"
-  | "Environmental Data Mismatch"
-  | "Other";
-
-export interface Report {
-  id: string;
-  subject: string;
-  description: string;
-  type: ReportType;
-  severity: Severity;
-  status: ReportStatus;
-  reporterName: string;
-  reporterRole: ReporterRole;
-  reporterInitials: string;
-  patientId?: string;
-  dateSubmitted: string;
-  assignedTo?: string;
-}
 
 interface ReportCardListProps {
   reports: Report[];
@@ -185,7 +163,7 @@ const ReportCardList: React.FC<ReportCardListProps> = ({
   if (filtered.length === 0) {
     return (
       <div className="rc-empty">
-        <div className="rc-empty__icon">📭</div>
+        <div className="rc-empty__icon"><Mailbox size={32} /></div>
         <div className="rc-empty__text">No reports found</div>
         <div className="rc-empty__sub">
           {searchQuery

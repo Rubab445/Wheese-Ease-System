@@ -3,6 +3,7 @@
 // Shows active AI model info and lets admin switch between models
 
 import React, { useState } from "react";
+import { ChevronUp, ArrowRightLeft, Circle } from 'lucide-react';
 import '../../Admin.module.css/AIMonitoring.css'
 
 // ─── Types ────────────────────────────────────────────────────
@@ -199,7 +200,7 @@ const ModelInfoCard: React.FC<ModelInfoCardProps> = ({
         className="mic-switch-btn"
         onClick={() => setExpanded((prev) => !prev)}
       >
-        {expanded ? "▲ Close Model Switcher" : "⇄ Switch AI Model"}
+        {expanded ? <><ChevronUp size={16}/> Close Model Switcher</> : <><ArrowRightLeft size={16}/> Switch AI Model</>}
       </button>
 
       {/* Model list */}
@@ -216,7 +217,7 @@ const ModelInfoCard: React.FC<ModelInfoCardProps> = ({
               }`}
               style={{
                 borderColor:
-                  m.id === activeModel ? m.color : "#ffffff11",
+                  m.id === activeModel ? m.color : "#E2E8F0",
                 backgroundColor:
                   m.id === activeModel ? m.color + "15" : "transparent",
               }}
@@ -233,8 +234,8 @@ const ModelInfoCard: React.FC<ModelInfoCardProps> = ({
                   {m.accuracy}% acc
                 </span>
                 {m.id === activeModel ? (
-                  <span style={{ color: m.color, fontSize: 12 }}>
-                    ● Active
+                  <span style={{ color: m.color, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Circle fill="currentColor" size={8} /> Active
                   </span>
                 ) : switching ? (
                   <span className="mic-model-option__hint">...</span>

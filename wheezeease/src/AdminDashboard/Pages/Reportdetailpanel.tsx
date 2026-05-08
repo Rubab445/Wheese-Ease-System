@@ -1,375 +1,291 @@
-
-
-import React, { useState, useEffect } from "react";
-import {type Report, type ReportStatus,type Severity } from '../../AdminDashboard/Components/ReportCard'
-import '../Admin.module.css/Reports.css'
-
-// ─── Types ────────────────────────────────────────────────────
-
-interface AdminNote {
-  id: number;
-  text: string;
-  author: string;
-  timestamp: string;
-}
-
-interface TimelineEvent {
-  id: number;
-  text: string;
-  timestamp: string;
-}
+import React, { useState, useEffect, useRef } from "react";
+import { 
+  type Report, 
+  type ReportStatus, 
+  type ReportSeverity
+} from '../types';
+import { 
+  X, Send, AlertCircle, Clock,
+  MessageSquare, FileText,
+  Lock, CheckCircle2, Mailbox
+} from 'lucide-react';
+import '../Admin.module.css/Reports.css';
 
 interface ReportDetailPanelProps {
   report: Report | null;
   onStatusChange: (reportId: string, newStatus: ReportStatus) => void;
+  onAddMessage: (reportId: string, text: string) => void;
+  onAddInternalNote: (reportId: string, text: string) => void;
   onClose: () => void;
 }
-
-// ─── Constants ────────────────────────────────────────────────
-
-const STATUS_OPTIONS: { value: ReportStatus; label: string }[] = [
-  { value: "open",       label: "Open"        },
-  { value: "inprogress", label: "In Progress" },
-  { value: "resolved",   label: "Resolved"    },
-  { value: "closed",     label: "Closed"      },
-];
-
-const SEVERITY_COLORS: Record<Severity, string> = {
-  critical: "var(--severity-critical)",
-  high:     "var(--severity-high)",
-  medium:   "var(--severity-medium)",
-  low:      "var(--severity-low)",
-};
-
-const TYPE_DESCRIPTIONS: Record<string, string> = {
-  "Wrong AI Recommendation":
-    "The AI model produced an inaccurate or potentially harmful recommendation for this patient. Review the AI log for the corresponding prediction.",
-  "App Bug / Technical Issue":
-    "A technical malfunction was reported. Check system logs for errors around the submission time.",
-  "Incorrect Symptom Data":
-    "The patient or doctor believes symptom data was logged incorrectly, either by the user or by the AI layer.",
-  "Prescription/Medication Error":
-    "A medication-related discrepancy was flagged. Requires immediate review by clinical staff.",
-  "Account or Access Problem":
-    "Login, permissions, or role-based access issues were reported.",
-  "Environmental Data Mismatch":
-    "Environmental API data (AQI, pollen, humidity) appears inconsistent with actual local conditions.",
-  Other: "General report — see description for details.",
-};
-
-const formatDateTime = (iso: string): string =>
-  new Date(iso).toLocaleString("en-PK", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-// ─── Component ────────────────────────────────────────────────
 
 const ReportDetailPanel: React.FC<ReportDetailPanelProps> = ({
   report,
   onStatusChange,
+  onAddMessage,
+  onAddInternalNote,
   onClose,
 }) => {
-  const [notes, setNotes]           = useState<AdminNote[]>([]);
-  const [noteInput, setNoteInput]   = useState<string>("");
-  const [replyInput, setReplyInput] = useState<string>("");
-  const [replySent, setReplySent]   = useState<boolean>(false);
-  const [timeline, setTimeline]     = useState<TimelineEvent[]>([]);
+  const [activeTab, setActiveTab] = useState<'dialog' | 'internal' | 'history'>('dialog');
+  const [messageInput, setMessageInput] = useState("");
+  const [noteInput, setNoteInput] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Reset state when a new report is selected
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   useEffect(() => {
-    if (!report) return;
-    setNotes([]);
-    setNoteInput("");
-    setReplyInput("");
-    setReplySent(false);
-    setTimeline([
-      {
-        id: 1,
-        text: `Report submitted by ${report.reporterName} (${report.reporterRole})`,
-        timestamp: report.dateSubmitted,
-      },
-    ]);
-  }, [report?.id]);
+    if (activeTab === 'dialog') {
+      scrollToBottom();
+    }
+  }, [report?.messages, activeTab]);
 
   if (!report) {
     return (
       <div className="rdp-empty">
-        <div className="rdp-empty__icon">🗂️</div>
-        <div className="rdp-empty__title">Select a Report</div>
-        <div className="rdp-empty__sub">
-          Click any report from the list to view details, manage status, and
-          respond to the reporter.
-        </div>
+        <div className="rdp-empty-icon"><Mailbox size={32} /></div>
+        <h3>Select a report to view details</h3>
+        <p>Choose a report from the list to start investigating and resolving the issue.</p>
       </div>
     );
   }
 
-  // ── Handlers ────────────────────────────────────────────────
+  const isLocked = report.status === 'resolved' || report.status === 'closed';
 
-  const handleStatusChange = (newStatus: ReportStatus): void => {
-    if (newStatus === report.status) return;
-    onStatusChange(report.id, newStatus);
-    const label =
-      STATUS_OPTIONS.find((s) => s.value === newStatus)?.label ?? newStatus;
-    setTimeline((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        text: `Status changed to "${label}" by Admin`,
-        timestamp: new Date().toISOString(),
-      },
-    ]);
+  const handleSendMessage = () => {
+    if (!messageInput.trim() || isLocked) return;
+    onAddMessage(report.id, messageInput);
+    setMessageInput("");
   };
 
-  const handleAddNote = (): void => {
-    const trimmed = noteInput.trim();
-    if (!trimmed) return;
-    const newNote: AdminNote = {
-      id: Date.now(),
-      text: trimmed,
-      author: "Admin",
-      timestamp: new Date().toISOString(),
-    };
-    setNotes((prev) => [...prev, newNote]);
+  const handleAddNote = () => {
+    if (!noteInput.trim()) return;
+    onAddInternalNote(report.id, noteInput);
     setNoteInput("");
-    setTimeline((prev) => [
-      ...prev,
-      {
-        id: Date.now() + 1,
-        text: `Admin added an internal note`,
-        timestamp: new Date().toISOString(),
-      },
-    ]);
   };
 
-  const handleSendReply = (): void => {
-    const trimmed = replyInput.trim();
-    if (!trimmed) return;
-    setReplySent(true);
-    setReplyInput("");
-    setTimeline((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        text: `Admin sent a reply to ${report.reporterName}`,
-        timestamp: new Date().toISOString(),
-      },
-    ]);
-    setTimeout(() => setReplySent(false), 5000);
+  const formatTime = (iso: string) => {
+    return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  const handleNoteKeyDown = (
-    e: React.KeyboardEvent<HTMLTextAreaElement>
-  ): void => {
-    if (e.key === "Enter" && e.ctrlKey) handleAddNote();
+  const formatDate = (iso: string) => {
+    return new Date(iso).toLocaleDateString([], { day: '2-digit', month: 'short' });
   };
-
-  // ── Render ──────────────────────────────────────────────────
 
   return (
-    <div>
+    <div className="rdp-container">
       {/* Header */}
       <div className="rdp-header">
-        <div>
-          <div className="rdp-id">{report.id}</div>
-          <div
-            className="rdp-subject"
-            style={{
-              borderLeft: `3px solid ${SEVERITY_COLORS[report.severity]}`,
-              paddingLeft: 10,
-            }}
-          >
-            {report.subject}
+        <div className="rdp-header-top">
+          <div className="rdp-title-group">
+            <span className="rdp-id">{report.id}</span>
+            <h2 className="rdp-subject">{report.subject}</h2>
           </div>
+          <button className="rdp-close-btn" onClick={onClose}><X size={20} /></button>
         </div>
-        <button
-          className="rdp-close-btn"
-          onClick={onClose}
-          aria-label="Close detail panel"
-        >
-          ✕
-        </button>
-      </div>
-
-      {/* Badges */}
-      <div className="rdp-badges">
-        <span className={`rp-badge rp-badge--severity-${report.severity}`}>
-          {report.severity.charAt(0).toUpperCase() + report.severity.slice(1)}
-        </span>
-        <span className={`rp-badge rp-badge--status-${report.status}`}>
-          {STATUS_OPTIONS.find((s) => s.value === report.status)?.label}
-        </span>
-        <span className={`rp-badge rp-badge--role-${report.reporterRole}`}>
-          {report.reporterRole}
-        </span>
-        <span className="rp-badge rp-badge--type">{report.type}</span>
-      </div>
-
-      {/* Reporter info */}
-      <div className="rdp-section">
-        <div className="rdp-section-title">Reporter</div>
-        <div className="rdp-reporter-card">
-          <div
-            className={`rdp-avatar rdp-avatar--${report.reporterRole}`}
-          >
-            {report.reporterInitials}
-          </div>
-          <div>
-            <div className="rdp-reporter-name">{report.reporterName}</div>
-            <div className="rdp-reporter-meta">
-              {report.reporterRole.charAt(0).toUpperCase() +
-                report.reporterRole.slice(1)}{" "}
-              ·{" "}
-              {report.patientId
-                ? `Patient ID: ${report.patientId}`
-                : "No linked patient ID"}{" "}
-              · Submitted {formatDateTime(report.dateSubmitted)}
+        
+        <div className="rdp-meta-strip">
+          <div className="rdp-reporter-info">
+            <div className={`rdp-avatar rdp-avatar-${report.reporterRole}`}>
+              {report.reporterInitials}
+            </div>
+            <div className="rdp-reporter-text">
+              <span className="rdp-name">{report.reporterName}</span>
+              <span className="rdp-role">{report.reporterRole}</span>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Description */}
-      <div className="rdp-section">
-        <div className="rdp-section-title">Description</div>
-        <div className="rdp-description">{report.description}</div>
-      </div>
-
-      {/* AI note for wrong recommendation reports */}
-      {report.type === "Wrong AI Recommendation" && (
-        <div className="rdp-section">
-          <div className="rdp-section-title">AI Flag</div>
-          <div
-            className="rdp-description"
-            style={{
-              borderLeft: "3px solid var(--accent-amber)",
-              background: "#fffbeb",
-              color: "var(--accent-amber)",
-            }}
-          >
-            ⚠ This report concerns an AI-generated recommendation. Cross-check
-            the AI Activity Log in the AI Monitoring Module for predictions
-            linked to {report.reporterName} around the submission date.
+          <div className="rdp-badges">
+            <span className={`rp-badge rp-badge-severity-${report.severity}`}>
+              {report.severity.toUpperCase()}
+            </span>
+            <span className={`rp-badge rp-badge-status-${report.status}`}>
+              {report.status.replace('-', ' ').toUpperCase()}
+            </span>
           </div>
         </div>
-      )}
-
-      {/* Type context hint */}
-      <div className="rdp-section">
-        <div className="rdp-section-title">Admin Guidance</div>
-        <div
-          className="rdp-description"
-          style={{ color: "var(--text-muted)", fontStyle: "italic", fontSize: 12 }}
-        >
-          {TYPE_DESCRIPTIONS[report.type] ?? TYPE_DESCRIPTIONS["Other"]}
-        </div>
       </div>
 
-      {/* Status changer */}
-      <div className="rdp-section">
-        <div className="rdp-section-title">Change Status</div>
-        <div className="rdp-status-row">
-          {STATUS_OPTIONS.map((s) => (
-            <button
-              key={s.value}
-              onClick={() => handleStatusChange(s.value)}
-              className={`rdp-status-btn ${
-                report.status === s.value ? "rdp-status-btn--active" : ""
-              }`}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Main Content Area */}
+      <div className="rdp-main">
+        {/* Description & Context Section */}
+        <div className="rdp-content-section">
+          <div className="rdp-section-label">
+            <FileText size={14} /> Problem Description
+          </div>
+          <div className="rdp-description-card">
+            <p>{report.description}</p>
+            <div className="rdp-timestamp">
+              Submitted {formatDate(report.dateSubmitted)} at {formatTime(report.dateSubmitted)}
+            </div>
+          </div>
 
-      {/* Internal notes */}
-      <div className="rdp-section">
-        <div className="rdp-section-title">
-          Internal Notes ({notes.length})
-        </div>
-
-        {notes.length > 0 && (
-          <div className="rdp-notes-list">
-            {notes.map((note) => (
-              <div key={note.id} className="rdp-note">
-                <div className="rdp-note__text">{note.text}</div>
-                <div className="rdp-note__meta">
-                  {note.author} · {formatDateTime(note.timestamp)}
-                </div>
+          {report.type === "Wrong AI Recommendation" && (
+            <div className="rdp-ai-alert">
+              <div className="rdp-ai-alert-icon">
+                <AlertCircle size={18} />
               </div>
-            ))}
-          </div>
-        )}
-
-        <div className="rdp-note-form" style={{ marginTop: notes.length > 0 ? 8 : 0 }}>
-          <textarea
-            className="rdp-note-input"
-            placeholder="Add internal note (Ctrl+Enter to save)..."
-            value={noteInput}
-            onChange={(e) => setNoteInput(e.target.value)}
-            onKeyDown={handleNoteKeyDown}
-          />
-        </div>
-        <button
-          onClick={handleAddNote}
-          className="rp-btn rp-btn--secondary"
-          style={{ marginTop: 8, fontSize: 12, padding: "7px 14px" }}
-          disabled={!noteInput.trim()}
-        >
-          + Add Note
-        </button>
-      </div>
-
-      {/* Reply to reporter */}
-      <div className="rdp-section">
-        <div className="rdp-section-title">
-          Reply to {report.reporterName}
-        </div>
-
-        {replySent ? (
-          <div className="rdp-reply-sent">
-            ✓ Reply sent to {report.reporterName}
-          </div>
-        ) : (
-          <div className="rdp-reply-form">
-            <textarea
-              className="rdp-reply-input"
-              placeholder={`Write a message to ${report.reporterName}...`}
-              value={replyInput}
-              onChange={(e) => setReplyInput(e.target.value)}
-            />
-            <button
-              onClick={handleSendReply}
-              className="rp-btn rp-btn--primary"
-              style={{ alignSelf: "flex-end", fontSize: 12 }}
-              disabled={!replyInput.trim()}
-            >
-              Send Reply →
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Change history timeline */}
-      <div className="rdp-section">
-        <div className="rdp-section-title">History</div>
-        <div className="rdp-timeline">
-          {[...timeline].reverse().map((event) => (
-            <div key={event.id} className="rdp-timeline-item">
-              <div className="rdp-timeline-dot" />
-              <div className="rdp-timeline-content">
-                <div className="rdp-timeline-text">{event.text}</div>
-                <div className="rdp-timeline-time">
-                  {formatDateTime(event.timestamp)}
-                </div>
+              <div className="rdp-ai-alert-content">
+                <strong>AI Monitoring Flag</strong>
+                <p>This report concerns an AI prediction. Please cross-check the AI Monitoring Module to investigate the prediction generated for this patient.</p>
               </div>
             </div>
-          ))}
+          )}
+          
+          {report.patientId && (
+            <div className="rdp-linked-info">
+              <strong>Linked Patient:</strong> {report.patientId}
+            </div>
+          )}
+        </div>
+
+        {/* Workspace Tabs */}
+        <div className="rdp-workspace">
+          <div className="rdp-tabs">
+            <button 
+              className={`rdp-tab ${activeTab === 'dialog' ? 'active' : ''}`}
+              onClick={() => setActiveTab('dialog')}
+            >
+              <MessageSquare size={16} /> Dialog Thread
+            </button>
+            <button 
+              className={`rdp-tab ${activeTab === 'internal' ? 'active' : ''}`}
+              onClick={() => setActiveTab('internal')}
+            >
+              <Lock size={16} /> Internal Notes
+            </button>
+            <button 
+              className={`rdp-tab ${activeTab === 'history' ? 'active' : ''}`}
+              onClick={() => setActiveTab('history')}
+            >
+              <Clock size={16} /> Timeline
+            </button>
+          </div>
+
+          <div className="rdp-tab-content">
+            {activeTab === 'dialog' && (
+              <div className="rdp-dialog-pane">
+                <div className="rdp-messages-list">
+                  {report.messages.map((msg) => (
+                    <div key={msg.id} className={`rdp-message ${msg.senderRole === 'admin' ? 'admin' : 'user'}`}>
+                      <div className="rdp-message-bubble">
+                        <div className="rdp-message-header">
+                          <span className="rdp-msg-sender">{msg.senderName}</span>
+                          <span className="rdp-msg-time">{formatTime(msg.timestamp)}</span>
+                        </div>
+                        <div className="rdp-message-text">{msg.text}</div>
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={messagesEndRef} />
+                </div>
+                
+                <div className="rdp-input-area">
+                  {isLocked ? (
+                    <div className="rdp-locked-notice">
+                      <Lock size={14} /> This thread is locked because the report is resolved/closed.
+                    </div>
+                  ) : (
+                    <>
+                      <textarea 
+                        placeholder="Write a reply to the reporter..."
+                        value={messageInput}
+                        onChange={(e) => setMessageInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSendMessage();
+                          }
+                        }}
+                      />
+                      <button onClick={handleSendMessage} disabled={!messageInput.trim()}>
+                        <Send size={16} />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'internal' && (
+              <div className="rdp-internal-pane">
+                <div className="rdp-notes-list">
+                  {report.internalNotes.length === 0 ? (
+                    <div className="rdp-empty-state">No internal notes yet.</div>
+                  ) : (
+                    report.internalNotes.map((note) => (
+                      <div key={note.id} className="rdp-note-item">
+                        <div className="rdp-note-header">
+                          <strong>{note.author}</strong>
+                          <span>{formatDate(note.timestamp)} {formatTime(note.timestamp)}</span>
+                        </div>
+                        <div className="rdp-note-text">{note.text}</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <div className="rdp-note-input-area">
+                  <textarea 
+                    placeholder="Add a private note for the admin team..."
+                    value={noteInput}
+                    onChange={(e) => setNoteInput(e.target.value)}
+                  />
+                  <button onClick={handleAddNote} disabled={!noteInput.trim()}>
+                    Add Internal Note
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'history' && (
+              <div className="rdp-history-pane">
+                <div className="rdp-timeline">
+                  {report.timeline.map((event) => (
+                    <div key={event.id} className="rdp-timeline-event">
+                      <div className="rdp-timeline-dot" />
+                      <div className="rdp-timeline-content">
+                        <div className="rdp-event-text">{event.text}</div>
+                        <div className="rdp-event-time">{formatDate(event.timestamp)} · {formatTime(event.timestamp)}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Footer Controls */}
+      <div className="rdp-footer">
+        <div className="rdp-status-actions">
+          <span className="rdp-footer-label">UPDATE STATUS:</span>
+          <div className="rdp-status-btns">
+            <button 
+              className={`rdp-status-btn open ${report.status === 'open' ? 'active' : ''}`}
+              onClick={() => onStatusChange(report.id, 'open')}
+            >
+              Open
+            </button>
+            <button 
+              className={`rdp-status-btn in-progress ${report.status === 'inprogress' ? 'active' : ''}`}
+              onClick={() => onStatusChange(report.id, 'inprogress')}
+            >
+              In Progress
+            </button>
+            <button 
+              className={`rdp-status-btn resolved ${report.status === 'resolved' ? 'active' : ''}`}
+              onClick={() => onStatusChange(report.id, 'resolved')}
+            >
+              <CheckCircle2 size={14} /> Resolve
+            </button>
+            <button 
+              className={`rdp-status-btn closed ${report.status === 'closed' ? 'active' : ''}`}
+              onClick={() => onStatusChange(report.id, 'closed')}
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
     </div>

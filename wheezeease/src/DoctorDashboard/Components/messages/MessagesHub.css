@@ -1,0 +1,477 @@
+.messages-hub {
+  /* ── Medical Consultation Theme ────────────────── */
+  --medical-indigo: #2563EB;
+  --medical-indigo-light: #EFF6FF;
+  --medical-grey: #F1F5F9;
+  --medical-bg: #F8FAFC;
+  --medical-border: #E2E8F0;
+  --medical-text: #1E293B;
+  --medical-text-muted: #64748B;
+
+  --crimson: #991B1B;
+  --amber: #D97706;
+  --teal: #0D9488;
+  --wa-ticks: #53bdeb;
+
+  display: flex;
+  height: calc(100vh - 40px);
+  margin: 20px;
+  background-color: white;
+  font-family: 'Inter', sans-serif;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  border: 1px solid var(--medical-border);
+}
+
+/* SIDEBAR */
+.wa-sidebar {
+  width: 320px;
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-right: 1px solid var(--medical-border);
+}
+
+.wa-sidebar-header {
+  height: 64px;
+  background: white;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--medical-border);
+}
+
+.wa-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #E2E8F0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: var(--medical-text-muted);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.wa-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.wa-search-container {
+  padding: 12px;
+  background: white;
+}
+
+.wa-search-box {
+  background: var(--medical-grey);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  gap: 10px;
+}
+
+.wa-search-box input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 13px;
+  color: var(--medical-text);
+}
+
+.wa-chat-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.wa-chat-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid #F8FAFC;
+  transition: all 0.2s;
+  gap: 12px;
+}
+
+.wa-chat-item:hover {
+  background: #F8FAFC;
+}
+
+.wa-chat-item.active {
+  background: #EFF6FF;
+  border-left: 3px solid var(--medical-indigo);
+}
+
+.wa-chat-details {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wa-chat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.wa-chat-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--medical-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wa-chat-time {
+  font-size: 11px;
+  color: var(--medical-text-muted);
+}
+
+.wa-chat-msg-preview {
+  font-size: 12px;
+  color: var(--medical-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.wa-unread-badge {
+  background: var(--medical-indigo);
+  color: white;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 110px;
+  text-align: center;
+}
+
+/* CHAT AREA MAIN WRAP */
+.chat-main-wrap {
+  flex: 1;
+  display: flex;
+  background: var(--medical-bg);
+}
+
+/* CHAT AREA */
+.wa-chat-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  background: var(--medical-bg);
+}
+
+.wa-chat-header {
+  height: 64px;
+  background: white;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--medical-border);
+  z-index: 10;
+}
+
+.wa-chat-header-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.wa-chat-header-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.wa-chat-header-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--medical-text);
+}
+
+.wa-chat-header-status {
+  font-size: 11px;
+  color: var(--medical-text-muted);
+}
+
+/* Risk Pill */
+.risk-pill {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-left: 8px;
+}
+
+.risk-pill.high {
+  background: #FEF2F2;
+  color: var(--crimson);
+}
+
+.risk-pill.mod {
+  background: #FFFBEB;
+  color: var(--amber);
+}
+
+.risk-pill.stable {
+  background: #F0FDF4;
+  color: var(--teal);
+}
+
+.wa-messages-container {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Chat Centering */
+.chat-bubbles-wrap {
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wa-msg-row {
+  display: flex;
+  width: 100%;
+}
+
+.wa-msg-row.sent {
+  justify-content: flex-end;
+}
+
+.wa-msg-row.received {
+  justify-content: flex-start;
+}
+
+.wa-bubble {
+  max-width: 70%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+.wa-msg-row.sent .wa-bubble {
+  background: var(--medical-indigo);
+  color: white;
+  border-bottom-right-radius: 2px;
+}
+
+.wa-msg-row.received .wa-bubble {
+  background: white;
+  color: var(--medical-text);
+  border-bottom-left-radius: 2px;
+  border: 1px solid var(--medical-border);
+}
+
+.wa-bubble-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  font-size: 10px;
+  margin-top: 4px;
+  opacity: 0.8;
+}
+
+.wa-tick-blue {
+  color: #93C5FD;
+}
+
+.wa-tick-gray {
+  opacity: 0.5;
+}
+
+.wa-date-divider {
+  display: flex;
+  justify-content: center;
+  margin: 16px 0;
+}
+
+.wa-date-box {
+  background: white;
+  border: 1px solid var(--medical-border);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--medical-text-muted);
+  text-transform: uppercase;
+}
+
+/* Quick Reply Chips */
+.quick-reply-container {
+  display: flex;
+  gap: 8px;
+  padding: 8px 20px;
+  background: white;
+  border-top: 1px solid var(--medical-border);
+  overflow-x: auto;
+}
+
+.quick-chip {
+  background: white;
+  border: 1px solid var(--medical-border);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--medical-text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.quick-chip:hover {
+  border-color: var(--medical-indigo);
+  color: var(--medical-indigo);
+  background: #F0F7FF;
+}
+
+/* Input Area */
+.wa-input-area {
+  padding: 12px 20px;
+  background: white;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid var(--medical-border);
+}
+
+.wa-input-container {
+  flex: 1;
+  background: var(--medical-grey);
+  border-radius: 10px;
+  padding: 10px 16px;
+}
+
+.wa-input-container input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 14px;
+  color: var(--medical-text);
+}
+
+.wa-icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  color: var(--medical-text-muted);
+}
+
+.wa-icon-btn:hover {
+  background: #F1F5F9;
+}
+
+/* Patient Info Sidebar */
+.patient-info-sidebar {
+  width: 280px;
+  min-width: 280px;
+  background: white;
+  border-left: 1px solid var(--medical-border);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 20px;
+  gap: 24px;
+  overflow-y: auto;
+}
+
+.info-section-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--medical-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+}
+
+.trigger-tag {
+  display: inline-block;
+  background: #F1F5F9;
+  color: #475569;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-right: 6px;
+  margin-bottom: 6px;
+}
+
+.med-info-box {
+  background: #F8FAFC;
+  border: 1px solid var(--medical-border);
+  padding: 12px;
+  border-radius: 10px;
+}
+
+.med-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--medical-text);
+}
+
+.med-time {
+  font-size: 11px;
+  color: var(--medical-text-muted);
+  margin-top: 2px;
+}
+
+/* Empty State */
+.wa-empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: white;
+}
+
+.wa-empty-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--medical-indigo);
+  margin-bottom: 12px;
+}
+
+.wa-empty-desc {
+  font-size: 14px;
+  color: var(--medical-text-muted);
+  text-align: center;
+  max-width: 320px;
+  line-height: 1.6;
+}

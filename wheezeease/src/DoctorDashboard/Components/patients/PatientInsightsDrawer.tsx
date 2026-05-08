@@ -1,0 +1,133 @@
+import React from 'react';
+import { X, Activity, ShieldAlert, AlertTriangle, Wind, Bell, UserRoundSearch, History, LineChart } from 'lucide-react';
+import type { Patient } from '../../../types/patient.types';
+
+interface PatientInsightsDrawerProps {
+  isOpen: boolean;
+  patient: Patient | null;
+  onClose: () => void;
+  onEditProfile: (patient: Patient) => void;
+  onSendUrgentAlert: (patient: Patient) => void;
+}
+
+const PatientInsightsDrawer: React.FC<PatientInsightsDrawerProps> = ({
+  isOpen,
+  patient,
+  onClose,
+  onEditProfile,
+  onSendUrgentAlert,
+}) => {
+  // We keep the drawer in the DOM even if no patient is selected to allow for smooth CSS transitions
+  const riskClass = patient?.status === 'critical' ? 'critical' : patient?.status === 'watch' ? 'watch' : 'stable';
+  const riskScore = patient?.status === 'critical' ? 78 : patient?.status === 'watch' ? 47 : 12;
+
+  return (
+    <>
+      <div className={`p-drawer-overlay ${isOpen ? 'open' : ''}`} onClick={onClose} />
+      <div className={`p-drawer ${isOpen ? 'open' : ''}`}>
+        {patient ? (
+          <>
+            <div className="p-drawer-header">
+              <div className="p-id-cell">
+                <div className="p-avatar" style={{ background: patient.avatarBg, color: patient.avatarColor, width: '48px', height: '48px', fontSize: '18px' }}>
+                  {patient.initials}
+                </div>
+                <div>
+                  <div className="p-name" style={{ fontSize: '18px' }}>{patient.name}</div>
+                  <div className="p-tag-id">{patient.id} · {patient.age}y {patient.gender}</div>
+                  <div className={`p-risk-pill ${riskClass}`} style={{ marginTop: '8px' }}>
+                    {patient.status === 'critical' ? <ShieldAlert size={12} /> : patient.status === 'watch' ? <AlertTriangle size={12} /> : <Activity size={12} />}
+                    {riskScore}% {patient.status.toUpperCase()}
+                  </div>
+                </div>
+              </div>
+              <button className="btn-icon" onClick={onClose}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-drawer-body">
+              {/* ── Trend Chart Section ── */}
+              <section>
+                <div className="p-drawer-section-title">
+                  <LineChart size={14} />
+                  7-Day Risk Trend
+                </div>
+                <div style={{ height: '120px', background: '#F8FAFC', borderRadius: '12px', border: '1px dashed #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', height: '60px' }}>
+                    {[30, 45, 40, 60, 55, 75, 78].map((v, i) => (
+                      <div key={i} style={{ width: '20px', height: `${v}%`, background: v > 70 ? 'var(--red)' : 'var(--indigo)', borderRadius: '4px 4px 0 0', opacity: i === 6 ? 1 : 0.4 }} />
+                    ))}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '10px', color: 'var(--text-dim)', fontWeight: '700' }}>
+                  <span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span>
+                </div>
+              </section>
+
+              {/* ── Environmental Context ── */}
+              <section>
+                <div className="p-drawer-section-title">
+                  <Wind size={14} />
+                  Environmental Context
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ padding: '12px', background: '#FEF2F2', borderLeft: '3px solid var(--red)', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '800', color: 'var(--red)' }}>High Dust Exposure</div>
+                    <div style={{ fontSize: '11px', color: '#991B1B', marginTop: '2px' }}>Recorded at 2:00 PM · Local AQI: 158</div>
+                  </div>
+                  <div style={{ padding: '12px', background: '#FFFBEB', borderLeft: '3px solid var(--amber)', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '800', color: 'var(--amber)' }}>Pollen Spike Warning</div>
+                    <div style={{ fontSize: '11px', color: '#B45309', marginTop: '2px' }}>Active in Gujrat sector · Expected to last 48h</div>
+                  </div>
+                </div>
+              </section>
+
+              {/* ── Recent Activity Log ── */}
+              <section>
+                <div className="p-drawer-section-title">
+                  <History size={14} />
+                  Recent Activity Log
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {[
+                    { text: 'Inhaler dose taken (2 puffs)', time: '2h ago' },
+                    { text: 'Symptom Logged: Chest tightness (Mod)', time: '5h ago' },
+                    { text: 'Daily check-in completed', time: 'Yesterday' },
+                    { text: 'Environmental Trigger: High Pollen', time: 'Feb 18' },
+                    { text: 'Inhaler dose taken (1 puff)', time: 'Feb 18' },
+                  ].map((item, i) => (
+                    <div key={i} className="p-activity-item">
+                      <div className="p-activity-dot" />
+                      <div className="p-activity-info">
+                        <div className="p-activity-text">{item.text}</div>
+                        <div className="p-activity-time">{item.time}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </div>
+
+            <div className="p-drawer-footer">
+              <button className="btn-primary" style={{ background: 'var(--red)', flex: 1, boxShadow: '0 4px 10px rgba(153, 27, 27, 0.2)' }} onClick={() => onSendUrgentAlert(patient)}>
+                <Bell size={16} />
+                SEND URGENT ALERT
+              </button>
+              <button className="btn-icon" style={{ width: 'auto', padding: '0 16px', gap: '8px' }} onClick={() => onEditProfile(patient)}>
+                <UserRoundSearch size={16} />
+                EDIT PROFILE
+              </button>
+            </div>
+          </>
+        ) : (
+          <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-dim)' }}>
+            No patient selected
+          </div>
+        )}
+      </div>
+    </>
+  );
+};
+
+export default PatientInsightsDrawer;

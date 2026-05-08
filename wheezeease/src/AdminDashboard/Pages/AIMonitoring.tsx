@@ -1,8 +1,7 @@
-
-
 import React, { useState } from "react";
+import { RefreshCw, Check, AlertTriangle } from 'lucide-react';
 
-import ModelInfoCard, { type ModelId }   from '../../AdminDashboard/Components/AI Monitoring/Modelinfocard'
+import ModelInfoCard, { type ModelId } from '../../AdminDashboard/Components/AI Monitoring/Modelinfocard'
 import AIPerformanceMetrics from '../../AdminDashboard/Components/AI Monitoring/Aiperformancemetrics'
 import AIActivityLog from '../../AdminDashboard/Components/AI Monitoring/Aiactivitylog'
 import '../Admin.module.css/AIMonitoring.css'
@@ -14,10 +13,10 @@ type RetrainState = "idle" | "loading" | "success";
 // ─── Page Component ───────────────────────────────────────────
 
 const AIMonitoringPage: React.FC = () => {
-  const [activeModel,     setActiveModel]     = useState<ModelId>("sklearn");
-  const [alertThreshold,  setAlertThreshold]  = useState<number>(70);
-  const [aiEnabled,       setAiEnabled]       = useState<boolean>(true);
-  const [retrainState,    setRetrainState]    = useState<RetrainState>("idle");
+  const [activeModel, setActiveModel] = useState<ModelId>("sklearn");
+  const [alertThreshold, setAlertThreshold] = useState<number>(70);
+  const [aiEnabled, setAiEnabled] = useState<boolean>(true);
+  const [retrainState, setRetrainState] = useState<RetrainState>("idle");
 
   // ── Handlers ────────────────────────────────────────────────
 
@@ -45,10 +44,12 @@ const AIMonitoringPage: React.FC = () => {
 
   // ── Retrain button label / class ────────────────────────────
 
-  const retrainLabel: Record<RetrainState, string> = {
-    idle:    "↺ Retrain Model",
-    loading: "⟳ Retraining...",
-    success: "✓ Retrained!",
+  const getRetrainContent = () => {
+    switch (retrainState) {
+      case "idle": return <><RefreshCw size={14} /> Retrain Model</>;
+      case "loading": return <><RefreshCw size={14} className="animate-spin" /> Retraining...</>;
+      case "success": return <><Check size={14} /> Retrained!</>;
+    }
   };
 
   return (
@@ -80,9 +81,8 @@ const AIMonitoringPage: React.FC = () => {
             <div className="aim-toggle__thumb" />
           </button>
           <span
-            className={`aim-toggle-status ${
-              aiEnabled ? "aim-toggle-status--on" : "aim-toggle-status--off"
-            }`}
+            className={`aim-toggle-status ${aiEnabled ? "aim-toggle-status--on" : "aim-toggle-status--off"
+              }`}
           >
             {aiEnabled ? "ON" : "OFF"}
           </span>
@@ -92,9 +92,9 @@ const AIMonitoringPage: React.FC = () => {
         <button
           onClick={handleRetrain}
           disabled={retrainState === "loading"}
-          className={`aim-retrain-btn aim-retrain-btn--${retrainState}`}
+          className={`aim-retrain-btn ${retrainState === 'success' ? 'aim-retrain-btn--success' : ''}`}
         >
-          {retrainLabel[retrainState]}
+          {getRetrainContent()}
         </button>
 
         {/* Alert threshold slider */}
@@ -119,7 +119,7 @@ const AIMonitoringPage: React.FC = () => {
       {/* ── Warning bar (shown when AI is disabled) ── */}
       {!aiEnabled && (
         <div className="aim-warning-bar" role="alert">
-          ⚠ AI Engine is currently DISABLED — no predictions or alerts are
+          <AlertTriangle size={18} /> AI Engine is currently DISABLED — no predictions or alerts are
           being generated
         </div>
       )}

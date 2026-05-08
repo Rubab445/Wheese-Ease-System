@@ -61,6 +61,16 @@
 
 .onco-input-error { border-color: #d93025; }
 
+.onco-error-text {
+    color: #d93025;
+    font-size: 13px;
+    margin-top: -15px;
+    margin-bottom: 15px;
+    padding-left: 5px;
+    text-align: left;
+    width: 100%;
+}
+
 .onco-text-input {
     flex: 1;
     border: none;

@@ -65,6 +65,7 @@
 .content-left {
   flex: 1;
   max-width: 550px;
+  margin-top: -60px;
 }
 
 .title {
@@ -88,6 +89,15 @@
 
 .unit-name {
   font-weight: 700;
+  font-size: 1.3rem;
+  color: var(--primary-green);
+}
+
+.tagline {
+  margin-top: 15px;
+  font-size: 1.15rem;
+  color: #555;
+  line-height: 1.6;
 }
 
 .main-login-btn {
@@ -139,6 +149,10 @@
 
   .content-right {
     order: -1; /* Image appears above text on mobile */
+  }
+
+  .content-left {
+    margin-top: 0;
   }
 
   .title {

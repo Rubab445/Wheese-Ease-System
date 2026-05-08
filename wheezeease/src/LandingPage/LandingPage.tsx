@@ -32,13 +32,7 @@ export const LandingPage: React.FC = () => {
           </h1>
           <div className="hospital-details">
             <p className="unit-name">AI-Powered Allergy & Asthma Assistant</p>
-          </div>
-          
-
-          <div className="cta-group">
-            <button className="main-login-btn" onClick={() => navigate("/login")}>
-              Get Started
-            </button>
+            <p className="tagline">Breathe easier with intelligent, real-time tracking and personalized insights for your respiratory health.</p>
           </div>
         </div>
 

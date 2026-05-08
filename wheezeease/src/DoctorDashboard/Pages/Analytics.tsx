@@ -4,14 +4,12 @@ import {
     XAxis, YAxis, CartesianGrid, Tooltip, Legend,
     ResponsiveContainer, PieChart, Pie, Cell
 } from 'recharts';
+import { BrainCircuit, Activity, Wind, CloudFog, Droplets, Thermometer, Gauge, AlertTriangle, ShieldAlert, BarChart3, TrendingUp, Info } from 'lucide-react';
+import '../../styles/analytics.css';
 
 interface CustomTooltipProps {
     active?: boolean;
-    payload?: Array<{
-        name: string;
-        value: number;
-        color: string;
-    }>;
+    payload?: any[];
     label?: string;
 }
 
@@ -20,63 +18,40 @@ const Analytics: React.FC = () => {
     const [chartType, setChartType] = useState<'symptoms' | 'aqi' | 'both'>('both');
 
     // ========== MOCK DATA ==========
-    
     const correlationData = [
-        { day: 'Mon', symptoms: 3.2, aqi: 85, pollen: 45, patients: 12 },
-        { day: 'Tue', symptoms: 3.8, aqi: 92, pollen: 52, patients: 14 },
-        { day: 'Wed', symptoms: 4.5, aqi: 110, pollen: 68, patients: 18 },
-        { day: 'Thu', symptoms: 5.2, aqi: 135, pollen: 82, patients: 22 },
-        { day: 'Fri', symptoms: 6.1, aqi: 158, pollen: 91, patients: 28 },
-        { day: 'Sat', symptoms: 5.8, aqi: 145, pollen: 85, patients: 24 },
-        { day: 'Sun', symptoms: 4.2, aqi: 98, pollen: 58, patients: 16 },
-    ];
-
-    const aiPerformanceData = [
-        { week: 'Week 1', accuracy: 88, predictions: 45, correct: 40 },
-        { week: 'Week 2', accuracy: 91, predictions: 52, correct: 47 },
-        { week: 'Week 3', accuracy: 93, predictions: 58, correct: 54 },
-        { week: 'Week 4', accuracy: 94, predictions: 65, correct: 61 },
+        { day: 'Mon', symptoms: 3.2, aqi: 85, pollen: 45 },
+        { day: 'Tue', symptoms: 3.8, aqi: 92, pollen: 52 },
+        { day: 'Wed', symptoms: 4.5, aqi: 110, pollen: 68 },
+        { day: 'Thu', symptoms: 5.2, aqi: 135, pollen: 82 },
+        { day: 'Fri', symptoms: 6.1, aqi: 158, pollen: 91 },
+        { day: 'Sat', symptoms: 5.8, aqi: 145, pollen: 85 },
+        { day: 'Sun', symptoms: 4.2, aqi: 98, pollen: 58 },
     ];
 
     const cityRiskData = [
-        { city: 'Gujrat', critical: 8, warning: 4, stable: 2, total: 14 },
-        { city: 'Lahore', critical: 6, warning: 5, stable: 3, total: 14 },
-        { city: 'Sialkot', critical: 4, warning: 6, stable: 2, total: 12 },
-        { city: 'Islamabad', critical: 2, warning: 4, stable: 6, total: 12 },
-        { city: 'Rawalpindi', critical: 3, warning: 5, stable: 4, total: 12 },
+        { city: 'Gujrat', critical: 8, warning: 4, stable: 2 },
+        { city: 'Lahore', critical: 6, warning: 5, stable: 3 },
+        { city: 'Sialkot', critical: 4, warning: 6, stable: 2 },
+        { city: 'Islamabad', critical: 2, warning: 4, stable: 6 },
+        { city: 'Rawalpindi', critical: 3, warning: 5, stable: 4 },
     ];
 
     const triggerData = [
-        { name: 'Pollen', value: 45, color: '#f59e0b', patients: 23 },
-        { name: 'PM2.5', value: 28, color: '#ef4444', patients: 15 },
-        { name: 'Dust', value: 15, color: '#8b5cf6', patients: 8 },
-        { name: 'Cold Air', value: 8, color: '#06b6d4', patients: 4 },
-        { name: 'Humidity', value: 4, color: '#10b981', patients: 2 },
-    ];
-
-    const adherenceData = [
-        { week: 'Week 1', preventive: 68, rescue: 32 },
-        { week: 'Week 2', preventive: 71, rescue: 29 },
-        { week: 'Week 3', preventive: 74, rescue: 26 },
-        { week: 'Week 4', preventive: 78, rescue: 22 },
+        { name: 'Pollen', value: 45, color: '#D97706', patients: 23 },
+        { name: 'PM2.5', value: 28, color: '#991B1B', patients: 15 },
+        { name: 'Dust', value: 15, color: '#4F46E5', patients: 8 },
+        { name: 'Humidity', value: 8, color: '#0D9488', patients: 4 },
     ];
 
     const forecastData = [
-        { day: 'Mon', risk: 65, aqi: 95, pollen: 55 },
-        { day: 'Tue', risk: 72, aqi: 110, pollen: 62 },
-        { day: 'Wed', risk: 78, aqi: 125, pollen: 70 },
-        { day: 'Thu', risk: 85, aqi: 145, pollen: 78 },
-        { day: 'Fri', risk: 82, aqi: 138, pollen: 75 },
-        { day: 'Sat', risk: 70, aqi: 105, pollen: 60 },
-        { day: 'Sun', risk: 58, aqi: 88, pollen: 48 },
+        { day: 'Mon', risk: 65, aqi: 95 },
+        { day: 'Tue', risk: 72, aqi: 110 },
+        { day: 'Wed', risk: 78, aqi: 125 },
+        { day: 'Thu', risk: 85, aqi: 145 },
+        { day: 'Fri', risk: 82, aqi: 138 },
+        { day: 'Sat', risk: 70, aqi: 105 },
+        { day: 'Sun', risk: 58, aqi: 88 },
     ];
-
-    const weeklyStats = {
-        totalAlerts: 47,
-        avgSymptoms: 4.7,
-        highRiskDays: 3,
-        mostAffectedCity: 'Gujrat'
-    };
 
     const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label }) => {
         if (active && payload && payload.length) {
@@ -94,17 +69,12 @@ const Analytics: React.FC = () => {
         return null;
     };
 
-    const renderPieLabel = (entry: any) => {
-        return `${entry.name}`;
-    };
-
     return (
         <div className="analytics-page">
-            {/* Header */}
+            {/* ── Header ── */}
             <div className="analytics-header">
                 <div>
-                    <h1><i className="fas fa-chart-line"></i> Health Analytics</h1>
-                    <p>AI-powered insights, environmental correlation, and population health trends</p>
+                    <h1 style={{ fontWeight: 900 }}>Health Analytics</h1>
                 </div>
                 <div className="time-range-selector">
                     <button className={timeRange === '7d' ? 'active' : ''} onClick={() => setTimeRange('7d')}>7 Days</button>
@@ -113,256 +83,166 @@ const Analytics: React.FC = () => {
                 </div>
             </div>
 
-            {/* Key Metrics Cards - Redesigned */}
+            {/* ── Top Metric Cards ── */}
             <div className="analytics-metrics-grid">
-                <div className="analytics-metric-card">
+                <div className="analytics-metric-card lined-purple">
                     <div className="metric-icon purple">
-                        <i className="fas fa-brain"></i>
+                        <Activity size={24} />
                     </div>
                     <div className="metric-info">
-                        <span className="metric-value">94%</span>
-                        <span className="metric-label">AI Accuracy</span>
-                        <span className="metric-trend up">↑ +2.3% vs last week</span>
+                        <span className="metric-value">94.2%</span>
+                        <span className="metric-label">AI Prediction Accuracy</span>
                     </div>
                 </div>
-                <div className="analytics-metric-card">
+                <div className="analytics-metric-card lined-orange">
                     <div className="metric-icon orange">
-                        <i className="fas fa-chart-line"></i>
+                        <TrendingUp size={24} />
                     </div>
                     <div className="metric-info">
                         <span className="metric-value">0.87</span>
-                        <span className="metric-label">AQI-Symptom Correlation</span>
-                        <span className="metric-trend up">Strong positive correlation</span>
+                        <span className="metric-label">Environmental Correlation</span>
                     </div>
                 </div>
-                <div className="analytics-metric-card">
+                <div className="analytics-metric-card lined-blue">
                     <div className="metric-icon blue">
-                        <i className="fas fa-users"></i>
+                        <Wind size={24} />
                     </div>
                     <div className="metric-info">
-                        <span className="metric-value">92</span>
-                        <span className="metric-label">Active Patients</span>
-                        <span className="metric-trend up">↑ +12 this month</span>
+                        <span className="metric-value">158</span>
+                        <span className="metric-label">Peak AQI This Week</span>
                     </div>
                 </div>
-                <div className="analytics-metric-card">
+                <div className="analytics-metric-card lined-green">
                     <div className="metric-icon green">
-                        <i className="fas fa-pills"></i>
+                        <Droplets size={24} />
                     </div>
                     <div className="metric-info">
                         <span className="metric-value">78%</span>
                         <span className="metric-label">Medication Adherence</span>
-                        <span className="metric-trend up">↑ +5% improvement</span>
                     </div>
                 </div>
             </div>
 
-            {/* Correlation Chart - Main Chart */}
+            {/* ── AI Insight Header (System Generated Box) ── */}
+            <div className="ai-insight-box">
+                <div className="ai-insight-icon">
+                    <BrainCircuit size={24} />
+                </div>
+                <div className="ai-insight-content">
+                    <h4>TOP AI INSIGHT OF THE WEEK</h4>
+                    <p>AI detected a 22% correlation between humidity spikes in Gujrat and inhaler usage among asthma patients this week. Early warning alerts successfully prevented 7 potential emergency admissions.</p>
+                </div>
+            </div>
+
+            {/* ── Main Environmental vs Symptom Correlation ── */}
             <div className="analytics-chart-card">
                 <div className="chart-header">
                     <div>
-                        <h3>📈 Environmental vs Symptom Correlation</h3>
-                        <p>How AQI and Pollen levels affect patient symptoms</p>
+                        <h3>Environmental vs Symptom Correlation</h3>
+                        <p>Dashed lines represent environmental factors, solid lines represent clinical symptoms.</p>
                     </div>
                     <div className="chart-type-toggle">
-                        <button className={chartType === 'both' ? 'active' : ''} onClick={() => setChartType('both')}>Both</button>
-                        <button className={chartType === 'symptoms' ? 'active' : ''} onClick={() => setChartType('symptoms')}>Symptoms Only</button>
-                        <button className={chartType === 'aqi' ? 'active' : ''} onClick={() => setChartType('aqi')}>AQI Only</button>
+                        <button className={chartType === 'both' ? 'active' : ''} onClick={() => setChartType('both')}>Dual View</button>
+                        <button className={chartType === 'symptoms' ? 'active' : ''} onClick={() => setChartType('symptoms')}>Symptoms</button>
+                        <button className={chartType === 'aqi' ? 'active' : ''} onClick={() => setChartType('aqi')}>Environment</button>
                     </div>
                 </div>
-                <ResponsiveContainer width="100%" height={350}>
-                    <LineChart data={correlationData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                        <XAxis dataKey="day" stroke="#64748b" />
-                        <YAxis yAxisId="left" stroke="#64748b" domain={[0, 10]} label={{ value: 'Symptom Severity', angle: -90, position: 'insideLeft', style: { fill: '#64748b', fontSize: 12 } }} />
-                        <YAxis yAxisId="right" orientation="right" stroke="#64748b" domain={[0, 200]} label={{ value: 'AQI / Pollen', angle: 90, position: 'insideRight', style: { fill: '#64748b', fontSize: 12 } }} />
+                <ResponsiveContainer width="100%" height={280}>
+                    <LineChart data={correlationData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                        <XAxis dataKey="day" axisLine={false} tickLine={false} dy={8} />
+                        <YAxis yAxisId="left" axisLine={false} tickLine={false} />
+                        <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} />
                         <Tooltip content={<CustomTooltip />} />
-                        <Legend />
+                        <Legend verticalAlign="top" align="right" iconSize={10} />
                         {(chartType === 'symptoms' || chartType === 'both') && (
-                            <Line yAxisId="left" type="monotone" dataKey="symptoms" name="Symptom Severity" stroke="#7C3AED" strokeWidth={3} dot={{ fill: '#7C3AED', r: 5 }} />
+                            <Line yAxisId="left" type="monotone" dataKey="symptoms" name="Symptoms" stroke="#4F46E5" strokeWidth={2.5} dot={{ r: 3, fill: '#4F46E5' }} activeDot={{ r: 5 }} />
                         )}
                         {(chartType === 'aqi' || chartType === 'both') && (
-                            <Line yAxisId="right" type="monotone" dataKey="aqi" name="AQI Level" stroke="#ef4444" strokeWidth={2} dot={{ fill: '#ef4444', r: 4 }} />
+                            <Line yAxisId="right" type="monotone" dataKey="aqi" name="AQI" stroke="#991B1B" strokeWidth={1.5} strokeDasharray="5 5" dot={false} />
                         )}
                         {(chartType === 'both') && (
-                            <Line yAxisId="right" type="monotone" dataKey="pollen" name="Pollen Count" stroke="#f59e0b" strokeWidth={2} strokeDasharray="5 5" />
+                            <Line yAxisId="right" type="monotone" dataKey="pollen" name="Pollen" stroke="#D97706" strokeWidth={1.5} strokeDasharray="2 2" dot={false} />
                         )}
                     </LineChart>
                 </ResponsiveContainer>
-                <div className="insight-note">
-                    <i className="fas fa-chart-line"></i>
-                    <strong>Key Insight:</strong> Symptom severity increases by 32% when AQI exceeds 130. Friday spike correlated with 7 emergency reports.
-                </div>
             </div>
 
-            {/* Two Column Layout */}
+            {/* ── Two Column Layout ── */}
             <div className="analytics-two-column">
-                {/* AI Model Performance */}
+                {/* Risk Distribution by City - Stacked Bars */}
                 <div className="analytics-chart-card">
-                    <h3>🤖 AI Model Performance</h3>
-                    <ResponsiveContainer width="100%" height={250}>
-                        <AreaChart data={aiPerformanceData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                            <XAxis dataKey="week" stroke="#64748b" />
-                            <YAxis stroke="#64748b" domain={[80, 100]} />
-                            <Tooltip />
-                            <Legend />
-                            <Area type="monotone" dataKey="accuracy" name="Accuracy (%)" stroke="#7C3AED" fill="#7C3AED" fillOpacity={0.2} />
+                    <div className="chart-header">
+                        <div>
+                            <h3>Risk Distribution by City</h3>
+                            <p>Active crisis zones by severity.</p>
+                        </div>
+                    </div>
+                    <ResponsiveContainer width="100%" height={240}>
+                        <BarChart data={cityRiskData} layout="vertical" margin={{ left: -10, right: 20 }}>
+                            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#F1F5F9" />
+                            <XAxis type="number" axisLine={false} tickLine={false} />
+                            <YAxis type="category" dataKey="city" axisLine={false} tickLine={false} width={70} />
+                            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
+                            <Legend verticalAlign="top" align="right" iconSize={10} />
+                            <Bar dataKey="critical" name="Critical" stackId="a" fill="#991B1B" />
+                            <Bar dataKey="warning" name="Moderate" stackId="a" fill="#D97706" />
+                            <Bar dataKey="stable" name="Stable" stackId="a" fill="#0D9488" radius={[0, 4, 4, 0]} />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
+
+                {/* AI Performance Tracking */}
+                <div className="analytics-chart-card">
+                    <div className="chart-header">
+                        <div>
+                            <h3>AI Insight Reliability</h3>
+                            <p>Predicted risk vs actual reports.</p>
+                        </div>
+                    </div>
+                    <ResponsiveContainer width="100%" height={240}>
+                        <AreaChart data={forecastData} margin={{ left: -20, right: 10 }}>
+                            <defs>
+                                <linearGradient id="colorRisk" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#4F46E5" stopOpacity={0.1} />
+                                    <stop offset="95%" stopColor="#4F46E5" stopOpacity={0} />
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                            <XAxis dataKey="day" axisLine={false} tickLine={false} />
+                            <YAxis axisLine={false} tickLine={false} />
+                            <Tooltip content={<CustomTooltip />} />
+                            <Area type="monotone" dataKey="risk" name="Accuracy" stroke="#4F46E5" fillOpacity={1} fill="url(#colorRisk)" strokeWidth={2} />
                         </AreaChart>
                     </ResponsiveContainer>
-                    <div className="chart-stats">
-                        <div className="stat">
-                            <span className="stat-value">{aiPerformanceData[aiPerformanceData.length - 1].accuracy}%</span>
-                            <span className="stat-label">Current Accuracy</span>
-                        </div>
-                        <div className="stat">
-                            <span className="stat-value">+6%</span>
-                            <span className="stat-label">Improvement</span>
-                        </div>
-                        <div className="stat">
-                            <span className="stat-value">{aiPerformanceData.reduce((sum, w) => sum + w.predictions, 0)}</span>
-                            <span className="stat-label">Total Predictions</span>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Risk Distribution by City */}
-                <div className="analytics-chart-card">
-                    <h3>📍 Risk Distribution by City</h3>
-                    <ResponsiveContainer width="100%" height={250}>
-                        <BarChart data={cityRiskData} layout="vertical">
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                            <XAxis type="number" stroke="#64748b" />
-                            <YAxis type="category" dataKey="city" stroke="#64748b" width={80} />
-                            <Tooltip />
-                            <Legend />
-                            <Bar dataKey="critical" name="Critical" stackId="a" fill="#ef4444" radius={[0, 8, 8, 0]} />
-                            <Bar dataKey="warning" name="Warning" stackId="a" fill="#f59e0b" radius={[0, 8, 8, 0]} />
-                            <Bar dataKey="stable" name="Stable" stackId="a" fill="#10b981" radius={[0, 8, 8, 0]} />
-                        </BarChart>
-                    </ResponsiveContainer>
                 </div>
             </div>
 
-            {/* Second Two Column Layout */}
-            <div className="analytics-two-column">
-                {/* Trigger Frequency */}
-                <div className="analytics-chart-card">
-                    <h3>🌾 Common Triggers Analysis</h3>
-                    <div className="pie-container">
-                        <ResponsiveContainer width="60%" height={220}>
-                            <PieChart>
-                                <Pie
-                                    data={triggerData}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={50}
-                                    outerRadius={80}
-                                    paddingAngle={3}
-                                    dataKey="value"
-                                    label={renderPieLabel}
-                                    labelLine={true}
-                                >
-                                    {triggerData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.color} />
-                                    ))}
-                                </Pie>
-                                <Tooltip />
-                            </PieChart>
-                        </ResponsiveContainer>
-                        <div className="trigger-legend">
-                            {triggerData.map((trigger, idx) => (
-                                <div key={idx} className="legend-item">
-                                    <span className="legend-dot" style={{ background: trigger.color }}></span>
-                                    <span className="legend-name">{trigger.name}</span>
-                                    <span className="legend-value">{trigger.patients} patients</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Medication Adherence */}
-                <div className="analytics-chart-card">
-                    <h3>💊 Medication Adherence Trends</h3>
-                    <ResponsiveContainer width="100%" height={220}>
-                        <BarChart data={adherenceData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                            <XAxis dataKey="week" stroke="#64748b" />
-                            <YAxis stroke="#64748b" domain={[0, 100]} />
-                            <Tooltip />
-                            <Legend />
-                            <Bar dataKey="preventive" name="Preventer Usage" fill="#10b981" radius={[8, 8, 0, 0]} />
-                            <Bar dataKey="rescue" name="Rescue Usage" fill="#f59e0b" radius={[8, 8, 0, 0]} />
-                        </BarChart>
-                    </ResponsiveContainer>
-                    <div className="insight-note small">
-                        <i className="fas fa-chart-simple"></i>
-                        <span>Preventer usage increased by 10% over 4 weeks - positive trend!</span>
-                    </div>
-                </div>
-            </div>
-
-            {/* 7-Day Risk Forecast */}
-            <div className="analytics-chart-card">
+            {/* ── Forecast Banner ── */}
+            <div className="analytics-chart-card" style={{ borderLeft: '3px solid #991B1B' }}>
                 <div className="chart-header">
                     <div>
-                        <h3>⚠️ 7-Day Risk Forecast</h3>
-                        <p>AI-predicted risk levels based on environmental forecasts</p>
-                    </div>
-                    <div className="forecast-badge">
-                        <i className="fas fa-cloud-sun-rain"></i> Updated daily
+                        <h3 style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <ShieldAlert size={16} color="#991B1B" />
+                            7-Day Predictive Risk Forecast
+                        </h3>
+                        <p>Projected risk escalation based on weather forecasts.</p>
                     </div>
                 </div>
-                <ResponsiveContainer width="100%" height={250}>
-                    <AreaChart data={forecastData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                        <XAxis dataKey="day" stroke="#64748b" />
-                        <YAxis stroke="#64748b" domain={[0, 100]} label={{ value: 'Risk Level (%)', angle: -90, position: 'insideLeft', style: { fill: '#64748b', fontSize: 12 } }} />
+                <ResponsiveContainer width="100%" height={220}>
+                    <LineChart data={forecastData} margin={{ left: -20, right: 10 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                        <XAxis dataKey="day" axisLine={false} tickLine={false} />
+                        <YAxis axisLine={false} tickLine={false} domain={[0, 100]} />
                         <Tooltip content={<CustomTooltip />} />
-                        <Legend />
-                        <Area type="monotone" dataKey="risk" name="Predicted Risk %" stroke="#ef4444" fill="#ef4444" fillOpacity={0.1} />
-                        <Line type="monotone" dataKey="aqi" name="AQI Forecast" stroke="#7C3AED" strokeDasharray="5 5" />
-                    </AreaChart>
+                        <Legend verticalAlign="top" align="right" iconSize={10} />
+                        <Line type="stepAfter" dataKey="risk" name="Predicted Risk %" stroke="#991B1B" strokeWidth={2.5} dot={{ r: 3, fill: '#991B1B' }} />
+                        <Line type="monotone" dataKey="aqi" name="AQI Projected" stroke="#4F46E5" strokeWidth={1.5} strokeDasharray="5 5" dot={false} />
+                    </LineChart>
                 </ResponsiveContainer>
                 <div className="forecast-warning">
-                    <i className="fas fa-exclamation-triangle"></i>
-                    <strong>High Risk Alert:</strong> Thursday shows 85% risk level. Consider broadcasting preventive alerts to patients in Gujrat and Lahore.
-                </div>
-            </div>
-
-            {/* Weekly Summary Stats */}
-            <div className="weekly-summary">
-                <h3>📊 Weekly Summary</h3>
-                <div className="summary-grid">
-                    <div className="summary-item">
-                        <i className="fas fa-bell"></i>
-                        <div>
-                            <span className="summary-value">{weeklyStats.totalAlerts}</span>
-                            <span className="summary-label">Total Alerts Generated</span>
-                        </div>
-                    </div>
-                    <div className="summary-item">
-                        <i className="fas fa-chart-line"></i>
-                        <div>
-                            <span className="summary-value">{weeklyStats.avgSymptoms}</span>
-                            <span className="summary-label">Avg Symptom Severity</span>
-                        </div>
-                    </div>
-                    <div className="summary-item">
-                        <i className="fas fa-calendar-exclamation"></i>
-                        <div>
-                            <span className="summary-value">{weeklyStats.highRiskDays}</span>
-                            <span className="summary-label">High Risk Days</span>
-                        </div>
-                    </div>
-                    <div className="summary-item">
-                        <i className="fas fa-map-marker-alt"></i>
-                        <div>
-                            <span className="summary-value">{weeklyStats.mostAffectedCity}</span>
-                            <span className="summary-label">Most Affected City</span>
-                        </div>
-                    </div>
+                    <AlertTriangle size={18} />
+                    <span><strong>Action Required:</strong> AI predicts an 85% risk spike on Thursday. Preventive alerts recommended for patients in high-density Gujrat clusters.</span>
                 </div>
             </div>
         </div>

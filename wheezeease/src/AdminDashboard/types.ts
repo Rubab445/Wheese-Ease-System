@@ -52,3 +52,58 @@ export interface Chat {
   online: boolean;
   messages: Message[];
 }
+
+// --- Report Module Types ---
+
+export type ReportSeverity = "critical" | "high" | "medium" | "low";
+export type ReportStatus = "open" | "inprogress" | "resolved" | "closed";
+export type ReporterRole = "patient" | "doctor";
+
+export type ReportType =
+  | "App Bug / Technical Issue"
+  | "Wrong AI Recommendation"
+  | "Incorrect Symptom Data"
+  | "Prescription/Medication Error"
+  | "Account or Access Problem"
+  | "Environmental Data Mismatch"
+  | "Other";
+
+export interface ReportMessage {
+  id: string;
+  senderName: string;
+  senderRole: 'admin' | ReporterRole;
+  text: string;
+  timestamp: string;
+}
+
+export interface ReportTimelineEvent {
+  id: string;
+  text: string;
+  timestamp: string;
+  type: 'status_change' | 'assignment' | 'comment' | 'submission';
+}
+
+export interface InternalNote {
+  id: string;
+  text: string;
+  author: string;
+  timestamp: string;
+}
+
+export interface Report {
+  id: string;
+  subject: string;
+  description: string;
+  type: ReportType;
+  severity: ReportSeverity;
+  status: ReportStatus;
+  reporterName: string;
+  reporterRole: ReporterRole;
+  reporterInitials: string;
+  patientId?: string;
+  dateSubmitted: string;
+  assignedTo?: string;
+  messages: ReportMessage[];
+  timeline: ReportTimelineEvent[];
+  internalNotes: InternalNote[];
+}

@@ -1,6 +1,7 @@
 import {
-  Home, Users, UserCog, FileText, Cloud,
-  BarChart3, Settings, LogOut, Mail
+  LayoutDashboard, Users, Leaf, Cpu, 
+  BarChart3, MessageSquare, Settings, 
+  Moon, LogOut, ChevronRight
 } from 'lucide-react';
 import '../Admin.module.css/AdminSidebar.css';
 
@@ -9,7 +10,6 @@ interface SidebarProps {
   onModuleChange: (module: string) => void;
   isExpanded: boolean;
   isMobile: boolean;
-  onOpenUtility: () => void;
 }
 
 export default function Sidebar({
@@ -17,17 +17,18 @@ export default function Sidebar({
   onModuleChange,
   isExpanded,
   isMobile,
-  onOpenUtility
 }: SidebarProps) {
 
-  const navigationItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'user-management', label: 'User Management', icon: Users },
-    { id: 'doctor-management', label: 'Doctors', icon: UserCog },
-    { id: 'patient-directory', label: 'Reports', icon: FileText },
-    { id: 'environmental-monitor', label: 'Environmental Monitor', icon: Cloud },
-    { id: 'analytics', label: 'AI Monitoring', icon: BarChart3 },
-    { id: 'messages', label: 'Messages', icon: Mail },
+  const mainNavigation = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'user-management', label: 'Users', icon: Users },
+    { id: 'environmental-monitor', label: 'Environmental', icon: Leaf },
+    { id: 'analytics', label: 'AI Monitoring', icon: Cpu },
+    { id: 'report-details', label: 'System Reports', icon: BarChart3 },
+  ];
+
+  const systemNavigation = [
+    { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
   const handleLogout = () => {
@@ -37,75 +38,98 @@ export default function Sidebar({
   };
 
   return (
-    <div className="admin-sidebar">
-
-      {/* ================= LOGO (RESTORED FULL) ================= */}
-      {isExpanded && (
-        <div className="admin-logo-section">
-          <div className="admin-logo-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M4 8L12 4L20 8L12 12L4 8Z" fill="currentColor" opacity="0.3" />
-              <path d="M4 12L12 16L20 12" stroke="currentColor" strokeWidth="2" />
-              <path d="M4 16L12 20L20 16" stroke="currentColor" strokeWidth="2" />
-            </svg>
-          </div>
-          <span className="admin-logo-text">WheezeEase</span>
+    <div className={`admin-sidebar ${!isExpanded ? 'collapsed' : ''}`}>
+      
+      {/* ================= LOGO ================= */}
+      <div className="admin-logo-section">
+        <div className="admin-logo-icon">
+          <Leaf size={24} fill="currentColor" />
         </div>
-      )}
+        {isExpanded && <span className="admin-logo-text">WheezeEase</span>}
+      </div>
 
-      {/* ================= MOBILE UTILITY BUTTON ================= */}
-      {isMobile && (
-        <button
-          onClick={() => {
-            onOpenUtility();
-          }}
-          className="admin-nav-item"
-        >
-          <Mail size={20} />
-          {isExpanded && (
-            <span className="admin-nav-label">Activity Panel</span>
-          )}
-        </button>
-      )}
+      <div className="admin-sidebar-content">
+        {/* ================= MAIN SECTION ================= */}
+        <div className="admin-nav-section">
+          {isExpanded && <h3 className="admin-section-title">MAIN</h3>}
+          <nav className="admin-navigation">
+            {mainNavigation.map((item) => {
+              const isActive = activeModule === item.id;
+              const Icon = item.icon;
 
-      {/* ================= NAVIGATION ================= */}
-      <nav className="admin-navigation">
-        {navigationItems.map((item) => {
-          const isActive = activeModule === item.id;
-          const Icon = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => onModuleChange(item.id)}
+                  className={`admin-nav-item ${isActive ? 'admin-active' : ''}`}
+                  title={!isExpanded ? item.label : ''}
+                >
+                  <Icon size={20} className="admin-nav-icon" />
+                  {isExpanded && <span className="admin-nav-label">{item.label}</span>}
+                  {isExpanded && isActive && <ChevronRight size={16} className="admin-active-indicator" />}
+                </button>
+              );
+            })}
+          </nav>
+        </div>
 
-          return (
-            <button
-              key={item.id}
-              onClick={() => onModuleChange(item.id)}
-              className={`admin-nav-item ${isActive ? 'admin-active' : ''}`}
-            >
-              <Icon size={20} />
+        {/* ================= SYSTEM SECTION ================= */}
+        <div className="admin-nav-section">
+          {isExpanded && <h3 className="admin-section-title">SYSTEM</h3>}
+          <nav className="admin-navigation">
+            {systemNavigation.map((item) => {
+              const isActive = activeModule === item.id;
+              const Icon = item.icon;
 
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => onModuleChange(item.id)}
+                  className={`admin-nav-item ${isActive ? 'admin-active' : ''}`}
+                  title={!isExpanded ? item.label : ''}
+                >
+                  <Icon size={20} className="admin-nav-icon" />
+                  {isExpanded && <span className="admin-nav-label">{item.label}</span>}
+                </button>
+              );
+            })}
+            
+            {/* Dark Mode Toggle */}
+            <div className="admin-nav-item dark-mode-toggle">
+              <Moon size={20} className="admin-nav-icon" />
               {isExpanded && (
-                <span className="admin-nav-label">{item.label}</span>
+                <>
+                  <span className="admin-nav-label">Dark Mode</span>
+                  <label className="admin-switch">
+                    <input type="checkbox" />
+                    <span className="admin-slider round"></span>
+                  </label>
+                </>
               )}
-            </button>
-          );
-        })}
-      </nav>
+            </div>
+          </nav>
+        </div>
+      </div>
 
-      {/* ================= BOTTOM ================= */}
-      <div className="admin-bottom-section">
+      {/* ================= PROFILE & LOGOUT ================= */}
+      <div className="admin-sidebar-footer">
+        <div className="admin-profile-section">
+          <div className="admin-avatar">
+            <img src="https://ui-avatars.com/api/?name=Admin+User&background=E8F5E9&color=2E7D32" alt="Avatar" />
+          </div>
+          {isExpanded && (
+            <div className="admin-profile-info">
+              <span className="admin-profile-name">Harper Nelson</span>
+              <span className="admin-profile-role">Admin Manager</span>
+            </div>
+          )}
+        </div>
 
-        <button
-          onClick={() => onModuleChange('settings')}
-          className={`admin-nav-item ${activeModule === 'settings' ? 'admin-active' : ''}`}
-        >
-          <Settings size={20} />
-          {isExpanded && <span>Settings</span>}
-        </button>
-
-        <button onClick={handleLogout} className="admin-logout-button">
+        <button onClick={handleLogout} className="admin-logout-btn" title={!isExpanded ? 'Logout' : ''}>
           <LogOut size={18} />
-          {isExpanded && <span>Logout</span>}
+          {isExpanded && <span>Log out</span>}
         </button>
       </div>
     </div>
   );
-}
+}

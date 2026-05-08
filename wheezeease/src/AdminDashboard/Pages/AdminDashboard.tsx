@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import '../Admin.module.css/AdminDashboard.css'
-import { 
-  Users, Activity, AlertTriangle, Server, Search, Bell, 
-  Send, CheckCircle, X 
+import {
+  Users, Activity, AlertTriangle, Server, Search, Bell,
+  Send, CheckCircle, X, ShieldAlert, Database,
+  TrendingUp, Clock, Zap
 } from 'lucide-react';
 
 // --- Types ---
@@ -74,28 +75,7 @@ const ALERTS_DATA: Alert[] = [
     patientName: "Hassan Malik",
     detail: "Hassan Malik's recorded peak flow is 295 L/min, which is 24% below his personal best of 390 L/min. This drop is clinically significant and may indicate worsening airway obstruction.",
     actions: ["Schedule Urgent Review", "Send Spirometry Request", "Notify Primary Doctor"]
-  },
-  {
-    id: 5,
-    title: "Fatima Noor — New Diagnosis",
-    subtitle: "Occupational asthma confirmed · Plan needed",
-    time: "3 hr ago · Clinical",
-    severity: "medium",
-    icon: "🩺",
-    patientName: "Fatima Noor",
-    detail: "Fatima Noor has been newly diagnosed with Occupational Asthma following spirometry results. A personalised treatment plan has not yet been created.",
-    actions: ["Create Treatment Plan", "Refer to Specialist", "Schedule Follow-up"]
-  },
-  {
-    id: 6,
-    title: "System: SMS Gateway Degraded",
-    subtitle: "Message delivery delay >4 min detected",
-    time: "5 hr ago · System",
-    severity: "high",
-    icon: "⚠️",
-    detail: "The SMS Gateway service is experiencing degraded performance. Message delivery is delayed by an average of 4+ minutes.",
-    actions: ["View Error Logs", "Switch to Email Fallback", "Notify Engineering"]
-  },
+  }
 ];
 
 const CHART_DATA = {
@@ -120,11 +100,11 @@ const CHART_DATA = {
 };
 
 const SERVICES = [
-  { name: "AI Prediction Engine", status: "online", dotColor: "#10b981" },
-  { name: "AQI Feed Connector", status: "online", dotColor: "#10b981" },
+  { name: "AI Prediction", status: "online", dotColor: "#10b981" },
+  { name: "AQI Feed", status: "online", dotColor: "#10b981" },
   { name: "Patient Portal", status: "online", dotColor: "#10b981" },
   { name: "SMS Gateway", status: "degraded", dotColor: "#f59e0b" },
-  { name: "E-Prescription Service", status: "online", dotColor: "#10b981" }
+  { name: "E-Prescription", status: "online", dotColor: "#10b981" }
 ];
 
 // --- Helper Components ---
@@ -134,14 +114,17 @@ const AdminStatCard: React.FC<{
   trend: string;
   icon: React.ReactNode;
   color: string;
+  trendColor: string;
   onClick: () => void;
-}> = ({ title, value, trend, icon, color, onClick }) => (
-  <div className="admin-stat-card" style={{ backgroundColor: color }} onClick={onClick}>
-    <div className="admin-stat-card-icon">{icon}</div>
+}> = ({ title, value, trend, icon, color, trendColor, onClick }) => (
+  <div className="admin-stat-card" onClick={onClick} style={{ borderTop: `4px solid ${color}` }}>
+    <div className="admin-stat-card-icon" style={{ backgroundColor: color + '15', color: color }}>
+      {icon}
+    </div>
     <div className="admin-stat-card-content">
       <div className="admin-stat-card-value">{value}</div>
       <div className="admin-stat-card-title">{title}</div>
-      <div className="admin-stat-card-trend">{trend}</div>
+      <div className="admin-stat-card-trend" style={{ color: trendColor }}>{trend}</div>
     </div>
   </div>
 );
@@ -195,7 +178,7 @@ const Overview: React.FC = () => {
   const [isAllAlertsOpen, setIsAllAlertsOpen] = useState(false);
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [broadcastTarget, setBroadcastTarget] = useState("all");
-  const [broadcastSent, setBroadcastSent] = useState(false);
+  const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
   const [chartRange, setChartRange] = useState<ChartRange>("7d");
   const [metrics, setMetrics] = useState<MetricData>({
     cpu: 34,
@@ -220,7 +203,7 @@ const Overview: React.FC = () => {
 
   const handleResolveAlert = () => {
     if (selectedAlert) {
-      showToast(`✓ Alert "${selectedAlert.title}" marked as resolved`);
+      showToast(`✓ Alert resolved`);
       setIsAlertModalOpen(false);
       setSelectedAlert(null);
     }
@@ -228,35 +211,17 @@ const Overview: React.FC = () => {
 
   const handleEscalateAlert = () => {
     if (selectedAlert) {
-      showToast(`↑ Alert "${selectedAlert.title}" escalated to senior clinician`);
+      showToast(`↑ Alert escalated`);
       setIsAlertModalOpen(false);
       setSelectedAlert(null);
     }
   };
 
-  const handleAction = (action: string) => {
-    showToast(`Processing: ${action}...`);
-  };
-
   const handleSendBroadcast = () => {
-    if (!broadcastMessage.trim()) {
-      showToast("Please enter a message to broadcast");
-      return;
-    }
-    setBroadcastSent(true);
-    showToast(`📢 Broadcast sent to ${broadcastTarget} users`);
+    if (!broadcastMessage.trim()) return;
+    showToast(`📢 Broadcast sent to ${broadcastTarget}`);
     setBroadcastMessage("");
-    setTimeout(() => setBroadcastSent(false), 3000);
-  };
-
-  const handleSendEmergencyBroadcast = () => {
-    const msg = (document.getElementById("admin-emergency-msg") as HTMLTextAreaElement)?.value;
-    if (msg?.trim()) {
-      showToast(`📢 Emergency broadcast sent to all patients`);
-      setIsAllAlertsOpen(false);
-    } else {
-      showToast("Please enter an emergency message");
-    }
+    setIsBroadcastModalOpen(false);
   };
 
   // Simulate live metrics
@@ -275,7 +240,7 @@ const Overview: React.FC = () => {
   }, []);
 
   const criticalAlerts = ALERTS_DATA.filter(a => a.severity === "critical");
-  const recentAlerts = ALERTS_DATA.slice(0, 3);
+  const recentAlerts = ALERTS_DATA.slice(0, 4);
 
   return (
     <div className="admin-dashboard">
@@ -290,9 +255,7 @@ const Overview: React.FC = () => {
       {/* Header */}
       <header className="admin-header">
         <div className="admin-header-left">
-          <h1 className="admin-header-title">
-            Welcome Admin!
-          </h1>
+          <h1 className="admin-header-title">Dashboard</h1>
         </div>
         <div className="admin-header-right">
           <div className="admin-search-bar">
@@ -312,34 +275,38 @@ const Overview: React.FC = () => {
           <AdminStatCard
             title="Total Patients"
             value="284"
-            trend="↑ 12% this month"
-            icon={<Users size={20} />}
-            color="#47c6dc"
-            onClick={() => showToast("Viewing 284 registered patients")}
+            trend="↑ 12% vs last month"
+            trendColor="#059669"
+            icon={<Users size={22} />}
+            color="#60A5FA"
+            onClick={() => showToast("Viewing patient directory")}
           />
           <AdminStatCard
             title="Active Sessions"
             value="47"
-            trend="● Live now"
-            icon={<Activity size={20} />}
-            color="#47c6dc"
-            onClick={() => showToast("47 active sessions in progress")}
+            trend="● 5% increase"
+            trendColor="#15803D"
+            icon={<Activity size={22} />}
+            color="#34D399"
+            onClick={() => showToast("Monitoring live sessions")}
           />
           <AdminStatCard
             title="Critical Alerts"
             value={criticalAlerts.length.toString()}
-            trend="↑ 3 new today"
-            icon={<AlertTriangle size={20} />}
-            color="#47c6dc"
+            trend="↑ 2 new critical"
+            trendColor="#DC2626"
+            icon={<ShieldAlert size={22} />}
+            color="#A78BFA"
             onClick={() => setIsAllAlertsOpen(true)}
           />
           <AdminStatCard
-            title="System Uptime"
-            value="99.8%"
-            trend="Last 30 days"
-            icon={<Server size={20} />}
-            color="#47c6dc"
-            onClick={() => showToast("System uptime: 99.8% over last 30 days")}
+            title="System Status"
+            value="Optimal"
+            trend="99.9% Uptime"
+            trendColor="#059669"
+            icon={<Server size={22} />}
+            color="#FB923C"
+            onClick={() => showToast("All systems operational")}
           />
         </div>
 
@@ -349,8 +316,8 @@ const Overview: React.FC = () => {
           <div className="admin-chart-card">
             <div className="admin-card-header">
               <div className="admin-card-title">
-                <Activity size={18} />
-                Patient Activity
+                <TrendingUp size={18} />
+                Patient Activity Analysis
               </div>
               <div className="admin-chart-tabs">
                 {(["7d", "30d", "90d"] as ChartRange[]).map(range => (
@@ -359,15 +326,15 @@ const Overview: React.FC = () => {
                     className={`admin-chart-tab ${chartRange === range ? "active" : ""}`}
                     onClick={() => setChartRange(range)}
                   >
-                    {range === "7d" ? "7 Days" : range === "30d" ? "30 Days" : "90 Days"}
+                    {range === "7d" ? "7D" : range === "30d" ? "30D" : "90D"}
                   </button>
                 ))}
               </div>
             </div>
             <div className="admin-chart-legend">
-              <div className="admin-legend-item"><span className="admin-legend-dot" style={{ backgroundColor: "#8b5cf6" }} />New Patients</div>
-              <div className="admin-legend-item"><span className="admin-legend-dot" style={{ backgroundColor: "#f59e0b" }} />Flare-ups</div>
-              <div className="admin-legend-item"><span className="admin-legend-dot" style={{ backgroundColor: "#10b981" }} />Recovered</div>
+              <div className="admin-legend-item"><span className="admin-legend-dot" style={{ backgroundColor: "#15803D" }} />New Patients</div>
+              <div className="admin-legend-item"><span className="admin-legend-dot" style={{ backgroundColor: "#DC2626" }} />Flare-ups</div>
+              <div className="admin-legend-item"><span className="admin-legend-dot" style={{ backgroundColor: "#0D9488" }} />Recovered</div>
             </div>
             <div className="admin-chart-container">
               <ActivityChart data={CHART_DATA[chartRange]} />
@@ -380,11 +347,10 @@ const Overview: React.FC = () => {
             <div className="admin-alerts-card">
               <div className="admin-card-header">
                 <div className="admin-card-title">
-                  <AlertTriangle size={18} />
-                  Critical Alerts
-                  <span className="admin-alert-badge-count">{criticalAlerts.length}</span>
+                  <ShieldAlert size={18} />
+                  Recent Alerts
                 </div>
-                <button className="admin-text-button" onClick={() => setIsAllAlertsOpen(true)}>See all</button>
+                <button className="admin-text-button" onClick={() => setIsAllAlertsOpen(true)}>View All</button>
               </div>
               <div className="admin-alerts-list">
                 {recentAlerts.map(alert => (
@@ -396,13 +362,13 @@ const Overview: React.FC = () => {
             {/* Broadcast */}
             <div className="admin-broadcast-card">
               <div className="admin-card-title">
-                <Send size={18} />
-                Broadcast Message
+                <Zap size={18} />
+                Quick Broadcast
               </div>
               <textarea
                 className="admin-broadcast-textarea"
-                rows={2}
-                placeholder="Type a message to send to all patients or doctors..."
+                rows={3}
+                placeholder="Message to all users..."
                 value={broadcastMessage}
                 onChange={(e) => setBroadcastMessage(e.target.value)}
               />
@@ -412,22 +378,15 @@ const Overview: React.FC = () => {
                   value={broadcastTarget}
                   onChange={(e) => setBroadcastTarget(e.target.value)}
                 >
-                  <option value="all">All users</option>
-                  <option value="patients">Patients only</option>
-                  <option value="doctors">Doctors only</option>
-                  <option value="critical">Critical patients</option>
+                  <option value="all">All Users</option>
+                  <option value="patients">Patients</option>
+                  <option value="doctors">Doctors</option>
                 </select>
                 <button className="admin-broadcast-button" onClick={handleSendBroadcast}>
                   <Send size={14} />
                   Send
                 </button>
               </div>
-              {broadcastSent && (
-                <div className="admin-broadcast-success">
-                  <CheckCircle size={14} />
-                  Broadcast sent successfully!
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -436,29 +395,23 @@ const Overview: React.FC = () => {
         <div className="admin-health-card">
           <div className="admin-card-header">
             <div className="admin-card-title">
-              <Server size={18} />
-              System Health
+              <Database size={18} />
+              Infrastructure & AI Health
             </div>
-            <div className="admin-health-badge">● All Systems Operational</div>
+            <div className="admin-health-badge">● Systems Normal</div>
           </div>
           <div className="admin-health-metrics-grid">
-            <AdminHealthMetric label="CPU Usage" value={`${Math.round(metrics.cpu)}%`} percent={metrics.cpu} color="#8b5cf6" />
-            <AdminHealthMetric label="Memory" value={`${Math.round(metrics.memory)}%`} percent={metrics.memory} color="#3b82f6" />
-            <AdminHealthMetric label="Storage" value={`${Math.round(metrics.storage)}%`} percent={metrics.storage} color="#10b981" />
-            <AdminHealthMetric label="API Latency" value={`${Math.round(metrics.apiLatency)}ms`} percent={Math.min(100, metrics.apiLatency / 350 * 100)} color="#f59e0b" />
-            <AdminHealthMetric label="Active DB Conn." value={`${Math.round(metrics.dbConnections)}`} percent={(metrics.dbConnections / 50) * 100} color="#f97316" />
-            <AdminHealthMetric label="AI Model Load" value={`${Math.round(metrics.aiLoad)}%`} percent={metrics.aiLoad} color="#a855f7" />
+            <AdminHealthMetric label="Server Load" value={`${Math.round(metrics.cpu)}%`} percent={metrics.cpu} color="#15803D" />
+            <AdminHealthMetric label="Memory Usage" value={`${Math.round(metrics.memory)}%`} percent={metrics.memory} color="#0D9488" />
+            <AdminHealthMetric label="AI Engine Load" value={`${Math.round(metrics.aiLoad)}%`} percent={metrics.aiLoad} color="#7C3AED" />
           </div>
           <div className="admin-services-list">
-            <div className="admin-services-header">Services</div>
             {SERVICES.map(service => (
               <div key={service.name} className="admin-service-item">
-                <div className="admin-service-left">
-                  <div className="admin-service-dot" style={{ backgroundColor: service.dotColor }} />
-                  <span>{service.name}</span>
-                </div>
+                <div className="admin-service-dot" style={{ backgroundColor: service.dotColor }} />
+                <span>{service.name}</span>
                 <div className={`admin-service-status ${service.status === "online" ? "status-online" : "status-degraded"}`}>
-                  {service.status === "online" ? "Online" : "Degraded"}
+                  {service.status}
                 </div>
               </div>
             ))}
@@ -473,7 +426,7 @@ const Overview: React.FC = () => {
             <div className="admin-modal-header">
               <div className="admin-modal-title">
                 <span>{selectedAlert.icon}</span>
-                <span>{selectedAlert.title}</span>
+                <span>Alert Details</span>
               </div>
               <button className="admin-modal-close" onClick={() => setIsAlertModalOpen(false)}>
                 <X size={18} />
@@ -481,24 +434,25 @@ const Overview: React.FC = () => {
             </div>
             <div className="admin-modal-body">
               <div className="admin-alert-detail-badge" style={{
-                backgroundColor: selectedAlert.severity === "critical" ? "#fef2f2" : selectedAlert.severity === "high" ? "#fff7ed" : "#fffbeb",
-                color: selectedAlert.severity === "critical" ? "#dc2626" : selectedAlert.severity === "high" ? "#ea580c" : "#d97706"
+                backgroundColor: selectedAlert.severity === "critical" ? "#fef2f2" : "#fffbeb",
+                color: selectedAlert.severity === "critical" ? "#dc2626" : "#d97706"
               }}>
                 {selectedAlert.severity.toUpperCase()}
               </div>
-              <div className="admin-alert-detail-time">{selectedAlert.time}</div>
+              <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '8px' }}>{selectedAlert.title}</h3>
+              <div className="admin-alert-detail-time"><Clock size={12} /> {selectedAlert.time}</div>
               <p className="admin-alert-detail-text">{selectedAlert.detail}</p>
               <div className="admin-alert-actions">
                 {selectedAlert.actions.map((action, idx) => (
-                  <button key={idx} className="admin-alert-action-button" onClick={() => handleAction(action)}>
-                    {action} →
+                  <button key={idx} className="admin-alert-action-button" onClick={() => showToast(`Executing: ${action}`)}>
+                    {action}
                   </button>
                 ))}
               </div>
             </div>
             <div className="admin-modal-footer">
               <button className="admin-modal-button admin-resolve" onClick={handleResolveAlert}>
-                <CheckCircle size={14} /> Mark Resolved
+                <CheckCircle size={14} /> Resolve
               </button>
               <button className="admin-modal-button admin-escalate" onClick={handleEscalateAlert}>
                 <AlertTriangle size={14} /> Escalate
@@ -514,44 +468,19 @@ const Overview: React.FC = () => {
           <div className="admin-modal-content large" onClick={(e) => e.stopPropagation()}>
             <div className="admin-modal-header">
               <div className="admin-modal-title">
-                <AlertTriangle size={18} />
-                All Critical Alerts
-                <span className="admin-alert-count-badge">{ALERTS_DATA.length}</span>
+                <ShieldAlert size={18} />
+                System Alerts Log
               </div>
               <button className="admin-modal-close" onClick={() => setIsAllAlertsOpen(false)}>
                 <X size={18} />
               </button>
             </div>
-            <div className="admin-modal-body admin-alerts-list-modal">
-              {ALERTS_DATA.map(alert => (
-                <div
-                  key={alert.id}
-                  className="admin-alert-modal-item"
-                  onClick={() => {
-                    handleAlertClick(alert);
-                    setIsAllAlertsOpen(false);
-                  }}
-                >
-                  <div className="admin-alert-icon">{alert.icon}</div>
-                  <div className="admin-alert-content">
-                    <div className="admin-alert-title">{alert.title}</div>
-                    <div className="admin-alert-subtitle">{alert.subtitle}</div>
-                    <div className="admin-alert-time">{alert.time}</div>
-                  </div>
-                  <div className="admin-alert-badge">{alert.severity}</div>
-                </div>
-              ))}
-            </div>
-            <div className="admin-modal-footer admin-broadcast-footer">
-              <textarea
-                id="admin-emergency-msg"
-                className="admin-emergency-textarea"
-                rows={1}
-                placeholder="Broadcast emergency message to all patients..."
-              />
-              <button className="admin-broadcast-emergency" onClick={handleSendEmergencyBroadcast}>
-                <Send size={14} /> Broadcast
-              </button>
+            <div className="admin-modal-body">
+              <div className="admin-alerts-list">
+                {ALERTS_DATA.map(alert => (
+                  <AdminAlertItem key={alert.id} alert={alert} onClick={() => handleAlertClick(alert)} />
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -560,7 +489,7 @@ const Overview: React.FC = () => {
   );
 };
 
-// --- Chart Component using SVG for simplicity ---
+// --- Chart Component using SVG ---
 const ActivityChart: React.FC<{ data: typeof CHART_DATA['7d'] }> = ({ data }) => {
   const width = 600;
   const height = 180;
@@ -581,15 +510,11 @@ const ActivityChart: React.FC<{ data: typeof CHART_DATA['7d'] }> = ({ data }) =>
 
   return (
     <svg viewBox={`0 0 ${width} ${height}`} className="admin-chart-svg">
-      {/* Y-axis labels */}
+      {/* Y-axis grid lines */}
       {[0, 0.25, 0.5, 0.75, 1].map((tick, i) => {
-        const value = Math.round(maxValue * (1 - tick));
         const y = padding.top + chartHeight * tick;
         return (
-          <g key={i}>
-            <text x={padding.left - 8} y={y + 4} textAnchor="end" className="admin-chart-axis-label">{value}</text>
-            <line x1={padding.left} y1={y} x2={width - padding.right} y2={y} stroke="#e2e8f0" strokeWidth="0.5" />
-          </g>
+          <line key={i} x1={padding.left} y1={y} x2={width - padding.right} y2={y} stroke="#f1f5f9" strokeWidth="1" />
         );
       })}
 
@@ -603,16 +528,16 @@ const ActivityChart: React.FC<{ data: typeof CHART_DATA['7d'] }> = ({ data }) =>
         );
       })}
 
-      {/* Lines */}
-      <polyline points={linePoints(data.newPatients)} fill="none" stroke="#8b5cf6" strokeWidth="2" />
-      <polyline points={linePoints(data.flareups)} fill="none" stroke="#f59e0b" strokeWidth="2" strokeDasharray="5,4" />
-      <polyline points={linePoints(data.recovered)} fill="none" stroke="#10b981" strokeWidth="2" />
-
-      {/* Area under New Patients */}
+      {/* Area Fills */}
       <polygon
         points={`${padding.left},${getY(0)} ${linePoints(data.newPatients)} ${padding.left + chartWidth},${getY(0)}`}
-        fill="rgba(139, 92, 246, 0.05)"
+        fill="rgba(21, 128, 61, 0.05)"
       />
+
+      {/* Lines */}
+      <polyline points={linePoints(data.newPatients)} fill="none" stroke="#15803D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      <polyline points={linePoints(data.flareups)} fill="none" stroke="#DC2626" strokeWidth="2" strokeDasharray="4,3" />
+      <polyline points={linePoints(data.recovered)} fill="none" stroke="#0D9488" strokeWidth="2" />
     </svg>
   );
 };

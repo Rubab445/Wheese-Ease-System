@@ -18,8 +18,6 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    margin-left: 0;
-    transition: margin-left 0.3s ease;
     background: rgb(241, 246, 246);
 }
 
@@ -27,11 +25,10 @@
 .header-container {
     position: sticky;
     top: 0;
-    margin-left: auto;
     z-index: 100;
     background: rgb(241, 246, 246);
     flex-shrink: 0;
-    width: calc(100% - 108px)  !important;
+    width: 100%;
 }
 
 /* Dashboard Container - Contains content and utility bar side by side */
@@ -46,8 +43,8 @@
 .content-area {
     flex: 1;
     overflow-y: auto;
-    padding: 24px 24px 24px 108px;
     background: rgb(241, 246, 246);
+    padding: 0; /* Full width background, padding handled by modules */
 }
 
 /* Custom scrollbar for content area */
@@ -56,7 +53,7 @@
 }
 
 .content-area::-webkit-scrollbar-track {
-    background:white;
+    background: white;
     border-radius: 3px;
 }
 
@@ -69,47 +66,22 @@
     background: #7C3AED;
 }
 
-/* Utility Area - Fixed width on the right */
-.utility-area {
-    flex-shrink: 0;
-    width: 280px;
-    background: #F8F7FF;
-    border-left: 1px solid rgba(124, 58, 237, 0.1);
-    overflow-y: auto;
-}
-
-/* Hide scrollbar for utility area */
-.utility-area {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-}
-
-.utility-area::-webkit-scrollbar {
-    display: none;
-}
+/* Utility Area - Deleted */
 
 /* Responsive Design */
 @media (max-width: 1024px) {
-    .utility-area {
-        width: 280px;
-    }
-    
+    /* Optional: adjust padding or layout for tablet */
 }
 
 @media (max-width: 768px) {
     .dashboard-container {
         flex-direction: column;
     }
-    
-    .utility-area {
-        width: 100%;
-        border-left: none;
-        border-top: 1px solid rgba(124, 58, 237, 0.1);
-        max-height: 50vh;
-    }
-    
+
     .content-area {
-        max-height: 50vh;
+        max-height: 100%;
+        padding: 16px;
+        /* Reduced padding for mobile */
     }
 }
 
@@ -143,6 +115,7 @@
         opacity: 0;
         transform: translateY(-20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);

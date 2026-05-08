@@ -1,92 +1,58 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useState } from 'react';
 import AdminDashboard from './admin';
 import SignUp from './Signup';
 import './styles/Login.css';
 import "./styles/Signup.css";
 import Layout from './DoctorDashboard/Components/layout/Layout';
-import DoctorDashboard from './DoctorDashboard/Pages/Dashboard';
-import Analytics from './DoctorDashboard/Pages/Analytics';
 import PatientDirectory from './DoctorDashboard/Pages/PatientDirectory';
-import PatientDetail from './DoctorDashboard/Pages/PatientDetail';
-import AlertsHub from './DoctorDashboard/Pages/AlertsHub';
+import DashboardOverview from './DoctorDashboard/Pages/DashboardOverview';
+import Analytics from './DoctorDashboard/Pages/Analytics';
 import Settings from './DoctorDashboard/Pages/Settings';
-import Prescriptions from './DoctorDashboard/Pages/Prescriptions';
 import Messages from './DoctorDashboard/Pages/Messages';
 import { LandingPage } from './LandingPage/LandingPage';
+import AlertsHub from './DoctorDashboard/Pages/AlertsPage';
 import Login from './Login';
+import PatientsPage from './DoctorDashboard/Pages/PatientDirectory'
 
 function App() {
-    // Authentication aur Role ko localStorage se initial load karna
-    const [isAuthenticated, setIsAuthenticated] = useState(
-        localStorage.getItem('isAuthenticated') === 'true'
-    );
-    const [userRole, setUserRole] = useState<string | null>(
-        localStorage.getItem('userRole')
-    );
-
-    // Login hone par state update karne ka function
-    const handleLogin = (role: string) => {
-        setIsAuthenticated(true);
-        setUserRole(role);
+    // Handle login - you can implement your actual login logic here
+    const handleLogin = () => {
+        // Your login logic here
+        console.log("User logged in");
     };
 
     return (
         <BrowserRouter>
             {/* FontAwesome for icons */}
             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
-            
+
             <Routes>
-                {/* Auth Routes: Agar login hai to dashboard bhejo, warna login dikhao */}
-                <Route
-                    path="/"
-                    element={<LandingPage/>}
-                />
-                <Route
-                    path="/login"
-                    element={<Login onLogin={handleLogin} />}
-                />
-                
+                {/* Auth Routes */}
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/login" element={<Login onLogin={handleLogin} />} />
                 <Route path="/signup" element={<SignUp />} />
 
-                {/* Admin Protected Route */}
-                <Route
-                    path="/admin"
-                    element={
-                            <AdminDashboard />
-                    }
-                />
-                 <Route
-                    path="/analytics"
-                    element={
-                          <Layout><Analytics /></Layout>
-                    }
-                />
-                <Route path="/patients" element={<Layout><PatientDirectory /></Layout>} />
-                <Route path="/patients/:id" element={<Layout><PatientDetail /></Layout>} />
-                <Route path="/alerts" element={<Layout><AlertsHub /></Layout>} />
+                {/* Admin Route */}
+                <Route path="/admin" element={<AdminDashboard />} />
+
+                {/* Doctor Dashboard Routes with Layout */}
+                <Route path="/analytics" element={<Layout><Analytics /></Layout>} />
                 <Route path="/settings" element={<Layout><Settings /></Layout>} />
-                <Route path="/prescriptions" element={<Layout><Prescriptions /></Layout>} />
                 <Route path="/messages" element={<Layout><Messages /></Layout>} />
-                {/* Doctor Dashboard Protected Route */}
-                <Route
-                    path="/doctor"
-                    element={
-                            <Layout>
-                           <DoctorDashboard />
-                          </Layout>
-                    }
-                />
-                {/* Default Redirect: "/" par aane wala user status ke mutabiq redirect hoga */}
-                <Route 
-                    path="/" 
-                    element={
+                <Route path="/patients" element={<Layout><PatientDirectory /></Layout>} />
+                <Route path="/dashboard" element={<Layout><DashboardOverview /></Layout>} />
+                
+                {/* New Enhanced Patients Page - Replace the old PatientDirectory if needed */}
+                <Route path="/enhanced-patients" element={<Layout><PatientsPage /></Layout>} />
+                
+                {/* Doctor Dashboard default */}
+                <Route path="/doctor" element={<Layout><DashboardOverview /></Layout>} />
+                <Route path="/alerts" element={<Layout><AlertsHub /></Layout>} />
 
-                            <Navigate to="/login" replace />
-                    } 
-                />
+                {/* Default Redirect */}
+                <Route path="/" element={<Navigate to="/login" replace />} />
 
-                {/* Catch-all: Agar koi ghalat URL likhe to wapis home/login par bhejo */}
+                {/* Catch-all */}
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
         </BrowserRouter>
