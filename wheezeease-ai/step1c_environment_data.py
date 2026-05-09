@@ -63,45 +63,93 @@ print(f"\n🇵🇰 Pakistan cities: {len(pakistan)}")
 if len(pakistan) > 0:
     print(pakistan[['city', 'AQI', 'PM2_5', 'NO2']].to_string(index=False))
 
-# 4. REPLACE ENV VALUES
-print("\n--- Replacing with real environmental data ---")
+# 4. REPLACE ENV VALUES - BIASED BY RISK LEVEL
+print("\n--- Replacing with real environmental data (biased by risk) ---")
 np.random.seed(42)
-n = len(patient_df)
-env_samples = env_clean[['AQI', 'PM2_5', 'NO2']].sample(
-    n=n, replace=True, random_state=42
-).reset_index(drop=True)
 
-patient_df['AQI']   = env_samples['AQI'].values
-patient_df['PM2_5'] = env_samples['PM2_5'].values
-patient_df['NO2']   = env_samples['NO2'].values
-print(f" Replaced AQI, PM2.5, NO2 with real values")
+# Separate high and low AQI cities for intelligent assignment
+high_aqi_cities = env_clean[env_clean['AQI'] > 150].copy()
+low_aqi_cities  = env_clean[env_clean['AQI'] <= 150].copy()
 
-# 5. RECALCULATE RISK — UPDATED FORMULA MATCHING step1 & step1b
-print("\n--- Recalculating risk labels ---")
+print(f"   High AQI cities (>150): {len(high_aqi_cities)}")
+print(f"   Low AQI cities (≤150):  {len(low_aqi_cities)}")
+
+# Count high-risk patients (from existing risk_label if available, else use wheezing as proxy)
+if 'risk_label' in patient_df.columns:
+    high_risk = (patient_df['risk_label'] == 'high').sum()
+    medium_risk = (patient_df['risk_label'] == 'medium').sum()
+    low_risk = (patient_df['risk_label'] == 'low').sum()
+    print(f"   High-risk patients: {high_risk}, Medium: {medium_risk}, Low: {low_risk}")
+else:
+    high_risk = 0
+    medium_risk = 0
+    low_risk = len(patient_df)
+
+# Bias environmental assignment: high-risk → high AQI, low-risk → low AQI
+if high_risk > 0 and len(high_aqi_cities) > 0:
+    high_samples = high_aqi_cities[['AQI', 'PM2_5', 'NO2']].sample(
+        n=high_risk, replace=True, random_state=42
+    ).reset_index(drop=True)
+    patient_df.loc[patient_df['risk_label'] == 'high', ['AQI', 'PM2_5', 'NO2']] = high_samples.values
+
+if medium_risk > 0:
+    medium_samples = env_clean[['AQI', 'PM2_5', 'NO2']].sample(
+        n=medium_risk, replace=True, random_state=42
+    ).reset_index(drop=True)
+    patient_df.loc[patient_df['risk_label'] == 'medium', ['AQI', 'PM2_5', 'NO2']] = medium_samples.values
+
+if low_risk > 0 and len(low_aqi_cities) > 0:
+    low_samples = low_aqi_cities[['AQI', 'PM2_5', 'NO2']].sample(
+        n=low_risk, replace=True, random_state=42
+    ).reset_index(drop=True)
+    patient_df.loc[patient_df['risk_label'] == 'low', ['AQI', 'PM2_5', 'NO2']] = low_samples.values
+
+print(f" Assigned environmental data with risk-aware bias")
+
+# Validation: Check NO2 scale
+print(f"\n--- NO2 Scale Validation ---")
+print(f"   NO2 range: {patient_df['NO2'].min():.1f} – {patient_df['NO2'].max():.1f}")
+if patient_df['NO2'].max() > 300:
+    print(f"   ℹ NO2 is on AQI scale (0-500)")
+else:
+    print(f"   ℹ NO2 is on concentration scale (μg/m³, ~10-200)")
+
+# 5. RECALCULATE RISK — INCLUDES NEW CLINICAL FEATURES FROM STEP1B
+print("\n--- Recalculating risk labels with complete clinical features ---")
 
 patient_df['risk_score'] = (
-    (patient_df['AQI'] / 400)                * 0.15 +
-    (patient_df['pollen_count'] / 200)       * 0.10 +
-    (patient_df['PM2_5'] / 150)              * 0.05 +
-    (patient_df['wheezing'])                 * 0.25 +
-    (patient_df['chest_tightness'])          * 0.20 +
-    (patient_df['breathing_difficulty'] / 3) * 0.20 +
-    (patient_df['inhaler_usage'] / 5)        * 0.05
+    (patient_df['AQI'] / 400)                              * 0.12 +
+    (patient_df['pollen_count'] / 200)                     * 0.08 +
+    (patient_df['PM2_5'] / 150)                            * 0.05 +
+    (patient_df['wheezing'])                               * 0.20 +
+    (patient_df['chest_tightness'])                        * 0.15 +
+    (patient_df['breathing_difficulty'] / 3)              * 0.15 +
+    (patient_df['inhaler_usage'] / 5)                      * 0.05 +
+    (1 - patient_df['lung_function_fev1'].clip(1, 4) / 4) * 0.10 +
+    (patient_df['smoking'])                                * 0.05 +
+    (patient_df['family_history_asthma'])                  * 0.05
 ).clip(0, 1)
 
 patient_df['risk_label'] = patient_df['risk_score'].apply(score_to_label)
 
-# ── Clinical override rules ──
+# ── Clinical override rules (enhanced with step1b logic) ──
 high_mask = (
-    (patient_df['wheezing'] == 1) &
-    (patient_df['breathing_difficulty'] == 3) &
-    (patient_df['inhaler_usage'] >= 4)
+    (
+        (patient_df['wheezing'] == 1) &
+        (patient_df['breathing_difficulty'] == 3) &
+        (patient_df['inhaler_usage'] >= 4)
+    ) |
+    (
+        (patient_df['lung_function_fev1'] < 1.5) &
+        (patient_df['wheezing'] == 1)
+    )
 )
 low_mask = (
     (patient_df['wheezing'] == 0) &
     (patient_df['chest_tightness'] == 0) &
     (patient_df['breathing_difficulty'] == 1) &
-    (patient_df['inhaler_usage'] == 0)
+    (patient_df['inhaler_usage'] == 0) &
+    (patient_df['lung_function_fev1'] > 3.0)
 )
 
 patient_df.loc[high_mask, 'risk_label'] = 'high'

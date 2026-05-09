@@ -26,16 +26,15 @@ feature_columns  = data['feature_columns']
 print(f"\n Data loaded: {len(X_train)} train, {len(X_test)} test samples")
 
 # 4.2 CREATE & TRAIN MODEL
-print("\n--- Training Random Forest (100 trees) ---")
+print("\n--- Training Random Forest (500 trees) ---")
 
 model = RandomForestClassifier(
     n_estimators=500,
-    max_depth=None,            # unlimited depth
-    min_samples_split=2,
-    min_samples_leaf=1,
+    max_depth=20,              # reasonable limit
+    min_samples_split=5,       # need 5 samples to split
+    min_samples_leaf=2,        # leaves need at least 2 samples
     random_state=42,
-    n_jobs=-1,
-    class_weight={0: 2, 1: 1, 2: 5}  # Low=2x, Medium=1x, High=5x
+    n_jobs=-1
 )
 
 model.fit(X_train, y_train)
@@ -46,7 +45,7 @@ y_pred_proba = model.predict_proba(X_test)
 # Lower the threshold for High risk (class 2) from 0.5 to 0.25
 y_pred_adjusted = []
 for proba in y_pred_proba:
-    if proba[2] >= 0.25:      # if High risk probability >= 25%, flag as High
+    if proba[2] >= 0.25 and proba[2] > proba[0]:  # High AND it's not outweighed by Low
         y_pred_adjusted.append(2)
     elif proba[0] >= 0.45:    # if Low risk probability >= 45%, flag as Low
         y_pred_adjusted.append(0)
@@ -59,7 +58,8 @@ y_pred = np.array(y_pred_adjusted)
 print("\n--- 4.4 Model Evaluation ---")
 
 accuracy = accuracy_score(y_test, y_pred)
-print(f"\n Accuracy: {accuracy:.2%}")
+print(f"\n Test Accuracy: {accuracy:.2%}")
+print(f" Train Accuracy: {accuracy_score(y_train, model.predict(X_train)):.2%}")
 
 print("\n Classification Report:")
 print(classification_report(
@@ -78,15 +78,16 @@ indices     = np.argsort(importances)[::-1]
 
 print("\nTop 10 Most Important Features:")
 for i in range(min(10, len(feature_columns))):
-    print(f"  {i+1:2}. {feature_columns[indices[i]]:25} → {importances[indices[i]]:.4f}")
+    print(f"  {i+1:2}. {feature_columns[indices[i]]:25} -> {importances[indices[i]]:.4f}")
 
 # Plot feature importance
 plt.figure(figsize=(10, 6))
-plt.barh(
+bars = plt.barh(
     [feature_columns[i] for i in indices[:10]][::-1],
     [importances[i] for i in indices[:10]][::-1],
     color='steelblue'
 )
+plt.bar_label(bars, fmt='%.3f', padding=3)
 plt.xlabel('Importance Score')
 plt.title('Random Forest — Top 10 Feature Importances')
 plt.tight_layout()
@@ -109,19 +110,19 @@ print(" Saved: data/rf_confusion_matrix.png")
 
 # 4.7 SHOW EXAMPLE DECISION LOGIC (one tree)
 print("\n--- 4.7 Example Single Tree Logic ---")
-print("One tree out of 100 might reason like this:")
+print("One tree out of 500 might reason like this:")
 print("""
 IF AQI > 150
    AND pollen_count > 80
    AND wheezing = 1
-   → HIGH RISK (confidence: 0.82)
+   -> HIGH RISK (confidence: 0.82)
 
 IF AQI < 80
    AND symptom_severity < 2
    AND medication_adherence = 1
-   → LOW RISK (confidence: 0.91)
+   -> LOW RISK (confidence: 0.91)
 """)
-print("All 100 trees vote, and the majority wins.")
+print("All 500 trees vote, and the majority wins.")
 
 # 4.8 SAVE MODEL
 with open('data/model_rf.pkl', 'wb') as f:

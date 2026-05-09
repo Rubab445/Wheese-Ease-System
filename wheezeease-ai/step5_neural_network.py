@@ -84,11 +84,24 @@ print("\n Training complete!")
 print("\n--- 5.4 Model Evaluation ---")
 
 loss, accuracy = model.evaluate(X_test, y_test, verbose=0)
+train_loss, train_accuracy = model.evaluate(X_train, y_train, verbose=0)
 print(f"\n Test Loss     : {loss:.4f}")
 print(f" Test Accuracy : {accuracy:.2%}")
+print(f" Train Accuracy: {train_accuracy:.2%}")
 
 y_pred_proba = model.predict(X_test)
-y_pred       = np.argmax(y_pred_proba, axis=1)
+
+# Apply custom threshold: lower bar for High Risk, but ensure it's not outweighed by Low
+y_pred_adjusted = []
+for proba in y_pred_proba:
+    if proba[2] >= 0.25 and proba[2] > proba[0]:  # High AND it's not outweighed by Low
+        y_pred_adjusted.append(2)
+    elif proba[0] >= 0.45:    # if Low risk probability >= 45%, flag as Low
+        y_pred_adjusted.append(0)
+    else:
+        y_pred_adjusted.append(1)  # otherwise Medium
+
+y_pred = np.array(y_pred_adjusted)
 
 print("\n Classification Report:")
 print(classification_report(

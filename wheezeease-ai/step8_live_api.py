@@ -6,11 +6,11 @@ import numpy as np
 import tensorflow as tf
 import os
 from datetime import datetime
+from time import time
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 # API KEY
-def _get_key():
-    return os.getenv("OPENWEATHER_API_KEY")
+_API_KEY = os.getenv("OPENWEATHER_API_KEY")
 
 # PAKISTAN CITY COORDINATES
 CITY_COORDS = {
@@ -34,35 +34,34 @@ CITY_COORDS = {
 # LOAD MODELS
 print("Loading models...")
 
-_BASE = os.path.dirname(os.path.abspath(__file__))
-_DATA = os.path.join(_BASE, 'data')
-
-nn_model = tf.keras.models.load_model(
-    os.path.join(_DATA, 'model_nn.h5'), compile=False
-)
-
-with open(os.path.join(_DATA, 'model_rf.pkl'), 'rb') as f:
-    rf_model = pickle.load(f)
-
-with open(os.path.join(_DATA, 'scaler.pkl'), 'rb') as f:
-    scaler = pickle.load(f)
-
-with open(os.path.join(_DATA, 'processed_data.pkl'), 'rb') as f:
-    meta = pickle.load(f)
-    feature_columns = meta['feature_columns']
+from model_loader import nn_model, rf_model, scaler, feature_columns
 
 print(" Models loaded successfully")
 
 # FETCH WEATHER
 
+_weather_cache = {}
+
 def get_weather(city: str) -> dict:
+    """Fetches current temperature and humidity for a city from cache or API."""
+    now = time()
+    if city in _weather_cache:
+        cached_time, cached_data = _weather_cache[city]
+        if now - cached_time < 300:  # 5 minute cache
+            return cached_data
+            
+    data = _fetch_weather(city)
+    _weather_cache[city] = (now, data)
+    return data
+
+def _fetch_weather(city: str) -> dict:
     """Fetches current temperature and humidity for a city."""
     try:
         r = requests.get(
             "https://api.openweathermap.org/data/2.5/weather",
             params={
                 "q":     city,
-                "appid": _get_key(),
+                "appid": _API_KEY,
                 "units": "metric"
             },
             timeout=8
@@ -89,7 +88,21 @@ def get_weather(city: str) -> dict:
 
 # FETCH AQI
 # 
+_aqi_cache = {}
+
 def get_aqi(city: str) -> dict:
+    """Fetches AQI, PM2.5, NO2 from cache or API."""
+    now = time()
+    if city in _aqi_cache:
+        cached_time, cached_data = _aqi_cache[city]
+        if now - cached_time < 300:
+            return cached_data
+            
+    data = _fetch_aqi(city)
+    _aqi_cache[city] = (now, data)
+    return data
+
+def _fetch_aqi(city: str) -> dict:
     """Fetches AQI, PM2.5, NO2 using OpenWeatherMap Air Pollution API."""
     coords = CITY_COORDS.get(city.lower().strip(), (32.5736, 74.0874))
     lat, lon = coords
@@ -100,7 +113,7 @@ def get_aqi(city: str) -> dict:
             params={
                 "lat":   lat,
                 "lon":   lon,
-                "appid": _get_key(),
+                "appid": _API_KEY,
             },
             timeout=8
         )
@@ -110,6 +123,9 @@ def get_aqi(city: str) -> dict:
             components = data["list"][0]["components"]
             aqi_index  = data["list"][0]["main"]["aqi"]
 
+            # The OWM API only provides a categorical AQI scale, not exact numerical values.
+            # We map each category to its midpoint as a reasonable approximation.
+            # For production, an API returning precise AQI (like AirVisual) should be used.
             aqi_map = {1: 25, 2: 75, 3: 125, 4: 200, 5: 350}
             aqi     = aqi_map.get(aqi_index, 50)
 
@@ -117,6 +133,9 @@ def get_aqi(city: str) -> dict:
             no2  = round(float(components.get("no2",   25)), 2)
             pm10 = round(float(components.get("pm10",  20)), 2)
 
+            # OpenWeatherMap doesn't provide pollen data in its free tier.
+            # We use PM10 as a rough proxy since both are airborne particulates.
+            # A production system would integrate a dedicated pollen API like Breezometer.
             pollen_estimate = min(int(pm10 * 1.5), 200)
 
             result = {
@@ -315,14 +334,14 @@ def get_personalized_advice(full_data: dict, prediction: int) -> str:
                 f"Stay completely indoors this {time_of_day}. "
                 "You have active symptoms AND the air quality is poor outside — "
                 "this is a dangerous combination for your lungs. "
-                "Use your rescue inhaler (blue one) now and contact Dr. Rahman immediately."
+                "Use your rescue inhaler (blue one) now and contact your doctor immediately."
             )
         elif symptom_driven:
             return (
                 "Use your rescue inhaler (2 puffs) right now and sit upright — "
                 "this position makes breathing easier. "
                 "Rest completely, avoid any physical activity. "
-                "If breathing does not improve within 15 minutes, call Dr. Rahman or go to emergency."
+                "If breathing does not improve within 15 minutes, call your doctor or go to emergency."
             )
         elif medication == 0:
             return (
@@ -450,50 +469,23 @@ def predict_with_live_data(weather_city: str,
     print(f"\n Running AI prediction...")
 
     # Feature Engineering
-    env_risk_index = (
-        full_data["AQI"]          * 0.40 +
-        full_data["pollen_count"] * 0.30 +
-        full_data["humidity"]     * 0.20 +
-        full_data["temperature"]  * 0.10
+    full_data["env_risk_index"] = (
+        (full_data["AQI"] / 400)          * 0.40 +
+        (full_data["pollen_count"] / 200) * 0.30 +
+        (full_data["humidity"] / 100)     * 0.20 +
+        (full_data["temperature"] / 45)   * 0.10
     )
-    symptom_severity = (
+    full_data["symptom_severity"] = (
         full_data["wheezing"] +
         full_data["coughing"] +
         full_data["chest_tightness"] +
-        full_data["breathing_difficulty"]
+        (full_data["breathing_difficulty"] - 1) / 2
     )
-    pollution_combo = full_data["PM2_5"] * 0.6 + full_data["NO2"] * 0.4
-    inhaler_overuse = 1 if full_data["inhaler_usage"] >= 3 else 0
+    full_data["pollution_combo"] = full_data["PM2_5"] * 0.6 + full_data["NO2"] * 0.4
+    full_data["inhaler_overuse"] = 1 if full_data["inhaler_usage"] >= 3 else 0
 
-    features = np.array([[
-        full_data["AQI"],
-        full_data["pollen_count"],
-        full_data["humidity"],
-        full_data["temperature"],
-        full_data["PM2_5"],
-        full_data["NO2"],
-        full_data["dust_exposure"],
-        full_data["wheezing"],
-        full_data["coughing"],
-        full_data["chest_tightness"],
-        full_data["inhaler_usage"],
-        full_data["breathing_difficulty"],
-        full_data["medication_adherence"],
-        full_data["past_attacks"],
-        full_data["lung_function_fev1"],
-        full_data["lung_function_fvc"],
-        full_data["bmi"],
-        full_data["smoking"],
-        full_data["physical_activity"],
-        full_data["family_history_asthma"],
-        full_data["history_of_allergies"],
-        full_data["hay_fever"],
-        full_data["eczema"],
-        env_risk_index,
-        symptom_severity,
-        pollution_combo,
-        inhaler_overuse
-    ]])
+    row = [full_data[col] for col in feature_columns]
+    features = np.array([row])
 
     features_scaled = scaler.transform(features)
 

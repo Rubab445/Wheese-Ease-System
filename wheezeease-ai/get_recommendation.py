@@ -5,6 +5,15 @@ import json
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional, List
+import hashlib
+import functools
+
+def sanitize_input(text: str, max_length: int = 200) -> str:
+    if not text:
+        return "Not provided"
+    clean = text.replace('{', '').replace('}', '').strip()
+    return clean[:max_length]
+
 
 router = APIRouter()
 
@@ -58,6 +67,81 @@ YOUR TONE:
 - Simple and reassuring for patients
 - Never alarming, never dismissive
 """
+
+ACTIVITY_SYSTEM_PROMPT = """
+You are a clinical decision support assistant embedded in WheezeEase, 
+an AI-powered asthma risk management application.
+
+Your role is to analyze a patient's planned or completed physical/household 
+activity alongside current environmental conditions, and provide structured, 
+evidence-based safety recommendations following GINA 2024 guidelines.
+
+STRICT RULES:
+- Never recommend specific medication dosages or prescribe drugs by name
+- Always recommend consulting a doctor for HIGH risk activities
+- Keep recommendations practical, short, and actionable
+- Consider Pakistan's climate, air quality, and healthcare context
+- Never diagnose. You support decisions, you do not make them.
+- Always respond in the exact JSON format specified. No extra text.
+- CRITICAL: Recommendations MUST be meaningfully different for LOW vs MEDIUM vs HIGH risk.
+  LOW risk = reassurance + maintenance tips.
+  MEDIUM risk = specific precautions for this activity type.
+  HIGH risk = urgent warnings + stop/modify activity guidance.
+  Never copy-paste the same preventive steps across risk levels.
+
+YOUR TONE:
+- Clear and professional
+- Simple and reassuring
+- Never alarming, never dismissive
+"""
+
+TRIP_SYSTEM_PROMPT = """
+You are a clinical decision support assistant in WheezeEase.
+Your role is to assess travel safety for asthma patients.
+Consider destination air quality, climate, healthcare access,
+and patient fitness to travel. Follow GINA 2024 guidelines.
+STRICT RULES:
+- Never recommend specific medication dosages or prescribe drugs by name
+- Always recommend consulting a doctor for HIGH risk cases
+- Keep recommendations practical, short, and actionable
+- Consider Pakistan's climate, air quality, and healthcare context
+- Never diagnose. You support decisions, you do not make them.
+- Always respond in the exact JSON format specified. No extra text.
+"""
+
+generation_config = genai.GenerationConfig(
+    temperature=0.2,
+    max_output_tokens=2048
+)
+
+model_general = genai.GenerativeModel(
+    model_name="models/gemini-2.5-flash",
+    system_instruction=SYSTEM_PROMPT,
+    generation_config=generation_config
+)
+
+model_activity = genai.GenerativeModel(
+    model_name="models/gemini-2.5-flash",
+    system_instruction=ACTIVITY_SYSTEM_PROMPT,
+    generation_config=generation_config
+)
+
+model_trip = genai.GenerativeModel(
+    model_name="models/gemini-2.5-flash",
+    system_instruction=TRIP_SYSTEM_PROMPT,
+    generation_config=generation_config
+)
+
+@functools.lru_cache(maxsize=100)
+def get_cached_gemini_response(prompt: str, model_type: str) -> str:
+    if model_type == "general":
+        return model_general.generate_content(prompt).text.strip()
+    elif model_type == "activity":
+        return model_activity.generate_content(prompt).text.strip()
+    elif model_type == "trip":
+        return model_trip.generate_content(prompt).text.strip()
+    return ""
+
 
 
 def get_hardcoded_recommendation(risk_level: str):
@@ -139,6 +223,11 @@ async def get_recommendation(request: RecommendationRequest):
 
     risk_instruction = risk_instructions.get(risk_level, risk_instructions["MEDIUM"])
     
+    symptoms_clean = sanitize_input(request.symptoms)
+    duration_clean = sanitize_input(request.duration)
+    medications_clean = sanitize_input(request.medications)
+    triggers_clean = sanitize_input(request.triggers)
+    
     user_prompt = f"""
     Analyze the following asthma patient data and provide recommendations.
     
@@ -150,10 +239,10 @@ async def get_recommendation(request: RecommendationRequest):
     - Gender: {request.gender or 'Unknown'}
     - Risk Level: {risk_level}
     - Risk Score: {request.risk_score or 'Unknown'}
-    - Current Symptoms: {request.symptoms or 'None reported'}
-    - Symptom Duration: {request.duration or 'Unknown'}
-    - Medications Currently Taking: {request.medications or 'None'}
-    - Known Triggers: {request.triggers or 'Unknown'}
+    - Current Symptoms: {symptoms_clean}
+    - Symptom Duration: {duration_clean}
+    - Medications Currently Taking: {medications_clean}
+    - Known Triggers: {triggers_clean}
     - Weather Conditions: {request.weather_description or 'Unknown'}
     - Air Quality Index: {request.aqi or 'Unknown'}
     - Humidity: {request.humidity or 'Unknown'}%
@@ -190,19 +279,7 @@ async def get_recommendation(request: RecommendationRequest):
     """
 
     try:
-        generation_config = genai.GenerationConfig(
-            temperature=0.2,
-            max_output_tokens=2048
-        )
-        
-        model = genai.GenerativeModel(
-            model_name="models/gemini-2.5-flash",
-            system_instruction=SYSTEM_PROMPT,
-            generation_config=generation_config
-        )
-        
-        response = model.generate_content(user_prompt)
-        response_text = response.text.strip()
+        response_text = get_cached_gemini_response(user_prompt, "general")
 
         if "```json" in response_text:
             response_text = response_text.split("```json")[1].split("```")[0].strip()
@@ -214,45 +291,19 @@ async def get_recommendation(request: RecommendationRequest):
         
     except json.JSONDecodeError as e:
         print(f"JSON parse error: {e}")
-        print(f"Raw response was: {response.text}")  
-        return {"success": False, "data": response.text}
+        return {"success": True, "data": get_hardcoded_recommendation(request.risk_level), "source": "fallback"}
         
     except Exception as e:
         print(f"Gemini error: {e}")
         return {
-            "success": False,
-            "data": get_hardcoded_recommendation(request.risk_level)
+            "success": True,
+            "data": get_hardcoded_recommendation(request.risk_level),
+            "source": "fallback"
         }
 
 
 # ── ACTIVITY-SPECIFIC RECOMMENDATIONS ──────────────────────────────
 
-ACTIVITY_SYSTEM_PROMPT = """
-You are a clinical decision support assistant embedded in WheezeEase, 
-an AI-powered asthma risk management application.
-
-Your role is to analyze a patient's planned or completed physical/household 
-activity alongside current environmental conditions, and provide structured, 
-evidence-based safety recommendations following GINA 2024 guidelines.
-
-STRICT RULES:
-- Never recommend specific medication dosages or prescribe drugs by name
-- Always recommend consulting a doctor for HIGH risk activities
-- Keep recommendations practical, short, and actionable
-- Consider Pakistan's climate, air quality, and healthcare context
-- Never diagnose. You support decisions, you do not make them.
-- Always respond in the exact JSON format specified. No extra text.
-- CRITICAL: Recommendations MUST be meaningfully different for LOW vs MEDIUM vs HIGH risk.
-  LOW risk = reassurance + maintenance tips.
-  MEDIUM risk = specific precautions for this activity type.
-  HIGH risk = urgent warnings + stop/modify activity guidance.
-  Never copy-paste the same preventive steps across risk levels.
-
-YOUR TONE:
-- Clear and professional
-- Simple and reassuring
-- Never alarming, never dismissive
-"""
 
 
 def get_hardcoded_activity_recommendation(risk_level: str, activity_type: str, is_exercise: bool = True):
@@ -481,19 +532,7 @@ async def get_activity_recommendation(
     """
 
     try:
-        generation_config = genai.GenerationConfig(
-            temperature=0.2,
-            max_output_tokens=2048
-        )
-        
-        model = genai.GenerativeModel(
-            model_name="models/gemini-2.5-flash",
-            system_instruction=ACTIVITY_SYSTEM_PROMPT,
-            generation_config=generation_config
-        )
-        
-        response = model.generate_content(user_prompt)
-        response_text = response.text.strip()
+        response_text = get_cached_gemini_response(user_prompt, "activity")
 
         if "```json" in response_text:
             response_text = response_text.split("```json")[1].split("```")[0].strip()
@@ -506,17 +545,69 @@ async def get_activity_recommendation(
     except json.JSONDecodeError as e:
         print(f"Activity recommendation JSON parse error: {e}")
         return {
-            "success": False,
-            "data": get_hardcoded_activity_recommendation(risk_level, activity_type, is_exercise)
+            "success": True,
+            "data": get_hardcoded_activity_recommendation(risk_level, activity_type, is_exercise),
+            "source": "fallback"
         }
         
     except Exception as e:
         print(f"Activity recommendation Gemini error: {e}")
         return {
-            "success": False,
-            "data": get_hardcoded_activity_recommendation(risk_level, activity_type, is_exercise)
+            "success": True,
+            "data": get_hardcoded_activity_recommendation(risk_level, activity_type, is_exercise),
+            "source": "fallback"
         }
 
+
+def get_hardcoded_trip_recommendation(risk_level: str):
+    """Fallback hardcoded trip recommendations if Gemini fails."""
+    recommendations = {
+        "HIGH": {
+            "condition_summary": "Travel to this destination poses significant asthma risk. Proceed only if absolutely necessary with comprehensive precautions.",
+            "immediate_actions": [
+                "Consult your doctor before traveling — the destination's air quality and conditions require medical review",
+                "Ensure you have a 2-week supply of all medications including rescue inhalers",
+                "Research hospitals and medical facilities near your destination with contact information saved"
+            ],
+            "preventive_steps": [
+                "Consider postponing travel until air quality improves or conditions are more favorable",
+                "If traveling, arrange for oxygen support and emergency medical services in your destination"
+            ],
+            "doctor_alert": True,
+            "doctor_alert_reason": "High-risk travel destination requires pre-travel medical consultation"
+        },
+        "MEDIUM": {
+            "condition_summary": "Travel to this destination is possible with careful preparation and precautions to manage asthma safely.",
+            "immediate_actions": [
+                "Pack 1.5x your usual medication supply including backup inhalers",
+                "Check air quality forecasts for your destination daily leading up to departure",
+                "Locate and note addresses/phone numbers of nearby hospitals and medical clinics at your destination"
+            ],
+            "preventive_steps": [
+                "During travel, limit outdoor activities during peak pollution hours (morning/evening)",
+                "Stay hydrated and monitor symptoms closely — seek medical attention if symptoms worsen"
+            ],
+            "doctor_alert": False,
+            "doctor_alert_reason": None
+        },
+        "LOW": {
+            "condition_summary": "Travel to this destination is relatively safe for your asthma. Maintain your regular medication routine.",
+            "immediate_actions": [
+                "Pack your standard medication supply plus one backup inhaler",
+                "Share your travel dates and destination with your doctor for their records",
+                "Download offline maps and note locations of pharmacies near your accommodation"
+            ],
+            "preventive_steps": [
+                "Continue taking controller medications as prescribed — do not skip doses while traveling",
+                "Stay in accommodation with good air quality and ventilation; avoid exposure to smoke"
+            ],
+            "doctor_alert": False,
+            "doctor_alert_reason": None
+        }
+    }
+    
+    risk_level = str(risk_level).upper() if risk_level else "MEDIUM"
+    return recommendations.get(risk_level, recommendations["MEDIUM"])
 
 async def get_trip_risk_recommendation(
     destination: str,
@@ -617,19 +708,7 @@ async def get_trip_risk_recommendation(
     """
 
     try:
-        generation_config = genai.GenerationConfig(
-            temperature=0.2,
-            max_output_tokens=2048
-        )
-        
-        model = genai.GenerativeModel(
-            model_name="models/gemini-2.5-flash",
-            system_instruction=SYSTEM_PROMPT,
-            generation_config=generation_config
-        )
-        
-        response = model.generate_content(user_prompt)
-        response_text = response.text.strip()
+        response_text = get_cached_gemini_response(user_prompt, "general")
 
         if "```json" in response_text:
             response_text = response_text.split("```json")[1].split("```")[0].strip()
@@ -642,64 +721,17 @@ async def get_trip_risk_recommendation(
     except json.JSONDecodeError as e:
         print(f"Trip risk recommendation JSON parse error: {e}")
         return {
-            "success": False,
-            "data": get_hardcoded_trip_recommendation(risk_level)
+            "success": True,
+            "data": get_hardcoded_trip_recommendation(risk_level),
+            "source": "fallback"
         }
         
     except Exception as e:
         print(f"Trip risk recommendation Gemini error: {e}")
         return {
-            "success": False,
-            "data": get_hardcoded_trip_recommendation(risk_level)
+            "success": True,
+            "data": get_hardcoded_trip_recommendation(risk_level),
+            "source": "fallback"
         }
 
 
-def get_hardcoded_trip_recommendation(risk_level: str):
-    """Fallback hardcoded trip recommendations if Gemini fails."""
-    recommendations = {
-        "HIGH": {
-            "condition_summary": "Travel to this destination poses significant asthma risk. Proceed only if absolutely necessary with comprehensive precautions.",
-            "immediate_actions": [
-                "Consult your doctor before traveling — the destination's air quality and conditions require medical review",
-                "Ensure you have a 2-week supply of all medications including rescue inhalers",
-                "Research hospitals and medical facilities near your destination with contact information saved"
-            ],
-            "preventive_steps": [
-                "Consider postponing travel until air quality improves or conditions are more favorable",
-                "If traveling, arrange for oxygen support and emergency medical services in your destination"
-            ],
-            "doctor_alert": True,
-            "doctor_alert_reason": "High-risk travel destination requires pre-travel medical consultation"
-        },
-        "MEDIUM": {
-            "condition_summary": "Travel to this destination is possible with careful preparation and precautions to manage asthma safely.",
-            "immediate_actions": [
-                "Pack 1.5x your usual medication supply including backup inhalers",
-                "Check air quality forecasts for your destination daily leading up to departure",
-                "Locate and note addresses/phone numbers of nearby hospitals and medical clinics at your destination"
-            ],
-            "preventive_steps": [
-                "During travel, limit outdoor activities during peak pollution hours (morning/evening)",
-                "Stay hydrated and monitor symptoms closely — seek medical attention if symptoms worsen"
-            ],
-            "doctor_alert": False,
-            "doctor_alert_reason": None
-        },
-        "LOW": {
-            "condition_summary": "Travel to this destination is relatively safe for your asthma. Maintain your regular medication routine.",
-            "immediate_actions": [
-                "Pack your standard medication supply plus one backup inhaler",
-                "Share your travel dates and destination with your doctor for their records",
-                "Download offline maps and note locations of pharmacies near your accommodation"
-            ],
-            "preventive_steps": [
-                "Continue taking controller medications as prescribed — do not skip doses while traveling",
-                "Stay in accommodation with good air quality and ventilation; avoid exposure to smoke"
-            ],
-            "doctor_alert": False,
-            "doctor_alert_reason": None
-        }
-    }
-    
-    risk_level = str(risk_level).upper() if risk_level else "MEDIUM"
-    return recommendations.get(risk_level, recommendations["MEDIUM"])

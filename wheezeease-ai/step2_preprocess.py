@@ -43,10 +43,10 @@ print("\n--- 2.3 Feature Engineering ---")
 
 # Environmental Risk Index — combines pollution factors
 df['env_risk_index'] = (
-    df['AQI']           * 0.40 +
-    df['pollen_count']  * 0.30 +
-    df['humidity']      * 0.20 +
-    df['temperature']   * 0.10
+    (df['AQI'] / 400)           * 0.40 +
+    (df['pollen_count'] / 200)  * 0.30 +
+    (df['humidity'] / 100)      * 0.20 +
+    (df['temperature'] / 45)    * 0.10
 )
 print(" Created: env_risk_index")
 
@@ -55,7 +55,7 @@ df['symptom_severity'] = (
     df['wheezing'] +
     df['coughing'] +
     df['chest_tightness'] +
-    df['breathing_difficulty']
+    (df['breathing_difficulty'] - 1) / 2
 )
 print(" Created: symptom_severity")
 
@@ -66,6 +66,11 @@ print(" Created: pollution_combo")
 # High inhaler usage = bad sign
 df['inhaler_overuse'] = (df['inhaler_usage'] >= 3).astype(int)
 print(" Created: inhaler_overuse (1 if used 3+ times)")
+
+# Check dust_exposure consistency
+print("\n--- Checking dust_exposure ---")
+print("Missing dust_exposure values:", df['dust_exposure'].isnull().sum())
+print(df['dust_exposure'].describe())
 
 # 2.4 SELECT FINAL FEATURES
 feature_columns = [

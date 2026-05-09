@@ -8,54 +8,29 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 from dotenv import load_dotenv
 load_dotenv()
 
-# LOAD MODELS
-_BASE = os.path.dirname(os.path.abspath(__file__))
-_DATA = os.path.join(_BASE, 'data')
-
-nn_model = tf.keras.models.load_model(
-    os.path.join(_DATA, 'model_nn.h5'), compile=False
-)
-
-with open(os.path.join(_DATA, 'model_rf.pkl'), 'rb') as f:
-    rf_model = pickle.load(f)
-
-with open(os.path.join(_DATA, 'scaler.pkl'), 'rb') as f:
-    scaler = pickle.load(f)
-
-with open(os.path.join(_DATA, 'processed_data.pkl'), 'rb') as f:
-    meta = pickle.load(f)
-    feature_columns = meta['feature_columns']
+from model_loader import nn_model, rf_model, scaler, feature_columns
 
 # FEATURE ENGINEERING
 def engineer_features(data: dict) -> np.ndarray:
-    env_risk_index = (
-        data['AQI']          * 0.40 +
-        data['pollen_count'] * 0.30 +
-        data['humidity']     * 0.20 +
-        data['temperature']  * 0.10
+    # compute engineered features first
+    data['env_risk_index'] = (
+        (data['AQI'] / 400)          * 0.40 +
+        (data['pollen_count'] / 200) * 0.30 +
+        (data['humidity'] / 100)     * 0.20 +
+        ((data['temperature'] - 5) / 40) * 0.10
     )
-    symptom_severity = (
+    data['symptom_severity'] = (
         data['wheezing'] +
         data['coughing'] +
         data['chest_tightness'] +
-        data['breathing_difficulty']
+        (data['breathing_difficulty'] - 1) / 2
     )
-    pollution_combo = data['PM2_5'] * 0.6 + data['NO2'] * 0.4
-    inhaler_overuse = 1 if data['inhaler_usage'] >= 3 else 0
+    data['pollution_combo'] = data['PM2_5'] * 0.6 + data['NO2'] * 0.4
+    data['inhaler_overuse'] = 1 if data['inhaler_usage'] >= 3 else 0
 
-    return np.array([[
-        data['AQI'], data['pollen_count'], data['humidity'],
-        data['temperature'], data['PM2_5'], data['NO2'],
-        data['dust_exposure'], data['wheezing'], data['coughing'],
-        data['chest_tightness'], data['inhaler_usage'],
-        data['breathing_difficulty'], data['medication_adherence'],
-        data['past_attacks'], data['lung_function_fev1'],
-        data['lung_function_fvc'], data['bmi'], data['smoking'],
-        data['physical_activity'], data['family_history_asthma'],
-        data['history_of_allergies'], data['hay_fever'],
-        data['eczema'], env_risk_index, symptom_severity,
-        pollution_combo, inhaler_overuse
-    ]])
+    # build array in exact training order
+    row = [data[col] for col in feature_columns]
+    return np.array([row])
 
 # PLAIN ENGLISH REASONS
 def get_plain_reasons(data: dict) -> list:
@@ -63,7 +38,7 @@ def get_plain_reasons(data: dict) -> list:
     Returns reasons in plain language that any patient can understand.
     No medical jargon — FEV1, PM2.5, NO2 all explained simply.
     """
-    importances = rf_model.feature_importances_
+    importances = rf_model.feature_importances_  # Note: Reflects default RF threshold importance
     reasons = []
 
     checks = [
@@ -209,8 +184,9 @@ def get_personalized_advice(data: dict, risk_level: str) -> dict:
             f"Take your preventer inhaler right now — skipping it today has left your airways unprotected"
         )
     elif inhaler >= 3:
+        doctor_name = data.get('assigned_doctor', 'your doctor')
         recommendations.append(
-            f"You have used your rescue inhaler {inhaler} times today — contact Dr. Rahman as this suggests your condition needs review"
+            f"You have used your rescue inhaler {inhaler} times today — contact {doctor_name} as this suggests your condition needs review"
         )
 
     # ── Active symptoms ──
@@ -313,12 +289,28 @@ def get_plain_alerts(data: dict) -> list:
     return alerts
 
 
+# INPUT VALIDATION
+def validate_input(data: dict):
+    required = {
+        'AQI': (0, 500), 'humidity': (0, 100),
+        'breathing_difficulty': (1, 3),
+        'lung_function_fev1': (0.5, 6.0)
+    }
+    for field, (min_val, max_val) in required.items():
+        if field not in data:
+            raise ValueError(f"Missing required field: {field}")
+        if not (min_val <= data[field] <= max_val):
+            raise ValueError(f"{field}={data[field]} outside valid range [{min_val}, {max_val}]")
+
+
 # MAIN PREDICTION FUNCTION
 def predict_risk(patient_data: dict) -> dict:
     """
     Main prediction function.
     Returns plain English results that any patient can understand.
     """
+    validate_input(patient_data)
+    
     features_raw    = engineer_features(patient_data)
     features_scaled = scaler.transform(features_raw)
 
@@ -331,8 +323,10 @@ def predict_risk(patient_data: dict) -> dict:
 
     # Random Forest safety check
     rf_pred = rf_model.predict(features_scaled)[0]
+    rf_override = False
     if rf_pred == 2 and prediction != 2:
         prediction = 2
+        rf_override = True
 
     label_map = {0: 'LOW',    1: 'MEDIUM',   2: 'HIGH'}
     icon_map  = {0: '✅',     1: '⚠️',       2: '🚨'}
@@ -358,6 +352,7 @@ def predict_risk(patient_data: dict) -> dict:
         'color':         color_map[prediction],
         'main_message':  main_message,
         'confidence':    round(confidence, 3),
+        'rf_override':   rf_override,
         'probabilities': {
             'low':    round(float(nn_proba[0]), 3),
             'medium': round(float(nn_proba[1]), 3),
@@ -412,6 +407,8 @@ if __name__ == '__main__':
         print(f"  Risk Level   : {result['risk_level']}")
         print(f"  Message      : {result['main_message']}")
         print(f"  Confidence   : {result['confidence']:.1%}")
+        if result.get('rf_override'):
+            print(f"  RF Override  : True (High Risk Safety Net Triggered)")
 
         print(f"\n  Why is your risk {result['risk_level']}?")
         for i, reason in enumerate(result['reasons'], 1):
