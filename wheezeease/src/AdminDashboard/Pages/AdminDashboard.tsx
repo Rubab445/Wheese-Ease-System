@@ -3,7 +3,7 @@ import '../Admin.module.css/AdminDashboard.css'
 import {
   Users, Activity, AlertTriangle, Server, Search, Bell,
   Send, CheckCircle, X, ShieldAlert, Database,
-  TrendingUp, Clock, Zap
+  TrendingUp, Clock, Zap, Wind, Pill, TrendingDown, Thermometer
 } from 'lucide-react';
 
 // --- Types ---
@@ -16,7 +16,7 @@ interface Alert {
   subtitle: string;
   time: string;
   severity: AlertSeverity;
-  icon: string;
+  icon: React.ReactNode;
   detail: string;
   actions: string[];
   patientName?: string;
@@ -39,7 +39,7 @@ const ALERTS_DATA: Alert[] = [
     subtitle: "SpO₂ dropped to 88% · Salbutamol used 4× today",
     time: "2 min ago · Emergency",
     severity: "critical",
-    icon: "🫁",
+    icon: <Activity size={16} />,
     patientName: "Matt Smith",
     detail: "Patient Matt Smith (WE-2024-0034) has experienced a severe asthma flare-up. SpO₂ has fallen to 88% (normal: >95%). He has used his Salbutamol rescue inhaler 4 times today, indicating uncontrolled asthma. Gujrat AQI is 148 — this is likely an environmental trigger. Immediate clinical review recommended.",
     actions: ["Call Emergency Contact", "Notify Dr. Ahmad", "Dispatch Community Nurse"]
@@ -50,7 +50,7 @@ const ALERTS_DATA: Alert[] = [
     subtitle: "12 patients in high-risk zone affected",
     time: "15 min ago · Environmental",
     severity: "high",
-    icon: "🌿",
+    icon: <Wind size={16} />,
     detail: "Air Quality Index in Gujrat has spiked to 148 (Unhealthy). Grass pollen levels are critical. 12 of your registered patients live in the affected zone. AI model predicts a 38% higher flare-up probability for the next 24 hours.",
     actions: ["Send AQI Alert to Patients", "Increase Preventer Dose Advisory", "Log Environmental Event"]
   },
@@ -60,7 +60,7 @@ const ALERTS_DATA: Alert[] = [
     subtitle: "3 consecutive missed Seretide doses detected",
     time: "1 hr ago · Adherence",
     severity: "medium",
-    icon: "💊",
+    icon: <Pill size={16} />,
     patientName: "Ayesha Khan",
     detail: "Patient Ayesha Khan has missed her Seretide controller inhaler for 3 consecutive doses. Her adherence rate has dropped to 52% this week. Without controller medication, her risk of a flare-up increases significantly.",
     actions: ["Send Reminder SMS", "Flag for Follow-up Call", "Adjust Prescription Schedule"]
@@ -71,7 +71,7 @@ const ALERTS_DATA: Alert[] = [
     subtitle: "PF 295 L/min — 24% below personal best",
     time: "2 hr ago · Clinical",
     severity: "medium",
-    icon: "📉",
+    icon: <TrendingDown size={16} />,
     patientName: "Hassan Malik",
     detail: "Hassan Malik's recorded peak flow is 295 L/min, which is 24% below his personal best of 390 L/min. This drop is clinically significant and may indicate worsening airway obstruction.",
     actions: ["Schedule Urgent Review", "Send Spirometry Request", "Notify Primary Doctor"]
@@ -141,8 +141,8 @@ const AdminAlertItem: React.FC<{
 
   return (
     <div className="admin-alert-item" onClick={onClick}>
-      <div className="admin-alert-icon" style={{ backgroundColor: severityColor.bg }}>
-        <span>{alert.icon}</span>
+      <div className="admin-alert-icon" style={{ backgroundColor: severityColor.bg, color: severityColor.text }}>
+        {alert.icon}
       </div>
       <div className="admin-alert-content">
         <div className="admin-alert-title">{alert.title}</div>
@@ -203,7 +203,7 @@ const Overview: React.FC = () => {
 
   const handleResolveAlert = () => {
     if (selectedAlert) {
-      showToast(`✓ Alert resolved`);
+      showToast(`Alert resolved`);
       setIsAlertModalOpen(false);
       setSelectedAlert(null);
     }
@@ -211,7 +211,7 @@ const Overview: React.FC = () => {
 
   const handleEscalateAlert = () => {
     if (selectedAlert) {
-      showToast(`↑ Alert escalated`);
+      showToast(`Alert escalated`);
       setIsAlertModalOpen(false);
       setSelectedAlert(null);
     }
@@ -219,7 +219,7 @@ const Overview: React.FC = () => {
 
   const handleSendBroadcast = () => {
     if (!broadcastMessage.trim()) return;
-    showToast(`📢 Broadcast sent to ${broadcastTarget}`);
+    showToast(`Broadcast sent to ${broadcastTarget}`);
     setBroadcastMessage("");
     setIsBroadcastModalOpen(false);
   };
@@ -275,7 +275,7 @@ const Overview: React.FC = () => {
           <AdminStatCard
             title="Total Patients"
             value="284"
-            trend="↑ 12% vs last month"
+            trend="+12% vs last month"
             trendColor="#059669"
             icon={<Users size={22} />}
             color="#60A5FA"
@@ -284,7 +284,7 @@ const Overview: React.FC = () => {
           <AdminStatCard
             title="Active Sessions"
             value="47"
-            trend="● 5% increase"
+            trend="+5% increase"
             trendColor="#15803D"
             icon={<Activity size={22} />}
             color="#34D399"
@@ -293,7 +293,7 @@ const Overview: React.FC = () => {
           <AdminStatCard
             title="Critical Alerts"
             value={criticalAlerts.length.toString()}
-            trend="↑ 2 new critical"
+            trend="+2 new critical"
             trendColor="#DC2626"
             icon={<ShieldAlert size={22} />}
             color="#A78BFA"
@@ -398,7 +398,7 @@ const Overview: React.FC = () => {
               <Database size={18} />
               Infrastructure & AI Health
             </div>
-            <div className="admin-health-badge">● Systems Normal</div>
+            <div className="admin-health-badge">Systems Normal</div>
           </div>
           <div className="admin-health-metrics-grid">
             <AdminHealthMetric label="Server Load" value={`${Math.round(metrics.cpu)}%`} percent={metrics.cpu} color="#15803D" />
@@ -425,7 +425,9 @@ const Overview: React.FC = () => {
           <div className="admin-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="admin-modal-header">
               <div className="admin-modal-title">
-                <span>{selectedAlert.icon}</span>
+                <span style={{ color: selectedAlert.severity === "critical" ? "#dc2626" : "#d97706" }}>
+                  {selectedAlert.icon}
+                </span>
                 <span>Alert Details</span>
               </div>
               <button className="admin-modal-close" onClick={() => setIsAlertModalOpen(false)}>

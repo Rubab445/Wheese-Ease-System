@@ -2,19 +2,18 @@ import React, { useState } from "react";
 import {
   MoreVertical, Send, CheckCheck, Paperclip,
   Smile, Search as SearchIcon, Mic,
-  Image, FileText, User, Camera, X
+  Image, FileText, User, Camera, X, ArrowLeft
 } from "lucide-react";
 import "../../AdminDashboard/Admin.module.css/adminMessages.css";
 
 const AdminMessages: React.FC = () => {
   const [activeChat, setActiveChat] = useState(0);
   const [typedMsg, setTypedMsg] = useState("");
-  const [showEmojis, setShowEmojis] = useState(false);
   const [showAttach, setShowAttach] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
-  // 🔥 MOBILE STATE ADDED
+  // MOBILE STATE ADDED
   const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
 
   const [chats, setChats] = useState([
@@ -32,10 +31,7 @@ const AdminMessages: React.FC = () => {
     }
   ]);
 
-  const addEmoji = (emoji: string) => {
-    setTypedMsg(prev => prev + emoji);
-    setShowEmojis(false);
-  };
+
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,7 +87,7 @@ const AdminMessages: React.FC = () => {
                 className={`admin-wa-chat-row ${activeChat === chat.id ? "active" : ""}`}
                 onClick={() => {
                   setActiveChat(chat.id);
-                  setIsMobileChatOpen(true); // 🔥 open chat on mobile
+                  setIsMobileChatOpen(true); // open chat on mobile
                 }}
               >
                 <div className={`pfp ${chat.online ? "online" : ""}`}>
@@ -116,12 +112,11 @@ const AdminMessages: React.FC = () => {
           {/* HEADER */}
          <header className="admin-wa-chat-header">
 
-  {/* 🔥 BACK ICON (mobile only) */}
   <div
     className="mobile-back-btn"
     onClick={() => setIsMobileChatOpen(false)}
   >
-    ←
+    <ArrowLeft size={20} />
   </div>
 
   <div className="admin-wa-user-meta">
@@ -170,20 +165,7 @@ const AdminMessages: React.FC = () => {
           <footer className="admin-wa-chat-footer">
 
             <div className="control-group">
-              <Smile
-                onClick={() => setShowEmojis(!showEmojis)}
-                className={showEmojis ? "active-icon" : ""}
-              />
 
-              {showEmojis && (
-                <div className="admin-wa-emoji-panel">
-                  {["😊", "😂", "🔥", "👍", "❤️", "🙌", "✨", "🤔"].map(e => (
-                    <span key={e} onClick={() => addEmoji(e)}>
-                      {e}
-                    </span>
-                  ))}
-                </div>
-              )}
 
               <div className="attach-wrapper">
                 <Paperclip

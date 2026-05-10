@@ -117,7 +117,6 @@ const PatientsPage: React.FC = () => {
         isOpen={isDrawerOpen}
         patient={selectedPatient}
         onClose={() => setIsDrawerOpen(false)}
-        onEditProfile={(p) => alert(`Edit ${p.name}`)}
         onSendUrgentAlert={(p) => alert(`Alert ${p.name}`)}
       />
 

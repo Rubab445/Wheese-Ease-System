@@ -66,10 +66,10 @@ const ROLE_COLORS: Record<UserRole, string> = {
 };
 
 const STATUS_CONFIG: Record<UserStatus, { color: string; bg: string; label: string }> = {
-  Active: { color: '#059669', bg: '#ECFDF5', label: '● Active' },
-  Inactive: { color: '#DC2626', bg: '#FEF2F2', label: '● Inactive' },
-  Suspended: { color: '#D97706', bg: '#FFFBEB', label: '● Suspended' },
-  Deleted: { color: '#6B7280', bg: '#F3F4F6', label: '● Deleted' },
+  Active: { color: '#059669', bg: '#ECFDF5', label: 'Active' },
+  Inactive: { color: '#DC2626', bg: '#FEF2F2', label: 'Inactive' },
+  Suspended: { color: '#D97706', bg: '#FFFBEB', label: 'Suspended' },
+  Deleted: { color: '#6B7280', bg: '#F3F4F6', label: 'Deleted' },
 };
 
 export default function UserManagement() {

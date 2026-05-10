@@ -113,10 +113,10 @@ const PatientListView: React.FC<PatientListViewProps> = ({
               {/* Column 6: Actions */}
               <td onClick={(e) => e.stopPropagation()}>
                 <div className="p-actions">
-                  <button className="btn-icon" onClick={() => onMessageClick(patient)} title="Message Patient">
+                  <button className="btn-icon" onClick={() => onMessageClick(patient)} title="Message Patient" style={{ background: '#EEF2FF', color: '#4F46E5', border: '1px solid #E0E7FF' }}>
                     <MessageSquare size={14} />
                   </button>
-                  <button className="btn-icon" onClick={() => onPrescriptionClick(patient)} title="Update Prescription">
+                  <button className="btn-icon" onClick={() => onPrescriptionClick(patient)} title="Update Prescription" style={{ background: '#F0FDF4', color: '#16A34A', border: '1px solid #DCFCE7' }}>
                     <FileEdit size={14} />
                   </button>
                   <button className="btn-table-primary" onClick={() => alert(`Sending AI advice to ${patient.name}...`)}>

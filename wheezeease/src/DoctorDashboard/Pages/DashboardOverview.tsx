@@ -24,35 +24,35 @@ const Overview: React.FC = () => {
   });
 
   const [patients] = useState<Patient[]>([
-    { id:'P-041', name:'Sara Ahmed',      av:'SA', age:34, gender:'F', cond:'Asthma',            risk:78, trend:'up',   inhaler:4, aqi:158, pollen:'High', humidity:67, temp:34, med:'Salbutamol + Fluticasone',    lastVisit:'Feb 18', notes:'Worsening this week. High pollen exposure. Monitor daily.', color:'#e84393' },
-    { id:'P-012', name:'Mohammad Khan',   av:'MK', age:52, gender:'M', cond:'COPD + Allergy',     risk:71, trend:'up',   inhaler:3, aqi:142, pollen:'High', humidity:70, temp:33, med:'Tiotropium + Montelukast',    lastVisit:'Feb 22', notes:'History of severe attacks in spring. Close monitoring needed.', color:'#e84343' },
-    { id:'P-025', name:'Bilal Chaudhry', av:'BC', age:23, gender:'M', cond:'Asthma + Allergy',   risk:63, trend:'up',   inhaler:2, aqi:130, pollen:'Med',  humidity:65, temp:32, med:'Montelukast + Salbutamol',    lastVisit:'Feb 25', notes:'Stress-induced flares. Advised breathing exercises.', color:'#9b43e8' },
-    { id:'P-027', name:'Fatima Noor',    av:'FN', age:28, gender:'F', cond:'Seasonal Allergy',   risk:55, trend:'up',   inhaler:1, aqi:112, pollen:'High', humidity:62, temp:31, med:'Cetirizine + Fluticasone',    lastVisit:'Mar 01', notes:'Pollen allergy flare expected this week.', color:'#f5a623' },
-    { id:'P-033', name:'Usman Iqbal',    av:'UI', age:45, gender:'M', cond:'Asthma',             risk:47, trend:'flat', inhaler:1, aqi:95,  pollen:'Med',  humidity:58, temp:30, med:'Budesonide + Formoterol',     lastVisit:'Feb 28', notes:'Stable. Continue current regimen.', color:'#3a8eff' },
-    { id:'P-061', name:'Ayesha Raza',    av:'AR', age:24, gender:'F', cond:'Seasonal Allergy',   risk:38, trend:'flat', inhaler:0, aqi:88,  pollen:'Med',  humidity:60, temp:30, med:'Azelastine nasal spray',      lastVisit:'Mar 02', notes:'Mild symptoms. Indoor air filter recommended.', color:'#20b2aa' },
-    { id:'P-038', name:'Zara Butt',      av:'ZB', age:18, gender:'F', cond:'Dust Allergy',       risk:22, trend:'down', inhaler:0, aqi:78,  pollen:'Low',  humidity:55, temp:29, med:'Loratadine',                  lastVisit:'Mar 03', notes:'Responding well. Reduce home dust exposure.', color:'#22c87a' },
-    { id:'P-008', name:'Ali Javed',      av:'AJ', age:61, gender:'M', cond:'Asthma',             risk:14, trend:'down', inhaler:0, aqi:72,  pollen:'Low',  humidity:52, temp:28, med:'Salmeterol + Fluticasone',    lastVisit:'Mar 05', notes:'Excellent control. Consider reducing steroid dose.', color:'#22c87a' },
-    { id:'P-015', name:'Hina Malik',     av:'HM', age:38, gender:'F', cond:'Allergy',            risk:9,  trend:'down', inhaler:0, aqi:65,  pollen:'Low',  humidity:50, temp:27, med:'Fexofenadine',                lastVisit:'Mar 06', notes:'In remission. Seasonal monitoring advised.', color:'#22c87a' },
+    { id: 'P-041', name: 'Sara Ahmed', av: 'SA', age: 34, gender: 'F', cond: 'Asthma', risk: 78, trend: 'up', inhaler: 4, aqi: 158, pollen: 'High', humidity: 67, temp: 34, med: 'Salbutamol + Fluticasone', lastVisit: 'Feb 18', notes: 'Worsening this week. High pollen exposure. Monitor daily.', color: '#e84393' },
+    { id: 'P-012', name: 'Mohammad Khan', av: 'MK', age: 52, gender: 'M', cond: 'COPD + Allergy', risk: 71, trend: 'up', inhaler: 3, aqi: 142, pollen: 'High', humidity: 70, temp: 33, med: 'Tiotropium + Montelukast', lastVisit: 'Feb 22', notes: 'History of severe attacks in spring. Close monitoring needed.', color: '#e84343' },
+    { id: 'P-025', name: 'Bilal Chaudhry', av: 'BC', age: 23, gender: 'M', cond: 'Asthma + Allergy', risk: 63, trend: 'up', inhaler: 2, aqi: 130, pollen: 'Med', humidity: 65, temp: 32, med: 'Montelukast + Salbutamol', lastVisit: 'Feb 25', notes: 'Stress-induced flares. Advised breathing exercises.', color: '#9b43e8' },
+    { id: 'P-027', name: 'Fatima Noor', av: 'FN', age: 28, gender: 'F', cond: 'Seasonal Allergy', risk: 55, trend: 'up', inhaler: 1, aqi: 112, pollen: 'High', humidity: 62, temp: 31, med: 'Cetirizine + Fluticasone', lastVisit: 'Mar 01', notes: 'Pollen allergy flare expected this week.', color: '#f5a623' },
+    { id: 'P-033', name: 'Usman Iqbal', av: 'UI', age: 45, gender: 'M', cond: 'Asthma', risk: 47, trend: 'flat', inhaler: 1, aqi: 95, pollen: 'Med', humidity: 58, temp: 30, med: 'Budesonide + Formoterol', lastVisit: 'Feb 28', notes: 'Stable. Continue current regimen.', color: '#3a8eff' },
+    { id: 'P-061', name: 'Ayesha Raza', av: 'AR', age: 24, gender: 'F', cond: 'Seasonal Allergy', risk: 38, trend: 'flat', inhaler: 0, aqi: 88, pollen: 'Med', humidity: 60, temp: 30, med: 'Azelastine nasal spray', lastVisit: 'Mar 02', notes: 'Mild symptoms. Indoor air filter recommended.', color: '#20b2aa' },
+    { id: 'P-038', name: 'Zara Butt', av: 'ZB', age: 18, gender: 'F', cond: 'Dust Allergy', risk: 22, trend: 'down', inhaler: 0, aqi: 78, pollen: 'Low', humidity: 55, temp: 29, med: 'Loratadine', lastVisit: 'Mar 03', notes: 'Responding well. Reduce home dust exposure.', color: '#22c87a' },
+    { id: 'P-008', name: 'Ali Javed', av: 'AJ', age: 61, gender: 'M', cond: 'Asthma', risk: 14, trend: 'down', inhaler: 0, aqi: 72, pollen: 'Low', humidity: 52, temp: 28, med: 'Salmeterol + Fluticasone', lastVisit: 'Mar 05', notes: 'Excellent control. Consider reducing steroid dose.', color: '#22c87a' },
+    { id: 'P-015', name: 'Hina Malik', av: 'HM', age: 38, gender: 'F', cond: 'Allergy', risk: 9, trend: 'down', inhaler: 0, aqi: 65, pollen: 'Low', humidity: 50, temp: 27, med: 'Fexofenadine', lastVisit: 'Mar 06', notes: 'In remission. Seasonal monitoring advised.', color: '#22c87a' },
   ]);
 
   const [alerts] = useState<Alert[]>([
-    { id:1, pid:'P-041', patient:'Sara Ahmed',     type:'high', msg:'Risk jumped to 78% — possible attack imminent', time:'4m ago',  icon:<AlertOctagon size={14}/>, read:false },
-    { id:2, pid:'P-041', patient:'Sara Ahmed',     type:'high', msg:'4th inhaler use detected — overuse risk',        time:'9m ago',  icon:<Wind size={14}/>,         read:false },
-    { id:3, pid:'P-012', patient:'Mohammad Khan',  type:'high', msg:'AQI exceeded 150 — active trigger zone',          time:'22m ago', icon:<CloudFog size={14}/>,     read:false },
-    { id:4, pid:'P-025', patient:'Bilal Chaudhry', type:'mod',  msg:'Risk rising to 63% — chest tightness reported',  time:'1h ago',  icon:<AlertTriangle size={14}/>,read:true  },
-    { id:5, pid:'P-027', patient:'Fatima Noor',    type:'mod',  msg:'Wheezing reported — risk escalating',             time:'2h ago',  icon:<Activity size={14}/>,     read:true  },
-    { id:6, pid:'P-038', patient:'Zara Butt',      type:'low',  msg:'Daily check-in complete — all clear',             time:'3h ago',  icon:<CheckCircle2 size={14}/>, read:true  },
-    { id:7, pid:'P-008', patient:'Ali Javed',      type:'low',  msg:'Risk decreased to 14% — good trend',             time:'5h ago',  icon:<TrendingDown size={14}/>, read:true  },
+    { id: 1, pid: 'P-041', patient: 'Sara Ahmed', type: 'high', msg: 'Risk jumped to 78% — possible attack imminent', time: '4m ago', icon: <AlertOctagon size={14} />, read: false },
+    { id: 2, pid: 'P-041', patient: 'Sara Ahmed', type: 'high', msg: '4th inhaler use detected — overuse risk', time: '9m ago', icon: <Wind size={14} />, read: false },
+    { id: 3, pid: 'P-012', patient: 'Mohammad Khan', type: 'high', msg: 'AQI exceeded 150 — active trigger zone', time: '22m ago', icon: <CloudFog size={14} />, read: false },
+    { id: 4, pid: 'P-025', patient: 'Bilal Chaudhry', type: 'mod', msg: 'Risk rising to 63% — chest tightness reported', time: '1h ago', icon: <AlertTriangle size={14} />, read: true },
+    { id: 5, pid: 'P-027', patient: 'Fatima Noor', type: 'mod', msg: 'Wheezing reported — risk escalating', time: '2h ago', icon: <Activity size={14} />, read: true },
+    { id: 6, pid: 'P-038', patient: 'Zara Butt', type: 'low', msg: 'Daily check-in complete — all clear', time: '3h ago', icon: <CheckCircle2 size={14} />, read: true },
+    { id: 7, pid: 'P-008', patient: 'Ali Javed', type: 'low', msg: 'Risk decreased to 14% — good trend', time: '5h ago', icon: <TrendingDown size={14} />, read: true },
   ]);
 
   const [weekData] = useState<WeekData[]>([
-    { day:'Mon', high:4,  mod:11, low:28 },
-    { day:'Tue', high:3,  mod:12, low:27 },
-    { day:'Wed', high:5,  mod:13, low:26 },
-    { day:'Thu', high:6,  mod:14, low:25 },
-    { day:'Fri', high:5,  mod:12, low:27 },
-    { day:'Sat', high:7,  mod:13, low:24 },
-    { day:'Now', high:2,  mod:3,  low:4  },
+    { day: 'Mon', high: 4, mod: 11, low: 28 },
+    { day: 'Tue', high: 3, mod: 12, low: 27 },
+    { day: 'Wed', high: 5, mod: 13, low: 26 },
+    { day: 'Thu', high: 6, mod: 14, low: 25 },
+    { day: 'Fri', high: 5, mod: 12, low: 27 },
+    { day: 'Sat', high: 7, mod: 13, low: 24 },
+    { day: 'Now', high: 2, mod: 3, low: 4 },
   ]);
 
   const [currentTime, setCurrentTime] = useState('');
@@ -60,8 +60,8 @@ const Overview: React.FC = () => {
   useEffect(() => {
     const tick = () => {
       const now = new Date();
-      const date = now.toLocaleDateString('en-GB', { weekday:'short', day:'2-digit', month:'short' });
-      const time = now.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+      const date = now.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short' });
+      const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       setCurrentTime(`${date} · ${time}`);
     };
     tick();
@@ -71,17 +71,17 @@ const Overview: React.FC = () => {
 
   useEffect(() => {
     const high = patients.filter(p => p.risk >= 61).length;
-    const mod  = patients.filter(p => p.risk >= 31 && p.risk < 61).length;
-    const low  = patients.filter(p => p.risk < 31).length;
+    const mod = patients.filter(p => p.risk >= 31 && p.risk < 61).length;
+    const low = patients.filter(p => p.risk < 31).length;
     setStats({ totalPatients: patients.length, lowRisk: low, moderateRisk: mod, highRisk: high });
   }, [patients]);
 
   /* Environmental snapshot derived from patient data */
-  const maxAQI     = Math.max(...patients.map(p => p.aqi));
+  const maxAQI = Math.max(...patients.map(p => p.aqi));
   const avgHumidity = Math.round(patients.reduce((s, p) => s + p.humidity, 0) / patients.length);
-  const highPollen  = patients.filter(p => p.pollen === 'High').length;
+  const highPollen = patients.filter(p => p.pollen === 'High').length;
   const pollenLevel = highPollen >= 4 ? 'High' : highPollen >= 2 ? 'Moderate' : 'Low';
-  const avgTemp     = Math.round(patients.reduce((s, p) => s + p.temp, 0) / patients.length);
+  const avgTemp = Math.round(patients.reduce((s, p) => s + p.temp, 0) / patients.length);
 
   const unread = alerts.filter(a => !a.read).length;
 
@@ -135,10 +135,10 @@ const Overview: React.FC = () => {
 
       {/* ── Stats Row — 4 cards ── */}
       <div className="stats-row">
-        <StatCard icon={<Users size={22}/>}        value={stats.totalPatients} label="Total Patients"  subLabel="6 checked in today"                   color="blue"  delay={0}    />
-        <StatCard icon={<ShieldCheck size={22}/>}  value={stats.lowRisk}       label="Low Risk"        subLabel="Stable · Safe today"                  color="green" delay={0.06} />
-        <StatCard icon={<AlertTriangle size={22}/>} value={stats.moderateRisk} label="Moderate Risk"   subLabel="Monitor closely"                      color="amber" delay={0.12} />
-        <StatCard icon={<AlertOctagon size={22}/>} value={stats.highRisk}      label="High Risk"       subLabel={`${unread} unread alert${unread!==1?'s':''}`} color="red" delay={0.18} />
+        <StatCard icon={<Users size={22} />} value={stats.totalPatients} label="Total Patients" subLabel="6 checked in today" color="blue" delay={0} />
+        <StatCard icon={<ShieldCheck size={22} />} value={stats.lowRisk} label="Low Risk" subLabel="Stable · Safe today" color="green" delay={0.06} />
+        <StatCard icon={<AlertTriangle size={22} />} value={stats.moderateRisk} label="Moderate Risk" subLabel="Monitor closely" color="amber" delay={0.12} />
+        <StatCard icon={<AlertOctagon size={22} />} value={stats.highRisk} label="High Risk" subLabel={`${unread} unread alert${unread !== 1 ? 's' : ''}`} color="red" delay={0.18} />
       </div>
 
       {/* ── AI System Observation — full-width banner ── */}
@@ -277,7 +277,6 @@ const Overview: React.FC = () => {
         isOpen={isDrawerOpen}
         patient={selectedPatient}
         onClose={() => setIsDrawerOpen(false)}
-        onEditProfile={(p) => alert(`Editing profile for ${p.name}`)}
         onSendUrgentAlert={(p) => alert(`URGENT ALERT SENT to ${p.name}`)}
       />
     </div>

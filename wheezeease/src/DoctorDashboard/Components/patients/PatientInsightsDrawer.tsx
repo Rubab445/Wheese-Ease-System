@@ -6,7 +6,6 @@ interface PatientInsightsDrawerProps {
   isOpen: boolean;
   patient: Patient | null;
   onClose: () => void;
-  onEditProfile: (patient: Patient) => void;
   onSendUrgentAlert: (patient: Patient) => void;
 }
 
@@ -14,7 +13,6 @@ const PatientInsightsDrawer: React.FC<PatientInsightsDrawerProps> = ({
   isOpen,
   patient,
   onClose,
-  onEditProfile,
   onSendUrgentAlert,
 }) => {
   // We keep the drawer in the DOM even if no patient is selected to allow for smooth CSS transitions
@@ -110,13 +108,9 @@ const PatientInsightsDrawer: React.FC<PatientInsightsDrawerProps> = ({
             </div>
 
             <div className="p-drawer-footer">
-              <button className="btn-primary" style={{ background: 'var(--red)', flex: 1, boxShadow: '0 4px 10px rgba(153, 27, 27, 0.2)' }} onClick={() => onSendUrgentAlert(patient)}>
+              <button className="btn-primary" style={{ background: '#FEE2E2', color: '#991B1B', border: '1px solid #FECACA', flex: 1, boxShadow: '0 2px 4px rgba(153, 27, 27, 0.05)' }} onClick={() => onSendUrgentAlert(patient)}>
                 <Bell size={16} />
                 SEND URGENT ALERT
-              </button>
-              <button className="btn-icon" style={{ width: 'auto', padding: '0 16px', gap: '8px' }} onClick={() => onEditProfile(patient)}>
-                <UserRoundSearch size={16} />
-                EDIT PROFILE
               </button>
             </div>
           </>

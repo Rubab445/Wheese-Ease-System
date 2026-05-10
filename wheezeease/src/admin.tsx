@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Sidebar from './AdminDashboard/Components/Sidebar';
 import Overview from './AdminDashboard/Pages/AdminDashboard';
 import UserManagement from './AdminDashboard/Pages/UserManagement';
@@ -80,7 +81,7 @@ export default function AdminDashboard() {
           color: '#64748B'
         }}
       >
-        {isExpanded ? '❮' : '❯'}
+        {isExpanded ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
       </button>
 
       {/* ================= LEFT SIDEBAR ================= */}
