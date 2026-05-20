@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/app_colors.dart';
 
 class MessageModal extends StatefulWidget {
@@ -15,21 +16,46 @@ class MessageModal extends StatefulWidget {
 class _MessageModalState extends State<MessageModal> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
-  final List<Map<String, String>> _messages = [
-    {
-      'type': 'in',
-      'text':
-          "Hello Sara! I've reviewed your check-in. Risk is high today — please stay indoors.",
-    },
-    {
-      'type': 'in',
-      'text':
-          'Carry your rescue inhaler and take Fluticasone at 2PM as scheduled.',
-    },
-  ];
+  final List<Map<String, String>> _messages = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInitialMessages();
+  }
+
+  Future<void> _loadInitialMessages() async {
+    String firstName = '';
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      final data = await Supabase.instance.client
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .maybeSingle();
+      if (data != null && data['full_name'] != null) {
+        firstName = (data['full_name'] as String).split(' ').first;
+      }
+    }
+    if (!mounted) return;
+    setState(() {
+      _messages.addAll([
+        {
+          'type': 'in',
+          'text':
+              "Hello${firstName.isNotEmpty ? ' $firstName' : ''}! I've reviewed your check-in. Risk is high today — please stay indoors.",
+        },
+        {
+          'type': 'in',
+          'text':
+              'Carry your rescue inhaler and take Fluticasone at 2PM as scheduled.',
+        },
+      ]);
+    });
+  }
 
   final _replies = [
-    "Thank you Sara. I'll monitor your risk closely.",
+    "I'll monitor your risk closely.",
     "Please take medication on time. I'll check your data.",
     "Understood. Rest and stay indoors. We'll talk at your next visit.",
     "Noted. If symptoms worsen, contact emergency services immediately.",

@@ -6,8 +6,9 @@ import 'medications_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
   final VoidCallback? onCheckinTap;
+  final VoidCallback? onDoctorMessageTap;
 
-  const NotificationsScreen({super.key, this.onCheckinTap});
+  const NotificationsScreen({super.key, this.onCheckinTap, this.onDoctorMessageTap});
 
   @override
   State<NotificationsScreen> createState() => _NotificationsScreenState();
@@ -269,6 +270,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                     builder: (_) => const MedicationsScreen(),
                                   ),
                                 );
+                              } else if (type == 'doctor') {
+                                widget.onDoctorMessageTap?.call();
                               }
                             },
                             child: Container(
@@ -353,12 +356,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                                 fontWeight: FontWeight.w500,
                                               ),
                                             ),
-                                            if (notification['type'] == 'reminder' || notification['type'] == 'medication') ...[
+                                            if (notification['type'] == 'reminder' || notification['type'] == 'medication' || notification['type'] == 'doctor') ...[
                                               const SizedBox(width: 8),
                                               Text(
                                                 notification['type'] == 'medication'
                                                     ? '· Tap to open'
-                                                    : '· Tap to check in',
+                                                    : notification['type'] == 'doctor'
+                                                        ? '· Tap to chat'
+                                                        : '· Tap to check in',
                                                 style: GoogleFonts.nunito(
                                                   fontSize: 11,
                                                   color: color,

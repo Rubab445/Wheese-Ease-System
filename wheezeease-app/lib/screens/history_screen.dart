@@ -8,10 +8,10 @@ class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
 
   @override
-  State<HistoryScreen> createState() => _HistoryScreenState();
+  State<HistoryScreen> createState() => HistoryScreenState();
 }
 
-class _HistoryScreenState extends State<HistoryScreen> {
+class HistoryScreenState extends State<HistoryScreen> {
   int _filterIndex = 0; // 0=All, 1=Symptoms, 2=Exercise, 3=Household, 4=Trip
   final List<String> _filters = [
     'All',
@@ -29,6 +29,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
     super.initState();
     _loadEntries();
   }
+
+  void refresh() => _loadEntries();
 
   Future<void> _loadEntries() async {
     if (!mounted) return;

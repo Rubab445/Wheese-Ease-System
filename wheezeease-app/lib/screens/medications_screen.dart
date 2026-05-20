@@ -198,7 +198,9 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
     final textMuted = isDark ? AppColors.textMutedDark : AppColors.textMuted;
     final border = isDark ? AppColors.borderDark : AppColors.border;
 
-    return SingleChildScrollView(
+    return Scaffold(
+      backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surface,
+      body: SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -212,9 +214,19 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Medications', style: GoogleFonts.playfairDisplay(fontSize: 24, fontWeight: FontWeight.w800, color: Colors.white)),
-                  Text('Your schedule & reminders', style: GoogleFonts.nunito(fontSize: 12, color: Colors.white70)),
+                Row(children: [
+                  if (Navigator.of(context).canPop())
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).pop(),
+                      child: const Padding(
+                        padding: EdgeInsets.only(right: 12),
+                        child: Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+                      ),
+                    ),
+                  Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('Medications', style: GoogleFonts.playfairDisplay(fontSize: 24, fontWeight: FontWeight.w800, color: Colors.white)),
+                    Text('Your schedule & reminders', style: GoogleFonts.nunito(fontSize: 12, color: Colors.white70)),
+                  ]),
                 ]),
                 const Icon(Icons.medication_outlined, color: Colors.white, size: 34),
               ],
@@ -284,7 +296,7 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
           const SizedBox(height: 100),
         ],
       ),
-    );
+    ));
   }
 
   Widget _buildInhalerForm(Color surface, Color text, Color textMuted, Color border, Color primary, bool isDark) {

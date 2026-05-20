@@ -12,7 +12,7 @@ import 'screens/location_permission_screen.dart';
 import 'screens/doctor_selection_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/checkin_screen.dart';
-import 'screens/history_screen.dart';
+import 'screens/history_screen.dart' show HistoryScreen, HistoryScreenState;
 import 'screens/medications_screen.dart';
 import 'screens/doctor_detail_screen.dart';
 import 'screens/profile_screen.dart';
@@ -131,6 +131,7 @@ class _AppShellState extends State<AppShell> {
   AppFlow _flow = AppFlow.auth;
   int _currentTab = 0;
   final GlobalKey<HomeScreenState> _homeKey = GlobalKey<HomeScreenState>();
+  final GlobalKey<HistoryScreenState> _historyKey = GlobalKey<HistoryScreenState>();
 
   @override
   void initState() {
@@ -359,6 +360,7 @@ class _AppShellState extends State<AppShell> {
                   onComplete: () {
                     Navigator.pop(context);
                     _homeKey.currentState?.refresh();
+                    _historyKey.currentState?.refresh();
                   },
                   onPatientDataUpdate: (data) {
                     setState(() => _lastPatientData = data);
@@ -369,7 +371,7 @@ class _AppShellState extends State<AppShell> {
           },
         ),
         const ActivitiesScreen(),
-        const HistoryScreen(),
+        HistoryScreen(key: _historyKey),
         NotificationsScreen(
           onCheckinTap: () {
             Navigator.push(
@@ -379,6 +381,7 @@ class _AppShellState extends State<AppShell> {
                   onComplete: () {
                     Navigator.pop(context);
                     _homeKey.currentState?.refresh();
+                    _historyKey.currentState?.refresh();
                   },
                   onPatientDataUpdate: (data) {
                     setState(() => _lastPatientData = data);
@@ -387,6 +390,7 @@ class _AppShellState extends State<AppShell> {
               ),
             );
           },
+          onDoctorMessageTap: () => setState(() => _showMessage = true),
         ),
       ],
     );
@@ -427,10 +431,13 @@ class _AppShellState extends State<AppShell> {
                       i == _currentTab && _moreMenuSelection == null;
                   final tab = _tabs[i];
                   return GestureDetector(
-                    onTap: () => setState(() {
-                      _currentTab = i;
-                      _moreMenuSelection = null;
-                    }),
+                    onTap: () {
+                      if (i == 2) _historyKey.currentState?.refresh();
+                      setState(() {
+                        _currentTab = i;
+                        _moreMenuSelection = null;
+                      });
+                    },
                     behavior: HitTestBehavior.opaque,
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
