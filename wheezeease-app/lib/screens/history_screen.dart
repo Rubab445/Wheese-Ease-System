@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import 'recommendation_detail_screen.dart';
+import '../services/activity_log_service.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -20,105 +21,37 @@ class _HistoryScreenState extends State<HistoryScreen> {
     'Trip',
   ];
 
-  // Sample data simulating logged entries
-  final List<Map<String, dynamic>> _entries = [
-    {
-      'type': 'symptoms',
-      'date': DateTime.now().subtract(const Duration(hours: 1)),
-      'data': {
-        'symptoms': ['Coughing', 'Wheezing'],
-        'severity': 'Moderate',
-        'mood': 3,
-        'notes': 'Worse after going outside this morning',
-        'intensity': 'mod',
-      },
-    },
-    {
-      'type': 'exercise',
-      'date': DateTime.now().subtract(const Duration(hours: 4)),
-      'data': {
-        'exercise_type': 'walking',
-        'duration': 30,
-        'intensity': 'moderate',
-        'indoor': false,
-        'used_inhaler': true,
-      },
-    },
-    {
-      'type': 'household',
-      'date': DateTime.now().subtract(const Duration(hours: 8)),
-      'data': {
-        'activity_type': 'cleaning',
-        'duration': 45,
-        'wore_mask': true,
-        'trigger': 'Dust',
-      },
-    },
-    {
-      'type': 'trip',
-      'date': DateTime.now().subtract(const Duration(days: 1)),
-      'data': {'destination': 'Lahore'},
-    },
-    {
-      'type': 'symptoms',
-      'date': DateTime.now().subtract(const Duration(days: 1, hours: 6)),
-      'data': {
-        'symptoms': ['Shortness of Breath'],
-        'severity': 'Severe',
-        'mood': 4,
-        'notes': 'Air quality was very poor today',
-        'intensity': 'sev',
-      },
-    },
-    {
-      'type': 'exercise',
-      'date': DateTime.now().subtract(const Duration(days: 2)),
-      'data': {
-        'exercise_type': 'running',
-        'duration': 20,
-        'intensity': 'intense',
-        'indoor': false,
-        'used_inhaler': false,
-      },
-    },
-    {
-      'type': 'household',
-      'date': DateTime.now().subtract(const Duration(days: 2, hours: 5)),
-      'data': {
-        'activity_type': 'cooking',
-        'duration': 60,
-        'wore_mask': false,
-        'trigger': 'Smoke',
-      },
-    },
-    {
-      'type': 'trip',
-      'date': DateTime.now().subtract(const Duration(days: 3)),
-      'data': {'destination': 'Islamabad'},
-    },
-    {
-      'type': 'symptoms',
-      'date': DateTime.now().subtract(const Duration(days: 3, hours: 2)),
-      'data': {
-        'symptoms': ['Fatigue'],
-        'severity': 'Mild',
-        'mood': 1,
-        'notes': '',
-        'intensity': 'mild',
-      },
-    },
-    {
-      'type': 'exercise',
-      'date': DateTime.now().subtract(const Duration(days: 4)),
-      'data': {
-        'exercise_type': 'cycling',
-        'duration': 45,
-        'intensity': 'moderate',
-        'indoor': true,
-        'used_inhaler': false,
-      },
-    },
-  ];
+  bool _loading = true;
+  List<Map<String, dynamic>> _entries = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEntries();
+  }
+
+  Future<void> _loadEntries() async {
+    if (!mounted) return;
+    setState(() => _loading = true);
+    try {
+      final logs = await ActivityLogService.getRecentLogs();
+      if (!mounted) return;
+      setState(() {
+        _entries = logs.map((e) {
+          final rawType = e['type'] as String? ?? '';
+          return {
+            'type': rawType == 'checkin' ? 'symptoms' : rawType,
+            'date': DateTime.tryParse(e['created_at'] as String? ?? '') ?? DateTime.now(),
+            'data': Map<String, dynamic>.from(e['data'] as Map? ?? {}),
+          };
+        }).toList();
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+    }
+  }
 
   List<Map<String, dynamic>> get _filteredEntries {
     if (_filterIndex == 0) return _entries;
@@ -216,7 +149,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final text = isDark ? AppColors.textDark : AppColors.text;
     final textMuted = isDark ? AppColors.textMutedDark : AppColors.textMuted;
     final border = isDark ? AppColors.borderDark : AppColors.border;
-    final filtered = _filteredEntries;
+    final filtered = _loading ? <Map<String, dynamic>>[] : _filteredEntries;
 
     return Column(
       children: [
@@ -314,25 +247,47 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
         // Entry list
         Expanded(
-          child: filtered.isEmpty
+          child: _loading
               ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.inbox_outlined, size: 48, color: textMuted),
-                      const SizedBox(height: 12),
-                      Text(
-                        'No entries yet',
-                        style: GoogleFonts.nunito(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: textMuted,
-                        ),
-                      ),
-                    ],
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(primary),
                   ),
                 )
-              : ListView.builder(
+              : RefreshIndicator(
+                  onRefresh: _loadEntries,
+                  color: primary,
+                  child: filtered.isEmpty
+                  ? ListView(
+                      children: [
+                        SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.inbox_outlined, size: 48, color: textMuted),
+                            const SizedBox(height: 12),
+                            Text(
+                              'No entries yet',
+                              style: GoogleFonts.nunito(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: textMuted,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Log an activity to see it here.\nPull down to refresh.',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.nunito(
+                                fontSize: 12,
+                                color: textMuted,
+                                height: 1.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    )
+                  : ListView.builder(
                   padding: const EdgeInsets.fromLTRB(18, 8, 18, 100),
                   itemCount: filtered.length,
                   itemBuilder: (context, i) {
@@ -340,16 +295,21 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     final type = entry['type'] as String;
                     final color = _typeColor(type);
                     return GestureDetector(
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => RecommendationDetailScreen(
-                            entryType: type,
-                            entryData: entry['data'] as Map<String, dynamic>,
-                            entryDate: entry['date'] as DateTime,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => RecommendationDetailScreen(
+                              entryType: type,
+                              entryData: Map<String, dynamic>.from(
+                                entry['data'] as Map? ?? {},
+                              ),
+                              entryDate: entry['date'] as DateTime,
+                              saveToHistory: false,
+                            ),
                           ),
-                        ),
-                      ),
+                        );
+                      },
                       child: Container(
                         margin: const EdgeInsets.only(bottom: 10),
                         padding: const EdgeInsets.all(14),
@@ -431,6 +391,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       ),
                     );
                   },
+                ),
                 ),
         ),
       ],

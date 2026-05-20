@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/app_colors.dart';
+import '../services/profile_service.dart';
 
 class OnboardingScreen extends StatefulWidget {
   final VoidCallback onComplete;
@@ -22,14 +24,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _currentStep = 0;
 
   // ── Step 0 controllers ──
-  final _nameController = TextEditingController(text: 'Sara Ahmed');
-  final _ageController = TextEditingController(text: '28');
-  final _heightController = TextEditingController(text: '165');
-  final _weightController = TextEditingController(text: '68');
+  final _nameController = TextEditingController();
+  final _ageController = TextEditingController();
+  final _heightController = TextEditingController();
+  final _weightController = TextEditingController();
   String _gender = 'Female';
 
   // ── Step 1 ──
-  final Set<String> _selectedConditions = {'Asthma', 'Dust Allergy'};
+  final Set<String> _selectedConditions = {};
   final List<Map<String, dynamic>> _conditions = [
     {'icon': Icons.air_rounded, 'label': 'Asthma'},
     {'icon': Icons.sick_outlined, 'label': 'Seasonal Allergy'},
@@ -40,12 +42,39 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   ];
 
   // ── Step 2 controllers ──
-  final _primaryMedController = TextEditingController(text: 'Salbutamol');
-  final _secondaryMedController = TextEditingController(text: 'Fluticasone');
-  final _triggersController = TextEditingController(text: 'Dust, Pollen');
+  final _primaryMedController = TextEditingController();
+  final _secondaryMedController = TextEditingController();
+  final _triggersController = TextEditingController();
   bool _smoking = false;
   bool _familyHistory = false;
   String _activityLevel = 'Moderate';
+
+  // ── Step 3 — Doctor selection ──
+  List<Map<String, dynamic>> _doctors = [];
+  bool _loadingDoctors = false;
+  String? _selectedDoctorId;
+  String? _selectedDoctorName;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDoctors();
+  }
+
+  Future<void> _loadDoctors() async {
+    setState(() => _loadingDoctors = true);
+    try {
+      final response = await Supabase.instance.client
+          .from('doctors')
+          .select('id, full_name, specialty, hospital');
+      setState(() {
+        _doctors = List<Map<String, dynamic>>.from(response as List);
+        _loadingDoctors = false;
+      });
+    } catch (_) {
+      setState(() => _loadingDoctors = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -61,8 +90,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   // ── BMI calculation ──
   double _calculateBMI() {
-    final height = double.tryParse(_heightController.text) ?? 165;
-    final weight = double.tryParse(_weightController.text) ?? 68;
+    final height = double.tryParse(_heightController.text) ?? 0;
+    final weight = double.tryParse(_weightController.text) ?? 0;
     if (height <= 0) return 24.0;
     return weight / ((height / 100) * (height / 100));
   }
@@ -85,7 +114,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   void _goToStep(int step) {
     setState(() => _currentStep = step);
-    if (step == 3) {
+    if (step == 4) {
       widget.onNameSet(_nameController.text);
     }
   }
@@ -205,7 +234,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               // ── Step dots ──
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(4, (i) {
+                children: List.generate(5, (i) {
                   final isActive = i == _currentStep;
                   final isDone = i < _currentStep;
                   return AnimatedContainer(
@@ -247,7 +276,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       case 2:
         return _buildStep2();
       case 3:
-        return _buildStep3();
+        return _buildStep3(); // Doctor selection
+      case 4:
+        return _buildStep4(); // Success
       default:
         return _buildStep0();
     }
@@ -683,14 +714,175 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   // ══════════════════════════════════════════
-  // STEP 3 — Success screen
+  // STEP 3 — Doctor Selection
   // ══════════════════════════════════════════
   Widget _buildStep3() {
-    final firstName = _nameController.text.split(' ').first;
     final primary = AppColors.primaryColor(context);
 
     return Column(
       key: const ValueKey(3),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Choose your doctor',
+          style: GoogleFonts.playfairDisplay(
+            fontSize: 21,
+            fontWeight: FontWeight.w800,
+            color: AppColors.textColor(context),
+          ),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          'Your doctor will monitor your health and get alerts',
+          style: GoogleFonts.nunito(
+            fontSize: 12,
+            color: AppColors.textMutedColor(context),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        if (_loadingDoctors)
+          const Center(child: CircularProgressIndicator())
+        else if (_doctors.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceColor(context),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.borderColor(context)),
+            ),
+            child: Text(
+              'No doctors available. Please try again later.',
+              style: GoogleFonts.nunito(
+                fontSize: 13,
+                color: AppColors.textMutedColor(context),
+              ),
+            ),
+          )
+        else
+          ...(_doctors.map((doc) {
+            final selected = _selectedDoctorId == doc['id'];
+            return GestureDetector(
+              onTap: () => setState(() {
+                _selectedDoctorId = doc['id'] as String;
+                _selectedDoctorName = doc['full_name'] as String;
+              }),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: selected ? primary : AppColors.borderColor(context),
+                    width: 2,
+                  ),
+                  color: selected
+                      ? primary.withOpacity(0.08)
+                      : AppColors.surfaceColor(context),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: selected
+                            ? primary.withOpacity(0.15)
+                            : AppColors.borderColor(context).withOpacity(0.4),
+                      ),
+                      child: Icon(
+                        Icons.local_hospital_outlined,
+                        color: selected ? primary : AppColors.textMutedColor(context),
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            doc['full_name'] as String? ?? 'Doctor',
+                            style: GoogleFonts.nunito(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: selected ? primary : AppColors.textColor(context),
+                            ),
+                          ),
+                          if ((doc['specialty'] as String?) != null)
+                            Text(
+                              doc['specialty'] as String,
+                              style: GoogleFonts.nunito(
+                                fontSize: 12,
+                                color: AppColors.textMutedColor(context),
+                              ),
+                            ),
+                          if ((doc['hospital'] as String?) != null)
+                            Text(
+                              doc['hospital'] as String,
+                              style: GoogleFonts.nunito(
+                                fontSize: 11,
+                                color: AppColors.textMutedColor(context),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    if (selected)
+                      Icon(Icons.check_circle_rounded, color: primary, size: 22),
+                  ],
+                ),
+              ),
+            );
+          })),
+
+        const SizedBox(height: 20),
+        Row(
+          children: [
+            OutlinedButton(
+              onPressed: () => _goToStep(2),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                side: BorderSide(color: AppColors.borderColor(context), width: 2),
+              ),
+              child: Text(
+                '← Back',
+                style: GoogleFonts.nunito(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textMutedColor(context),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _buildGradientButton(
+                'Continue →',
+                _selectedDoctorId == null
+                    ? () => ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Please select a doctor to continue')),
+                        )
+                    : () => _goToStep(4),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // ══════════════════════════════════════════
+  // STEP 4 — Success screen
+  // ══════════════════════════════════════════
+  Widget _buildStep4() {
+    final firstName = _nameController.text.split(' ').first;
+    final primary = AppColors.primaryColor(context);
+
+    return Column(
+      key: const ValueKey(4),
       children: [
         const SizedBox(height: 10),
         Icon(Icons.celebration_outlined, color: primary, size: 64),
@@ -706,7 +898,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         ),
         const SizedBox(height: 10),
         Text(
-          "We'll monitor your risk in real time and warn you before any attack. Dr. Rahman is connected.",
+          "We'll monitor your risk in real time and warn you before any attack.${_selectedDoctorName != null ? ' $_selectedDoctorName is connected.' : ''}",
           textAlign: TextAlign.center,
           style: GoogleFonts.nunito(
             fontSize: 13,
@@ -748,7 +940,44 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
         ),
         const SizedBox(height: 20),
-        _buildGreenButton('Start Monitoring', widget.onComplete),
+        _buildGreenButton(
+  'Start Monitoring',
+  () async {
+    try {
+      await ProfileService.saveProfile(
+        fullName: _nameController.text.trim(),
+        age: int.tryParse(_ageController.text.trim()) ?? 0,
+        gender: _gender,
+        heightCm: double.tryParse(_heightController.text.trim()),
+        weightKg: double.tryParse(_weightController.text.trim()),
+        bmi: _calculateBMI() > 0 ? _calculateBMI() : null,
+        conditions: _selectedConditions.toList(),
+        medications: [
+          _primaryMedController.text.trim(),
+          _secondaryMedController.text.trim(),
+        ],
+        allergies: [
+          _triggersController.text.trim(),
+        ],
+        smoking: _smoking,
+        familyHistory: _familyHistory,
+        activityLevel: _activityLevel,
+        doctorId: _selectedDoctorId,
+      );
+
+      widget.onNameSet(_nameController.text.trim());
+
+      widget.onComplete();
+
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error saving profile: $e'),
+        ),
+      );
+    }
+  },
+),
       ],
     );
   }

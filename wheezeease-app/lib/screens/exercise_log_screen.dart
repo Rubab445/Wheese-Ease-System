@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import 'recommendation_detail_screen.dart';
 
 class ExerciseLogScreen extends StatefulWidget {
   const ExerciseLogScreen({super.key});
@@ -45,34 +46,32 @@ class _ExerciseLogScreenState extends State<ExerciseLogScreen> {
         icon: icon,
         initialData: Map<String, dynamic>.from(_exerciseLogs[exerciseName]!),
         onSave: (data) {
-          setState(() {
-            _exerciseLogs[exerciseName] = data;
-          });
+          setState(() => _exerciseLogs[exerciseName] = data);
           Navigator.pop(ctx);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.check_circle_outline, color: Colors.white, size: 18),
-                  const SizedBox(width: 10),
-                  Text(
-                    '$exerciseName logged successfully',
-                    style: GoogleFonts.nunito(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-              backgroundColor: AppColors.green,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              margin: const EdgeInsets.all(16),
-              duration: const Duration(seconds: 2),
-            ),
-          );
+          _navigateToRecommendation(exerciseName, data);
         },
+      ),
+    );
+  }
+
+  void _navigateToRecommendation(String exerciseName, Map<String, dynamic> data) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RecommendationDetailScreen(
+          entryType: 'exercise',
+          entryData: {
+            'exercise_type': exerciseName.toLowerCase(),
+            'duration': data['duration'],
+            'intensity': data['intensity'],
+            'indoor': data['isIndoor'],
+            'used_inhaler': data['usedInhaler'],
+            'symptoms_reported': data['symptoms_reported'] ?? [],
+            'symptom_notes': data['symptom_notes'],
+          },
+          entryDate: DateTime.now(),
+          saveToHistory: true,
+        ),
       ),
     );
   }
@@ -815,6 +814,10 @@ class _ExerciseBottomSheetState extends State<_ExerciseBottomSheet> {
                       'isIndoor': _isIndoor,
                       'usedInhaler': _usedInhaler,
                       'hadSymptoms': _hadSymptoms,
+                      'symptoms_reported': List<String>.from(_selectedSymptoms),
+                      'symptom_notes': _symptomNotesController.text.trim().isEmpty
+                          ? null
+                          : _symptomNotesController.text.trim(),
                     });
                   },
                   child: Container(

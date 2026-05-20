@@ -5,6 +5,7 @@ import {
   Send, CheckCircle, X, ShieldAlert, Database,
   TrendingUp, Clock, Zap, Wind, Pill, TrendingDown, Thermometer
 } from 'lucide-react';
+import { fetchAdminStats } from '../../lib/adminService';
 
 // --- Types ---
 type AlertSeverity = 'critical' | 'high' | 'medium';
@@ -190,6 +191,11 @@ const Overview: React.FC = () => {
   });
   const [notifications, setNotifications] = useState(true);
   const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: "", visible: false });
+  const [adminStats, setAdminStats] = useState({ totalPatients: 0, totalDoctors: 0, highRisk: 0, moderateRisk: 0, lowRisk: 0, totalPredictions: 0 });
+
+  useEffect(() => {
+    fetchAdminStats().then(setAdminStats).catch(() => {});
+  }, []);
 
   const showToast = useCallback((message: string) => {
     setToast({ message, visible: true });
@@ -239,7 +245,6 @@ const Overview: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const criticalAlerts = ALERTS_DATA.filter(a => a.severity === "critical");
   const recentAlerts = ALERTS_DATA.slice(0, 4);
 
   return (
@@ -274,26 +279,26 @@ const Overview: React.FC = () => {
         <div className="admin-stats-grid">
           <AdminStatCard
             title="Total Patients"
-            value="284"
-            trend="+12% vs last month"
+            value={adminStats.totalPatients}
+            trend={`${adminStats.lowRisk} stable · ${adminStats.moderateRisk} moderate`}
             trendColor="#059669"
             icon={<Users size={22} />}
             color="#60A5FA"
             onClick={() => showToast("Viewing patient directory")}
           />
           <AdminStatCard
-            title="Active Sessions"
-            value="47"
-            trend="+5% increase"
+            title="Registered Doctors"
+            value={adminStats.totalDoctors}
+            trend="Active on platform"
             trendColor="#15803D"
             icon={<Activity size={22} />}
             color="#34D399"
-            onClick={() => showToast("Monitoring live sessions")}
+            onClick={() => showToast("Monitoring doctors")}
           />
           <AdminStatCard
-            title="Critical Alerts"
-            value={criticalAlerts.length.toString()}
-            trend="+2 new critical"
+            title="High Risk Patients"
+            value={adminStats.highRisk}
+            trend={`${adminStats.totalPredictions} total predictions`}
             trendColor="#DC2626"
             icon={<ShieldAlert size={22} />}
             color="#A78BFA"

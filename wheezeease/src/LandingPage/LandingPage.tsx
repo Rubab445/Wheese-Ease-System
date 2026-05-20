@@ -1,5 +1,5 @@
 import React from 'react';
-import { Stethoscope, Facebook } from 'lucide-react';
+import { Stethoscope } from 'lucide-react';
 import './LandingPage.css';
 import landingImage from '../assets/pms-landing-image.png';
 import { useNavigate } from "react-router-dom";
@@ -37,15 +37,13 @@ export const LandingPage: React.FC = () => {
         </div>
 
         <div className="content-right">
-          <img 
+          <img
             src={landingImage}
-            alt="AI Healthcare Illustration" 
+            alt="AI Healthcare Illustration"
             className="hero-illustration"
           />
         </div>
       </main>
-
-      {/* Footer */}
     </div>
   );
 };

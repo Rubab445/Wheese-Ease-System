@@ -19,6 +19,8 @@ import 'screens/profile_screen.dart';
 import 'screens/activities_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'services/notification_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'supabase_config.dart';
 
 import 'widgets/message_modal.dart';
 
@@ -26,13 +28,21 @@ final GlobalKey<_AppShellState> appShellKey = GlobalKey<_AppShellState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
-  // Initialize local notifications & schedule daily check-in reminders
+  // SUPABASE INIT
+  await Supabase.initialize(
+    url: SupabaseConfig.supabaseUrl,
+    anonKey: SupabaseConfig.supabaseAnonKey,
+  );
+
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+  ]);
+
+  // Notifications
   await NotificationService.init();
   await NotificationService.scheduleDailyNotifications();
 
-  // When user taps a notification, navigate to the check-in tab
   NotificationService.onNotificationTap = (payload) {
     if (payload == 'checkin') {
       appShellKey.currentState?.switchToCheckin();
@@ -120,6 +130,11 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   AppFlow _flow = AppFlow.auth;
   int _currentTab = 0;
+  @override
+  void initState() {
+    super.initState();
+    loadUserName();
+}
 
   /// Called by notification tap handler to navigate to check-in screen
   void switchToCheckin() {
@@ -138,7 +153,24 @@ class _AppShellState extends State<AppShell> {
     }
   }
 
-  String _userName = 'Sara Ahmed';
+  String _userName = '';
+
+  Future<void> loadUserName() async {
+  final user = Supabase.instance.client.auth.currentUser;
+
+  if (user != null) {
+    final data = await Supabase.instance.client
+        .from('profiles')
+        .select()
+        .eq('id', user.id)
+        .single();
+
+    setState(() {
+      _userName = data['full_name'] ?? 'User';
+    });
+  }
+}
+
 
   bool _showMessage = false;
 
@@ -173,8 +205,30 @@ class _AppShellState extends State<AppShell> {
     {'icon': Icons.notifications_outlined, 'label': 'Notifications'},
   ];
 
-  void _onAuthComplete() {
-    setState(() => _flow = AppFlow.onboarding);
+  Future<void> _onAuthComplete() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      setState(() => _flow = AppFlow.auth);
+      return;
+    }
+
+    try {
+      final data = await Supabase.instance.client
+          .from('profiles')
+          .select('onboarding_completed')
+          .eq('id', user.id)
+          .maybeSingle();
+
+      await loadUserName();
+
+      if (data == null || data['onboarding_completed'] != true) {
+        setState(() => _flow = AppFlow.onboarding);
+      } else {
+        setState(() => _flow = AppFlow.main);
+      }
+    } catch (_) {
+      setState(() => _flow = AppFlow.onboarding);
+    }
   }
 
   void _onOnboardingComplete() {

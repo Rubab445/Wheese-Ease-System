@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import '../services/activity_log_service.dart';
 
 class CheckinScreen extends StatefulWidget {
   final VoidCallback onComplete;
@@ -91,13 +92,14 @@ class _CheckinScreenState extends State<CheckinScreen> {
       final isNone = symptom['isNone'] == true;
 
       if (isNone) {
-        // "None" deselects everything else
         for (var s in _symptoms) {
           s['selected'] = false;
           s['severity'] = null;
           s['expanded'] = false;
         }
         symptom['selected'] = true;
+        // "None" is a definitive selection — trigger save
+        _triggerAutoSave();
         return;
       }
 
@@ -107,26 +109,30 @@ class _CheckinScreenState extends State<CheckinScreen> {
       final isCurrentlyExpanded = symptom['expanded'] as bool;
 
       if (isCurrentlyExpanded) {
-        // Collapse it and deselect if no severity chosen
+        // Collapse, deselect if no severity chosen
         symptom['expanded'] = false;
         if (symptom['severity'] == null) {
           symptom['selected'] = false;
         }
       } else {
-        // Expand it
+        // Close all other open cards first
+        for (var s in _symptoms) {
+          s['expanded'] = false;
+        }
         symptom['expanded'] = true;
         symptom['selected'] = true;
       }
+      // Do NOT save here — wait until severity is chosen
     });
-    _triggerAutoSave();
   }
 
   void _selectSeverity(int index, String severity) {
     setState(() {
       _symptoms[index]['severity'] = severity;
       _symptoms[index]['selected'] = true;
+      _symptoms[index]['expanded'] = false; // collapse after choosing severity
     });
-    _triggerAutoSave();
+    _triggerAutoSave(); // Save + show "Saved ✓" only when severity is picked
   }
 
   Color _severityBgColor(String severity) {
@@ -166,6 +172,43 @@ class _CheckinScreenState extends State<CheckinScreen> {
       default:
         return Colors.transparent;
     }
+  }
+
+  Future<void> _saveCheckin() async {
+    final selected = _symptoms
+        .where((s) => s['selected'] == true && s['isNone'] != true)
+        .toList();
+    final symptomNames = selected.map((s) => s['name'] as String).toList();
+
+    final severities = selected
+        .where((s) => s['severity'] != null)
+        .map((s) => s['severity'] as String)
+        .toList();
+
+    String severity = 'None';
+    if (severities.contains('severe')) {
+      severity = 'Severe';
+    } else if (severities.contains('moderate')) {
+      severity = 'Moderate';
+    } else if (severities.isNotEmpty) {
+      severity = 'Mild';
+    }
+
+    final riskLevel = severity == 'Severe'
+        ? 'HIGH'
+        : severity == 'Moderate'
+            ? 'MEDIUM'
+            : 'LOW';
+
+    final notes = _notesController.text.trim();
+
+    await ActivityLogService.saveCheckinLog(
+      symptoms: symptomNames,
+      severity: severity,
+      mood: _selectedMood,
+      notes: notes.isEmpty ? null : notes,
+      riskLevel: riskLevel,
+    );
   }
 
   /// Debounced auto-save: waits 2 seconds after the last toggle before saving.
@@ -218,9 +261,6 @@ class _CheckinScreenState extends State<CheckinScreen> {
       'dust_exposure': 0.5,
       'timestamp': DateTime.now().toIso8601String(),
     };
-
-    // Simulate brief save delay (replace with actual Supabase insert when backend is wired)
-    await Future.delayed(const Duration(milliseconds: 400));
 
     if (!mounted) return;
 
@@ -278,7 +318,11 @@ class _CheckinScreenState extends State<CheckinScreen> {
           child: Row(
             children: [
               GestureDetector(
-                onTap: () => widget.onComplete(),
+                onTap: () async {
+                  _debounceTimer?.cancel();
+                  await _saveCheckin();
+                  if (mounted) widget.onComplete();
+                },
                 child: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
               ),
               const SizedBox(width: 14),

@@ -1,59 +1,109 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import StatCard from '../Components/Overview/StatCard';
 import PatientRiskFeed from '../Components/Overview/PatientRiskFeed';
 import WeekRiskChart from '../Components/Overview/WeekRiskChart';
 import RecentAlerts from '../Components/Overview/RecentAlerts';
 import { type Patient, type Alert, type WeekData, type DashboardStats } from '../types/dashboard.types';
+import { fetchDashboardStats, fetchPatients, fetchAlerts } from '../../lib/patientService';
 import {
   Users, ShieldCheck, AlertTriangle, AlertOctagon,
-  Activity, Wind, CloudFog, CheckCircle2, TrendingDown,
-  BrainCircuit, Droplets, Thermometer, Gauge, Bell
+  Activity, Wind, CloudFog,
+  BrainCircuit, Droplets, Thermometer, Gauge
 } from 'lucide-react';
 import PatientInsightsDrawer from '../Components/patients/PatientInsightsDrawer';
 import { type Patient as DirectoryPatient } from '../../types/patient.types';
 import { useNavigate } from 'react-router-dom';
 import '../../styles/dashboard.css';
 
+const AVATAR_COLORS_DASH = ['#e84393', '#e84343', '#9b43e8', '#f5a623', '#3a8eff', '#22c87a', '#20b2aa'];
+
+function mapToDashPatient(p: DirectoryPatient, i: number): Patient {
+  const score = p.risk.score;
+  return {
+    id: p.id,
+    name: p.name,
+    av: p.initials,
+    age: p.age,
+    gender: p.gender === 'Female' ? 'F' : 'M',
+    cond: p.condition,
+    risk: score,
+    trend: p.status === 'critical' ? 'up' : p.status === 'watch' ? 'up' : 'flat',
+    inhaler: p.symptoms.some(s => s.name === 'Inhaler Used') ? 1 : 0,
+    aqi: score >= 70 ? 148 : score >= 40 ? 115 : 78,
+    pollen: score >= 70 ? 'High' : score >= 40 ? 'Med' : 'Low',
+    humidity: score >= 70 ? 67 : score >= 40 ? 62 : 55,
+    temp: 30,
+    med: p.medications[0]?.name ?? 'As prescribed',
+    lastVisit: p.lastActive,
+    notes: p.ai[0]?.desc ?? 'Monitoring in progress.',
+    color: AVATAR_COLORS_DASH[i % AVATAR_COLORS_DASH.length],
+  };
+}
+
+function timeAgoFromISO(iso: string): string {
+  const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (m < 1) return 'Just now';
+  if (m < 60) return `${m}m ago`;
+  if (m < 1440) return `${Math.floor(m / 60)}h ago`;
+  return `${Math.floor(m / 1440)}d ago`;
+}
+
 const Overview: React.FC = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>({
-    totalPatients: 9,
-    lowRisk: 4,
-    moderateRisk: 3,
-    highRisk: 2,
+    totalPatients: 0,
+    lowRisk: 0,
+    moderateRisk: 0,
+    highRisk: 0,
   });
 
-  const [patients] = useState<Patient[]>([
-    { id: 'P-041', name: 'Sara Ahmed', av: 'SA', age: 34, gender: 'F', cond: 'Asthma', risk: 78, trend: 'up', inhaler: 4, aqi: 158, pollen: 'High', humidity: 67, temp: 34, med: 'Salbutamol + Fluticasone', lastVisit: 'Feb 18', notes: 'Worsening this week. High pollen exposure. Monitor daily.', color: '#e84393' },
-    { id: 'P-012', name: 'Mohammad Khan', av: 'MK', age: 52, gender: 'M', cond: 'COPD + Allergy', risk: 71, trend: 'up', inhaler: 3, aqi: 142, pollen: 'High', humidity: 70, temp: 33, med: 'Tiotropium + Montelukast', lastVisit: 'Feb 22', notes: 'History of severe attacks in spring. Close monitoring needed.', color: '#e84343' },
-    { id: 'P-025', name: 'Bilal Chaudhry', av: 'BC', age: 23, gender: 'M', cond: 'Asthma + Allergy', risk: 63, trend: 'up', inhaler: 2, aqi: 130, pollen: 'Med', humidity: 65, temp: 32, med: 'Montelukast + Salbutamol', lastVisit: 'Feb 25', notes: 'Stress-induced flares. Advised breathing exercises.', color: '#9b43e8' },
-    { id: 'P-027', name: 'Fatima Noor', av: 'FN', age: 28, gender: 'F', cond: 'Seasonal Allergy', risk: 55, trend: 'up', inhaler: 1, aqi: 112, pollen: 'High', humidity: 62, temp: 31, med: 'Cetirizine + Fluticasone', lastVisit: 'Mar 01', notes: 'Pollen allergy flare expected this week.', color: '#f5a623' },
-    { id: 'P-033', name: 'Usman Iqbal', av: 'UI', age: 45, gender: 'M', cond: 'Asthma', risk: 47, trend: 'flat', inhaler: 1, aqi: 95, pollen: 'Med', humidity: 58, temp: 30, med: 'Budesonide + Formoterol', lastVisit: 'Feb 28', notes: 'Stable. Continue current regimen.', color: '#3a8eff' },
-    { id: 'P-061', name: 'Ayesha Raza', av: 'AR', age: 24, gender: 'F', cond: 'Seasonal Allergy', risk: 38, trend: 'flat', inhaler: 0, aqi: 88, pollen: 'Med', humidity: 60, temp: 30, med: 'Azelastine nasal spray', lastVisit: 'Mar 02', notes: 'Mild symptoms. Indoor air filter recommended.', color: '#20b2aa' },
-    { id: 'P-038', name: 'Zara Butt', av: 'ZB', age: 18, gender: 'F', cond: 'Dust Allergy', risk: 22, trend: 'down', inhaler: 0, aqi: 78, pollen: 'Low', humidity: 55, temp: 29, med: 'Loratadine', lastVisit: 'Mar 03', notes: 'Responding well. Reduce home dust exposure.', color: '#22c87a' },
-    { id: 'P-008', name: 'Ali Javed', av: 'AJ', age: 61, gender: 'M', cond: 'Asthma', risk: 14, trend: 'down', inhaler: 0, aqi: 72, pollen: 'Low', humidity: 52, temp: 28, med: 'Salmeterol + Fluticasone', lastVisit: 'Mar 05', notes: 'Excellent control. Consider reducing steroid dose.', color: '#22c87a' },
-    { id: 'P-015', name: 'Hina Malik', av: 'HM', age: 38, gender: 'F', cond: 'Allergy', risk: 9, trend: 'down', inhaler: 0, aqi: 65, pollen: 'Low', humidity: 50, temp: 27, med: 'Fexofenadine', lastVisit: 'Mar 06', notes: 'In remission. Seasonal monitoring advised.', color: '#22c87a' },
-  ]);
+  useEffect(() => {
+    fetchDashboardStats().then(s => setStats({
+      totalPatients: s.totalPatients,
+      lowRisk: s.lowRisk,
+      moderateRisk: s.moderateRisk,
+      highRisk: s.highRisk,
+    }));
+  }, []);
 
-  const [alerts] = useState<Alert[]>([
-    { id: 1, pid: 'P-041', patient: 'Sara Ahmed', type: 'high', msg: 'Risk jumped to 78% — possible attack imminent', time: '4m ago', icon: <AlertOctagon size={14} />, read: false },
-    { id: 2, pid: 'P-041', patient: 'Sara Ahmed', type: 'high', msg: '4th inhaler use detected — overuse risk', time: '9m ago', icon: <Wind size={14} />, read: false },
-    { id: 3, pid: 'P-012', patient: 'Mohammad Khan', type: 'high', msg: 'AQI exceeded 150 — active trigger zone', time: '22m ago', icon: <CloudFog size={14} />, read: false },
-    { id: 4, pid: 'P-025', patient: 'Bilal Chaudhry', type: 'mod', msg: 'Risk rising to 63% — chest tightness reported', time: '1h ago', icon: <AlertTriangle size={14} />, read: true },
-    { id: 5, pid: 'P-027', patient: 'Fatima Noor', type: 'mod', msg: 'Wheezing reported — risk escalating', time: '2h ago', icon: <Activity size={14} />, read: true },
-    { id: 6, pid: 'P-038', patient: 'Zara Butt', type: 'low', msg: 'Daily check-in complete — all clear', time: '3h ago', icon: <CheckCircle2 size={14} />, read: true },
-    { id: 7, pid: 'P-008', patient: 'Ali Javed', type: 'low', msg: 'Risk decreased to 14% — good trend', time: '5h ago', icon: <TrendingDown size={14} />, read: true },
-  ]);
+  const [rawPatients, setRawPatients] = useState<DirectoryPatient[]>([]);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
 
-  const [weekData] = useState<WeekData[]>([
-    { day: 'Mon', high: 4, mod: 11, low: 28 },
-    { day: 'Tue', high: 3, mod: 12, low: 27 },
-    { day: 'Wed', high: 5, mod: 13, low: 26 },
-    { day: 'Thu', high: 6, mod: 14, low: 25 },
-    { day: 'Fri', high: 5, mod: 12, low: 27 },
-    { day: 'Sat', high: 7, mod: 13, low: 24 },
-    { day: 'Now', high: 2, mod: 3, low: 4 },
-  ]);
+  useEffect(() => {
+    fetchPatients().then(data => {
+      setRawPatients(data);
+      setPatients(data.map((p, i) => mapToDashPatient(p, i)));
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetchAlerts().then(data => {
+      setAlerts(data.map((a, i) => ({
+        id: i + 1,
+        pid: a.patientId ?? '',
+        patient: a.patientName ?? 'Patient',
+        type: a.severity === 'critical' ? 'high' as const : 'mod' as const,
+        msg: a.message,
+        time: timeAgoFromISO(a.timestamp),
+        icon: a.severity === 'critical' ? <AlertOctagon size={14} /> : <AlertTriangle size={14} />,
+        read: a.read,
+      })));
+    }).catch(() => {});
+  }, []);
+
+  const weekData = useMemo<WeekData[]>(() => {
+    const h = stats.highRisk, m = stats.moderateRisk, l = stats.lowRisk;
+    return [
+      { day: 'Mon', high: Math.max(0, h - 1), mod: m, low: l },
+      { day: 'Tue', high: h, mod: m, low: l },
+      { day: 'Wed', high: Math.max(0, h - 1), mod: Math.max(0, m - 1), low: l },
+      { day: 'Thu', high: h, mod: m, low: l },
+      { day: 'Fri', high: h, mod: m, low: l },
+      { day: 'Sat', high: Math.max(0, h - 1), mod: m, low: l },
+      { day: 'Now', high: h, mod: m, low: l },
+    ];
+  }, [stats]);
 
   const [currentTime, setCurrentTime] = useState('');
 
@@ -69,12 +119,6 @@ const Overview: React.FC = () => {
     return () => clearInterval(id);
   }, []);
 
-  useEffect(() => {
-    const high = patients.filter(p => p.risk >= 61).length;
-    const mod = patients.filter(p => p.risk >= 31 && p.risk < 61).length;
-    const low = patients.filter(p => p.risk < 31).length;
-    setStats({ totalPatients: patients.length, lowRisk: low, moderateRisk: mod, highRisk: high });
-  }, [patients]);
 
   /* Environmental snapshot derived from patient data */
   const maxAQI = Math.max(...patients.map(p => p.aqi));
@@ -89,33 +133,8 @@ const Overview: React.FC = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const handlePatientClick = (p: Patient) => {
-    // Map dashboard patient to directory patient structure for drawer
-    const mapped: DirectoryPatient = {
-      id: p.id,
-      name: p.name,
-      age: p.age,
-      gender: p.gender === 'F' ? 'Female' : 'Male',
-      blood: 'O+', // fallback
-      condition: p.cond,
-      status: p.risk >= 61 ? 'critical' : p.risk >= 31 ? 'watch' : 'stable',
-      lastActive: 'Now',
-      phone: '',
-      email: '',
-      city: 'Gujrat',
-      initials: p.av,
-      avatarBg: p.color,
-      avatarColor: '#FFFFFF',
-      allergies: [],
-      triggers: [],
-      vitals: { spo2: '98%', peakFlow: '450', heartRate: '72', temp: '37' },
-      risk: { level: p.risk >= 61 ? 'High' : p.risk >= 31 ? 'Medium' : 'Low', score: p.risk, factors: [] },
-      symptoms: [],
-      medications: [{ name: p.med, dose: 'As prescribed', freq: 'Daily' }],
-      ai: [],
-      history: []
-    };
-    setSelectedPatient(mapped);
-    setIsDrawerOpen(true);
+    const raw = rawPatients.find(r => r.id === p.id);
+    if (raw) { setSelectedPatient(raw); setIsDrawerOpen(true); }
   };
 
   return (
@@ -150,8 +169,16 @@ const Overview: React.FC = () => {
             <span className="ai-banner-label">LIVE</span>
           </div>
           <div className="ai-banner-text">
-            High pollen levels and elevated AQI ({maxAQI}) detected in Gujrat — directly correlating with rising respiratory risk in {stats.highRisk + stats.moderateRisk} patients.
-            Sara Ahmed (78%) and Mohammad Khan (71%) are at imminent risk. Preventive inhaler protocols and indoor advisories recommended immediately.
+            {patients.length === 0
+              ? 'Loading patient data... Ensure patients are linked to your doctor account in Supabase.'
+              : (() => {
+                  const topRisk = [...patients].sort((a, b) => b.risk - a.risk).slice(0, 2);
+                  const atRisk = stats.highRisk + stats.moderateRisk;
+                  return `Monitoring ${patients.length} patient${patients.length !== 1 ? 's' : ''}. ${atRisk > 0
+                    ? `${topRisk.map(p => `${p.name} (${p.risk}%)`).join(' and ')} ${topRisk.length === 1 ? 'is' : 'are'} at elevated risk — preventive inhaler protocols recommended.`
+                    : 'All patients currently stable. Continue routine monitoring.'}`;
+                })()
+            }
           </div>
         </div>
       </div>
