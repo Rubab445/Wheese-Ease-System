@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Patient } from '../../types/patient.types';
-import { PATIENTS } from '../../data/patients.mock';
+import { fetchPatients } from '../../lib/patientService';
 import PatientStats from '../Components/patients/PatientsStats';
 import PatientFilters from '../Components/patients/PatientsFilter';
 import PatientListView from '../Components/patients/PatientTableView';
@@ -17,6 +17,8 @@ import '../../styles/patients.css';
  */
 const PatientsPage: React.FC = () => {
   const navigate = useNavigate();
+  const [allPatients, setAllPatients] = useState<Patient[]>([]);
+  const [loadingPatients, setLoadingPatients] = useState(true);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -27,8 +29,15 @@ const PatientsPage: React.FC = () => {
   const [isRxModalOpen, setIsRxModalOpen] = useState(false);
   const [rxPatient, setRxPatient] = useState<Patient | null>(null);
 
+  useEffect(() => {
+    fetchPatients().then(data => {
+      setAllPatients(data);
+      setLoadingPatients(false);
+    });
+  }, []);
+
   const filteredPatients = useMemo(() => {
-    let filtered = PATIENTS.filter((p: Patient) => {
+    let filtered = allPatients.filter((p: Patient) => {
       const matchSearch =
         p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.id.toLowerCase().includes(searchTerm.toLowerCase());
@@ -51,14 +60,14 @@ const PatientsPage: React.FC = () => {
     }
 
     return filtered;
-  }, [searchTerm, statusFilter, ageFilter, sortBy]);
+  }, [allPatients, searchTerm, statusFilter, ageFilter, sortBy]);
 
   const stats = useMemo(() => {
-    const activeCount = PATIENTS.filter((p: Patient) => p.lastActive.includes('h') || p.lastActive === 'today').length;
-    const highRiskCount = PATIENTS.filter((p: Patient) => p.status === 'critical').length;
-    const moderateCount = PATIENTS.filter((p: Patient) => p.status === 'watch').length;
+    const activeCount = allPatients.filter((p: Patient) => p.lastActive.includes('h') || p.lastActive === 'today').length;
+    const highRiskCount = allPatients.filter((p: Patient) => p.status === 'critical').length;
+    const moderateCount = allPatients.filter((p: Patient) => p.status === 'watch').length;
     return {
-      total: PATIENTS.length,
+      total: allPatients.length,
       active: activeCount,
       highRisk: highRiskCount,
       moderate: moderateCount,
@@ -70,6 +79,16 @@ const PatientsPage: React.FC = () => {
     setSelectedPatient(patient);
     setIsDrawerOpen(true);
   };
+
+  if (loadingPatients) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', flexDirection: 'column', gap: 12 }}>
+        <div style={{ width: 36, height: 36, border: '3px solid #2563EB', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <p style={{ color: '#6B7280', fontSize: 14 }}>Loading patients from Supabase...</p>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
 
   return (
     <div className="patients-page-wrapper">

@@ -45,15 +45,13 @@ export const LandingPage: React.FC = () => {
         </div>
 
         <div className="content-right">
-          <img 
+          <img
             src={landingImage}
-            alt="AI Healthcare Illustration" 
+            alt="AI Healthcare Illustration"
             className="hero-illustration"
           />
         </div>
       </main>
-
-      {/* Footer */}
     </div>
   );
 };

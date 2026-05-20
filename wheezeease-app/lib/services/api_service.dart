@@ -210,8 +210,11 @@ class ApiService {
         // Send list — backend expects List[str], empty list = no symptoms
         "symptoms_reported": symptomsReported,
         // Only send if not null — backend treats null as "not provided"
-        "symptom_severity": ?symptomSeverity,
-        "symptom_notes": ?symptomNotes,
+        if (symptomSeverity != null)
+  "symptom_severity": symptomSeverity,
+
+if (symptomNotes != null)
+  "symptom_notes": symptomNotes,
         "city": _weatherCity,
       });
 
@@ -254,10 +257,13 @@ class ApiService {
         // Send list — backend expects List[str], empty list = no symptoms
         "symptoms_reported": symptomsReported,
         // Only send if not null
-        "symptom_severity": ?symptomSeverity,
-        "symptom_notes": ?symptomNotes,
+       if (symptomSeverity != null)
+        "symptom_severity": symptomSeverity,
+
+       if (symptomNotes != null)
+       "symptom_notes": symptomNotes,
         "city": _weatherCity,
-      });
+         });
 
       print(
         'Logging household activity: $activityType, symptoms: $symptomsReported...',

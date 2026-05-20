@@ -1,13 +1,16 @@
 # Run: uvicorn main:app --reload --host 0.0.0.0 --port 8000
 from dotenv import load_dotenv
+import os
 load_dotenv()                    
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 from get_recommendation import router as recommendation_router, get_activity_recommendation, get_trip_risk_recommendation
-import os
 import sys
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -321,7 +324,17 @@ async def login(request: LoginRequest):
             "role":  doctor["role"]
         }
     }
-
+@app.get("/checkin/history")
+async def get_checkin_history(period: str = "week"):
+    return [
+       {"date":"Mon","severity":2},
+       {"date":"Tue","severity":3},
+       {"date":"Wed","severity":1},
+       {"date":"Thu","severity":4},
+       {"date":"Fri","severity":2},
+       {"date":"Sat","severity":5},
+       {"date":"Sun","severity":3},
+]
 
 @app.get("/trip-risk", tags=["Prediction"])
 async def trip_risk(

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Stethoscope } from 'lucide-react';
-import './styles/Login.css'; 
-import LoginImage from './assets/newImage.png'
+import './styles/Login.css';
+import LoginImage from './assets/newImage.png';
+import { supabase } from './lib/supabase';
 
 interface LoginProps {
     onLogin: (role: string) => void;
@@ -21,55 +22,58 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         return '';
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        let hasError = false;
         const newErrors = { email: '', password: '', auth: '' };
-        
-        const emailError = validateEmail(username);
-        if (emailError) {
-            newErrors.email = emailError;
-            hasError = true;
-        }
 
-        if (!password) {
-            newErrors.password = 'Password is required';
-            hasError = true;
-        } else if (password.length < 6) {
-            newErrors.password = 'Password must be at least 6 characters';
-            hasError = true;
-        }
-        
-        if (hasError) {
-            setErrors(newErrors);
+        const emailError = validateEmail(username);
+        if (emailError) { setErrors({ ...newErrors, email: emailError }); return; }
+        if (!password) { setErrors({ ...newErrors, password: 'Password is required' }); return; }
+        if (password.length < 6) { setErrors({ ...newErrors, password: 'Password must be at least 6 characters' }); return; }
+
+        setIsLoading(true);
+
+        // Admin: hardcoded
+        if (username === 'admin@onco.com' && password === 'admin123') {
+            localStorage.setItem('isAuthenticated', 'true');
+            localStorage.setItem('userRole', 'admin');
+            setIsLoading(false);
+            setShowSuccess(true);
+            setTimeout(() => { setShowSuccess(false); onLogin('admin'); }, 2000);
             return;
         }
 
-        setIsLoading(true);
-        
-        setTimeout(() => {
-            let role = '';
-            if (username === 'doctor@onco.com' && password === '12345678') {
-                role = 'doctor';
-            } else if (username === 'admin@onco.com' && password === 'admin123') {
-                role = 'admin';
-            }
+        // Doctor: Supabase auth
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: username,
+            password,
+        });
 
-            if (role !== '') {
-                setIsLoading(false);
-                setShowSuccess(true);
-                localStorage.setItem('isAuthenticated', 'true');
-                localStorage.setItem('userRole', role);
-                
-                setTimeout(() => {
-                    setShowSuccess(false);
-                    onLogin(role);
-                }, 2000);
-            } else {
-                setIsLoading(false);
-                setErrors({ ...newErrors, auth: 'Invalid credentials. Use doctor@onco.com/12345678 or admin@onco.com/admin123' });
-            }
-        }, 1500);
+        if (error || !data.user) {
+            setIsLoading(false);
+            setErrors({ ...newErrors, auth: error?.message ?? 'Invalid credentials. Please try again.' });
+            return;
+        }
+
+        // Verify this user is registered as a doctor
+        const { data: doctor } = await supabase
+            .from('doctors')
+            .select('id')
+            .eq('id', data.user.id)
+            .maybeSingle();
+
+        if (!doctor) {
+            await supabase.auth.signOut();
+            setIsLoading(false);
+            setErrors({ ...newErrors, auth: 'Access denied. This account is not registered as a doctor.' });
+            return;
+        }
+
+        localStorage.setItem('isAuthenticated', 'true');
+        localStorage.setItem('userRole', 'doctor');
+        setIsLoading(false);
+        setShowSuccess(true);
+        setTimeout(() => { setShowSuccess(false); onLogin('doctor'); }, 2000);
     };
 
     return (

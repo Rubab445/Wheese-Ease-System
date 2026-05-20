@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-enum AuthPage { welcome, login, signup }
+enum AuthPage { welcome, login, signup, emailConfirm }
 
 class AuthScreen extends StatefulWidget {
   final VoidCallback onAuthComplete;
@@ -24,6 +25,8 @@ class _AuthScreenState extends State<AuthScreen>
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _agreeToTerms = false;
+  String _confirmedEmail = '';
+  final supabase = Supabase.instance.client;
 
   // Login controllers
   final _loginEmailController = TextEditingController();
@@ -45,7 +48,99 @@ class _AuthScreenState extends State<AuthScreen>
     _signupConfirmPasswordController.dispose();
     super.dispose();
   }
+  Future<void> _signup() async {
+  try {
+    final name = _signupNameController.text.trim();
+    final email = _signupEmailController.text.trim();
+    final password = _signupPasswordController.text.trim();
+    final confirmPassword =
+        _signupConfirmPasswordController.text.trim();
 
+    if (name.isEmpty ||
+        email.isEmpty ||
+        password.isEmpty ||
+        confirmPassword.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all fields')),
+      );
+      return;
+    }
+
+    if (password != confirmPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Passwords do not match')),
+      );
+      return;
+    }
+
+    if (!_agreeToTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Accept terms first')),
+      );
+      return;
+    }
+
+    final response = await supabase.auth.signUp(
+      email: email,
+      password: password,
+      data: {
+        'full_name': name,
+      },
+    );
+
+    if (response.user != null) {
+      setState(() {
+        _confirmedEmail = email;
+        _currentPage = AuthPage.emailConfirm;
+      });
+    }
+
+  } on AuthException catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.message)),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.toString())),
+    );
+  }
+}
+
+Future<void> _login() async {
+  try {
+    final email = _loginEmailController.text.trim();
+    final password = _loginPasswordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Fill all fields')),
+      );
+      return;
+    }
+
+    final response = await supabase.auth.signInWithPassword(
+      email: email,
+      password: password,
+    );
+
+    if (response.user != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Login successful')),
+      );
+
+      widget.onAuthComplete();
+    }
+
+  } on AuthException catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.message)),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.toString())),
+    );
+  }
+}
   void _navigateTo(AuthPage page) {
     setState(() => _currentPage = page);
   }
@@ -90,6 +185,8 @@ class _AuthScreenState extends State<AuthScreen>
         return _buildLoginPage();
       case AuthPage.signup:
         return _buildSignupPage();
+      case AuthPage.emailConfirm:
+        return _buildEmailConfirmPage();
     }
   }
 
@@ -322,10 +419,8 @@ class _AuthScreenState extends State<AuthScreen>
                   const SizedBox(height: 20),
 
                   // Login button
-                  _buildPrimaryButton('Login', () {
-                    widget.onNameSet('User');
-                    widget.onAuthComplete();
-                  }),
+                  _buildPrimaryButton('Login', _login),
+                  
                 ],
               ),
             ),
@@ -615,13 +710,7 @@ class _AuthScreenState extends State<AuthScreen>
                   const SizedBox(height: 20),
 
                   // Sign Up button
-                  _buildPrimaryButton('Sign Up', () {
-                    final name = _signupNameController.text.trim();
-                    if (name.isNotEmpty) {
-                      widget.onNameSet(name);
-                    }
-                    widget.onAuthComplete();
-                  }),
+                  _buildPrimaryButton('Sign Up', _signup),
                 ],
               ),
             ),
@@ -819,6 +908,167 @@ class _AuthScreenState extends State<AuthScreen>
       width: 8,
       height: 8,
       decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+    );
+  }
+
+  // ══════════════════════════════════════════
+  // EMAIL CONFIRMATION PAGE
+  // ══════════════════════════════════════════
+  Widget _buildEmailConfirmPage() {
+    final primary = AppColors.primaryColor(context);
+    final text = AppColors.textColor(context);
+    final textMuted = AppColors.textMutedColor(context);
+    final surface = AppColors.surfaceColor(context);
+    final border = AppColors.borderColor(context);
+
+    return SingleChildScrollView(
+      key: const ValueKey('emailConfirm'),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const SizedBox(height: 60),
+
+            // Icon
+            Container(
+              width: 90,
+              height: 90,
+              decoration: BoxDecoration(
+                color: primary.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.mark_email_unread_outlined, size: 44, color: primary),
+            ),
+            const SizedBox(height: 28),
+
+            // Title
+            Text(
+              'Check your inbox',
+              style: GoogleFonts.playfairDisplay(
+                fontSize: 26,
+                fontWeight: FontWeight.w800,
+                color: text,
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Subtitle
+            Text(
+              'We sent a confirmation link to',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.nunito(fontSize: 14, color: textMuted),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              _confirmedEmail,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.nunito(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: primary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Click the link in the email to verify your account, then come back here and log in.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.nunito(
+                fontSize: 13,
+                color: textMuted,
+                height: 1.6,
+              ),
+            ),
+            const SizedBox(height: 36),
+
+            // Steps
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _confirmStep('1', 'Open your email app'),
+                  const SizedBox(height: 12),
+                  _confirmStep('2', 'Find the email from WheezeEase'),
+                  const SizedBox(height: 12),
+                  _confirmStep('3', 'Tap "Confirm your email"'),
+                  const SizedBox(height: 12),
+                  _confirmStep('4', 'Come back and log in below'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            // Go to Login button
+            GestureDetector(
+              onTap: () => setState(() => _currentPage = AuthPage.login),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  gradient: Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.primaryGradientDark
+                      : AppColors.primaryGradient,
+                ),
+                child: Center(
+                  child: Text(
+                    'Go to Login',
+                    style: GoogleFonts.nunito(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 40),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _confirmStep(String number, String label) {
+    final primary = AppColors.primaryColor(context);
+    final text = AppColors.textColor(context);
+    return Row(
+      children: [
+        Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: primary.withOpacity(0.12),
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Text(
+              number,
+              style: GoogleFonts.nunito(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: primary,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          label,
+          style: GoogleFonts.nunito(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: text,
+          ),
+        ),
+      ],
     );
   }
 }

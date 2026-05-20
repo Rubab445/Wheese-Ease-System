@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { fetchDashboardStats } from '../../lib/patientService';
 import {
     LineChart, Line, AreaChart, Area, BarChart, Bar,
     XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -16,6 +17,11 @@ interface CustomTooltipProps {
 const Analytics: React.FC = () => {
     const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
     const [chartType, setChartType] = useState<'symptoms' | 'aqi' | 'both'>('both');
+    const [patientStats, setPatientStats] = useState({ totalPatients: 0, highRisk: 0, moderateRisk: 0, lowRisk: 0 });
+
+    useEffect(() => {
+        fetchDashboardStats().then(s => setPatientStats(s));
+    }, []);
 
     // ========== MOCK DATA ==========
     const correlationData = [
@@ -85,13 +91,22 @@ const Analytics: React.FC = () => {
 
             {/* ── Top Metric Cards ── */}
             <div className="analytics-metrics-grid">
-                <div className="analytics-metric-card lined-purple">
-                    <div className="metric-icon purple">
+                <div className="analytics-metric-card lined-blue">
+                    <div className="metric-icon blue">
                         <Activity size={24} />
                     </div>
                     <div className="metric-info">
-                        <span className="metric-value">94.2%</span>
-                        <span className="metric-label">AI Prediction Accuracy</span>
+                        <span className="metric-value">{patientStats.totalPatients}</span>
+                        <span className="metric-label">Total Patients</span>
+                    </div>
+                </div>
+                <div className="analytics-metric-card lined-purple">
+                    <div className="metric-icon purple">
+                        <ShieldAlert size={24} />
+                    </div>
+                    <div className="metric-info">
+                        <span className="metric-value">{patientStats.highRisk}</span>
+                        <span className="metric-label">High Risk Patients</span>
                     </div>
                 </div>
                 <div className="analytics-metric-card lined-orange">
@@ -99,26 +114,17 @@ const Analytics: React.FC = () => {
                         <TrendingUp size={24} />
                     </div>
                     <div className="metric-info">
-                        <span className="metric-value">0.87</span>
-                        <span className="metric-label">Environmental Correlation</span>
-                    </div>
-                </div>
-                <div className="analytics-metric-card lined-blue">
-                    <div className="metric-icon blue">
-                        <Wind size={24} />
-                    </div>
-                    <div className="metric-info">
-                        <span className="metric-value">158</span>
-                        <span className="metric-label">Peak AQI This Week</span>
+                        <span className="metric-value">{patientStats.moderateRisk}</span>
+                        <span className="metric-label">Moderate Risk Patients</span>
                     </div>
                 </div>
                 <div className="analytics-metric-card lined-green">
                     <div className="metric-icon green">
-                        <Droplets size={24} />
+                        <Info size={24} />
                     </div>
                     <div className="metric-info">
-                        <span className="metric-value">78%</span>
-                        <span className="metric-label">Medication Adherence</span>
+                        <span className="metric-value">{patientStats.lowRisk}</span>
+                        <span className="metric-label">Stable Patients</span>
                     </div>
                 </div>
             </div>

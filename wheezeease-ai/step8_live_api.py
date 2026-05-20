@@ -192,8 +192,12 @@ def get_top_reasons(full_data: dict) -> list:
     Returns reasons in plain language any patient can understand.
     No FEV1, PM2.5, NO2 jargon — everything explained simply.
     """
-    importances = rf_model.feature_importances_
-    reasons     = []
+    reasons = []
+
+    if rf_model is not None:
+       importances = rf_model.feature_importances_
+    else:
+     importances = [0] * len(feature_columns)
 
     checks = [
         ("lung_function_fev1",
@@ -487,19 +491,30 @@ def predict_with_live_data(weather_city: str,
     row = [full_data[col] for col in feature_columns]
     features = np.array([row])
 
-    features_scaled = scaler.transform(features)
+    if scaler is not None:
+        features_scaled = scaler.transform(features)
+    else:
+        features_scaled = features
 
     # Neural Network — primary
-    nn_proba = nn_model.predict(features_scaled, verbose=0)[0]
+    if nn_model is not None:
+        nn_proba = nn_model.predict(features_scaled, verbose=0)[0]
+    else:
+        nn_proba = [0.2, 0.6, 0.2]
 
-    if nn_proba[2] >= 0.25:   prediction = 2
-    elif nn_proba[0] >= 0.45: prediction = 0
-    else:                      prediction = 1
+    if nn_proba[2] >= 0.25:
+       prediction = 2
+    elif nn_proba[0] >= 0.45:
+       prediction = 0
+    else:
+       prediction = 1
 
     # Random Forest safety override
-    rf_pred = rf_model.predict(features_scaled)[0]
-    if rf_pred == 2 and prediction != 2:
-        prediction = 2
+    if rf_model is not None:
+       rf_pred = rf_model.predict(features_scaled)[0]
+
+       if rf_pred == 2 and prediction != 2:
+          prediction = 2
 
     label_map = {0: "LOW",   1: "MEDIUM",  2: "HIGH"}
     icon_map  = {0: "✅",    1: "⚠️",      2: "🚨"}

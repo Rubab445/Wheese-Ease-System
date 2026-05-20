@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/app_colors.dart';
+import '../services/profile_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String userName;
@@ -24,6 +26,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
     'checkin_remind': true,
     'aqi_weather': false,
   };
+
+  Map<String, dynamic>? _profile;
+  String _riskLevel = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final profile = await ProfileService.getProfile();
+    String riskLevel = '';
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user != null) {
+        final pred = await Supabase.instance.client
+            .from('prediction_logs')
+            .select('risk_level')
+            .eq('user_id', user.id)
+            .order('created_at', ascending: false)
+            .limit(1)
+            .maybeSingle();
+        riskLevel = pred?['risk_level'] as String? ?? '';
+      }
+    } catch (_) {}
+    if (mounted) setState(() { _profile = profile; _riskLevel = riskLevel; });
+  }
 
   void _showToast(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -140,40 +170,78 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 7,
-                height: 7,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.red,
+          if (_riskLevel.isNotEmpty || _profile?['conditions'] != null)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 7,
+                  height: 7,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _riskLevel == 'HIGH'
+                        ? AppColors.red
+                        : _riskLevel == 'MEDIUM'
+                        ? AppColors.yellow
+                        : AppColors.green,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 7),
-              Text(
-                'High Risk · Asthma + Dust Allergy',
-                style: GoogleFonts.nunito(
-                  fontSize: 12,
-                  color: AppColors.red,
-                  fontWeight: FontWeight.w700,
+                const SizedBox(width: 7),
+                Flexible(
+                  child: Text(
+                    [
+                      if (_riskLevel.isNotEmpty)
+                        '${_riskLevel[0]}${_riskLevel.substring(1).toLowerCase()} Risk',
+                      if (_profile?['conditions'] != null &&
+                          (_profile!['conditions'] as String).isNotEmpty)
+                        _profile!['conditions'] as String,
+                    ].join(' · '),
+                    style: GoogleFonts.nunito(
+                      fontSize: 12,
+                      color: _riskLevel == 'HIGH'
+                          ? AppColors.red
+                          : _riskLevel == 'MEDIUM'
+                          ? AppColors.yellow
+                          : AppColors.green,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
 
           // Health info
           _sectionLabel('Health Information', textMuted),
           _settingsList(surface, border, isDark, [
-            _settingsItem(Icons.local_hospital_outlined, AppColors.blueDim, 'Conditions', 'Asthma, Dust Allergy',
-                text, textMuted, textDim, border, primary, onTap: () {}),
-            _settingsItem(Icons.medication_outlined, primary.withOpacity(0.12), 'Medications', 'Salbutamol, Fluticasone, Cetirizine',
-                text, textMuted, textDim, border, primary, onTap: () {}),
-            _settingsItem(Icons.warning_amber_rounded, AppColors.yellowDim, 'Known Triggers', 'Dust, Pollen, Cold air',
-                text, textMuted, textDim, border, AppColors.yellow, onTap: () {}),
-            _settingsItem(Icons.phone_outlined, AppColors.redDim, 'Emergency Contact', '+92 300 9876543',
-                text, textMuted, textDim, border, AppColors.red, onTap: () {}),
+            _settingsItem(
+              Icons.local_hospital_outlined, AppColors.blueDim, 'Conditions',
+              _profile?['conditions']?.toString().isNotEmpty == true
+                  ? _profile!['conditions'] as String
+                  : 'Not set',
+              text, textMuted, textDim, border, primary, onTap: () {},
+            ),
+            _settingsItem(
+              Icons.medication_outlined, primary.withOpacity(0.12), 'Medications',
+              _profile?['medications']?.toString().isNotEmpty == true
+                  ? _profile!['medications'] as String
+                  : 'Not set',
+              text, textMuted, textDim, border, primary, onTap: () {},
+            ),
+            _settingsItem(
+              Icons.warning_amber_rounded, AppColors.yellowDim, 'Known Triggers',
+              _profile?['allergies']?.toString().isNotEmpty == true
+                  ? _profile!['allergies'] as String
+                  : 'None listed',
+              text, textMuted, textDim, border, AppColors.yellow, onTap: () {},
+            ),
+            _settingsItem(
+              Icons.person_outline, AppColors.greenDim, 'Activity Level',
+              _profile?['activity_level']?.toString().isNotEmpty == true
+                  ? '${(_profile!['activity_level'] as String)[0].toUpperCase()}${(_profile!['activity_level'] as String).substring(1)}'
+                  : 'Not set',
+              text, textMuted, textDim, border, AppColors.green, onTap: () {},
+            ),
           ]),
 
           // Notifications

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import 'recommendation_detail_screen.dart';
 
 class HouseholdActivityScreen extends StatefulWidget {
   const HouseholdActivityScreen({super.key});
@@ -46,22 +47,28 @@ class _HouseholdActivityScreenState extends State<HouseholdActivityScreen> {
         onSave: (data) {
           setState(() => _activityLogs[name] = data);
           Navigator.pop(ctx);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(children: [
-                const Icon(Icons.check_circle_outline, color: Colors.white, size: 18),
-                const SizedBox(width: 10),
-                Text('$name logged successfully',
-                  style: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
-              ]),
-              backgroundColor: AppColors.green,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              margin: const EdgeInsets.all(16),
-              duration: const Duration(seconds: 2),
-            ),
-          );
+          _navigateToRecommendation(name, data);
         },
+      ),
+    );
+  }
+
+  void _navigateToRecommendation(String activityName, Map<String, dynamic> data) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RecommendationDetailScreen(
+          entryType: 'household',
+          entryData: {
+            'activity_type': activityName.toLowerCase(),
+            'duration': data['duration'],
+            'wore_mask': data['woreMask'],
+            'symptoms_reported': data['symptoms_reported'] ?? [],
+            'symptom_notes': data['symptom_notes'],
+          },
+          entryDate: DateTime.now(),
+          saveToHistory: true,
+        ),
       ),
     );
   }
@@ -479,8 +486,15 @@ class _HouseholdBottomSheetState extends State<_HouseholdBottomSheet> {
                 padding: const EdgeInsets.symmetric(horizontal: 22),
                 child: GestureDetector(
                   onTap: () => widget.onSave({
-                    'duration': _duration, 'intensity': _intensity,
-                    'woreMask': _woreMask, 'openedWindows': _openedWindows, 'hadSymptoms': _hadSymptoms,
+                    'duration': _duration,
+                    'intensity': _intensity,
+                    'woreMask': _woreMask,
+                    'openedWindows': _openedWindows,
+                    'hadSymptoms': _hadSymptoms,
+                    'symptoms_reported': List<String>.from(_selectedSymptoms),
+                    'symptom_notes': _notesCtrl.text.trim().isEmpty
+                        ? null
+                        : _notesCtrl.text.trim(),
                   }),
                   child: Container(
                     width: double.infinity,

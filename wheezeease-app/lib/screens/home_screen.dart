@@ -2,9 +2,10 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:fl_chart/fl_chart.dart';
 import '../theme/app_colors.dart';
 import '../services/api_service.dart';
+import '../services/prediction_log_service.dart';
+import '../services/activity_log_service.dart';
 import '../models/prediction_result.dart';
 import '../screens/trip_risk_screen.dart';
 
@@ -69,17 +70,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         _loading = false;
       });
       _arcController.forward(from: 0.0);
+      PredictionLogService.savePrediction(
+        result: prediction,
+        patientData: widget.patientData,
+      );
     }
 
-    // Fetch symptom history for graphs
-    final history = await ApiService.getSymptomHistory(period: _graphPeriod);
-    if (history != null && mounted) {
-      setState(() {
-        _symptomHistory = List<Map<String, dynamic>>.from(history);
-        _historyLoading = false;
-      });
-    } else if (mounted) {
-      setState(() => _historyLoading = false);
+    // Fetch symptom history from Supabase prediction_logs
+    try {
+      final history = await ActivityLogService.getSymptomHistory(
+        period: _graphPeriod,
+      );
+      if (mounted) {
+        setState(() {
+          _symptomHistory = history;
+          _historyLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _historyLoading = false);
     }
   }
 
@@ -449,7 +458,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 )
               : SizedBox(
-                  height: 200,
+                  height: 222,
                   child: ListView(
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -958,109 +967,165 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   ) {
     final text = isDark ? AppColors.textDark : AppColors.text;
     final textMuted = isDark ? AppColors.textMutedDark : AppColors.textMuted;
+    final now = DateTime.now();
 
-    // Build spots from history data
-    final spots = <FlSpot>[];
-    for (int i = 0; i < _symptomHistory.length; i++) {
-      final val = (_symptomHistory[i][key] ?? 0);
-      spots.add(FlSpot(i.toDouble(), (val as num).toDouble()));
+    final Map<int, double> dayMap = {};
+    for (var e in _symptomHistory) {
+      final dtStr = e['created_at'] as String?;
+      final dt = dtStr != null ? DateTime.tryParse(dtStr)?.toLocal() : null;
+      if (dt == null) continue;
+      final daysAgo = now.difference(dt).inDays;
+      if (daysAgo > 6) continue;
+      final raw = e[key];
+      double val = 0;
+      if (raw is bool) {
+        val = raw ? 1.0 : 0.0;
+      } else if (raw is num) {
+        val = raw.toDouble();
+      }
+      if (val > (dayMap[daysAgo] ?? 0)) dayMap[daysAgo] = val;
     }
 
-    // If all zeros, still show flat line
-    final hasData = spots.any((s) => s.y > 0);
+    int detectionCount = 0;
+    const dayNames = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+    final barData = <Map<String, dynamic>>[];
+
+    for (int i = 6; i >= 0; i--) {
+      final day = now.subtract(Duration(days: i));
+      final val = dayMap[i] ?? 0;
+      if (val > 0) detectionCount++;
+      barData.add({
+        'label': i == 0 ? 'T' : dayNames[day.weekday - 1],
+        'val': val,
+        'isToday': i == 0,
+      });
+    }
+
+    const barMaxH = 76.0;
+    const barW = 14.0;
 
     return Container(
-      width: 160,
+      width: 162,
+      height: 210,
       margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 6),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
       decoration: BoxDecoration(
         color: surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: border, width: 0.5),
+        border: Border(
+          top: BorderSide(color: color, width: 3),
+          left: BorderSide(color: border, width: 0.5),
+          right: BorderSide(color: border, width: 0.5),
+          bottom: BorderSide(color: border, width: 0.5),
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(isDark ? 0.15 : 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
+          // ── header ──
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              ),
-              const SizedBox(width: 6),
               Text(
                 label,
                 style: GoogleFonts.nunito(
-                  fontSize: 11,
+                  fontSize: 12,
                   fontWeight: FontWeight.w800,
                   color: text,
                 ),
               ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(detectionCount > 0 ? 0.15 : 0.07),
+                  borderRadius: BorderRadius.circular(7),
+                ),
+                child: Text(
+                  detectionCount > 0 ? '${detectionCount}x' : '—',
+                  style: GoogleFonts.nunito(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: detectionCount > 0 ? color : textMuted,
+                  ),
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
-            hasData
-                ? 'Detected ${spots.where((s) => s.y > 0).length}x'
+            detectionCount > 0
+                ? '$detectionCount day${detectionCount != 1 ? 's' : ''} this week'
                 : 'No episodes',
-            style: GoogleFonts.nunito(fontSize: 9, color: textMuted),
+            style: GoogleFonts.nunito(
+              fontSize: 9,
+              fontWeight: FontWeight.w600,
+              color: textMuted,
+            ),
           ),
           const SizedBox(height: 10),
-          Expanded(
-            child: spots.isEmpty
-                ? Center(
-                    child: Text(
-                      'No data',
-                      style: GoogleFonts.nunito(fontSize: 10, color: textMuted),
-                    ),
-                  )
-                : LineChart(
-                    LineChartData(
-                      gridData: const FlGridData(show: false),
-                      borderData: FlBorderData(show: false),
-                      titlesData: const FlTitlesData(show: false),
-                      lineTouchData: const LineTouchData(enabled: false),
-                      minY: 0,
-                      maxY: key == 'breathing_difficulty'
-                          ? 3
-                          : key == 'inhaler_usage'
-                          ? 5
-                          : 1,
-                      lineBarsData: [
-                        LineChartBarData(
-                          spots: spots,
-                          isCurved: true,
-                          color: color,
-                          barWidth: 2.5,
-                          isStrokeCapRound: true,
-                          dotData: FlDotData(
-                            show: true,
-                            getDotPainter: (spot, _, __, ___) =>
-                                FlDotCirclePainter(
-                                  radius: spot.y > 0 ? 3 : 1.5,
-                                  color: spot.y > 0
-                                      ? color
-                                      : color.withOpacity(0.3),
-                                  strokeWidth: 0,
-                                  strokeColor: Colors.transparent,
-                                ),
-                          ),
-                          belowBarData: BarAreaData(
-                            show: true,
-                            color: color.withOpacity(0.08),
-                          ),
+          // ── bars ──
+          SizedBox(
+            height: barMaxH,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: barData.map((b) {
+                final val = b['val'] as double;
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Container(
+                      width: barW,
+                      height: val > 0 ? barMaxH : 14.0,
+                      decoration: BoxDecoration(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(4),
                         ),
-                      ],
+                        gradient: val > 0
+                            ? LinearGradient(
+                                colors: [color, color.withOpacity(0.5)],
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                              )
+                            : null,
+                        color: val > 0 ? null : color.withOpacity(0.35),
+                        border: val == 0
+                            ? Border.all(color: color.withOpacity(0.5), width: 1)
+                            : null,
+                      ),
                     ),
+                  ],
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 5),
+          // ── day labels ──
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: barData.map((b) {
+              final isToday = b['isToday'] as bool;
+              return SizedBox(
+                width: barW,
+                child: Text(
+                  b['label'] as String,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.nunito(
+                    fontSize: 7,
+                    fontWeight: isToday ? FontWeight.w800 : FontWeight.w600,
+                    color: isToday ? color : textMuted,
                   ),
+                ),
+              );
+            }).toList(),
           ),
         ],
       ),

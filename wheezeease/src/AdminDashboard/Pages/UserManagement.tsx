@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { fetchAdminUsers } from '../../lib/adminService';
 import {
   Search, Plus, Users, Stethoscope, UserRound, ShieldCheck,
   Download, Filter, Eye, Pencil, Trash2, CheckSquare,
@@ -73,7 +74,15 @@ const STATUS_CONFIG: Record<UserStatus, { color: string; bg: string; label: stri
 };
 
 export default function UserManagement() {
-  const [users, setUsers] = useState<AppUser[]>(MOCK_USERS);
+  const [users, setUsers] = useState<AppUser[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+
+  useEffect(() => {
+    fetchAdminUsers()
+      .then(data => setUsers(data.length ? data : MOCK_USERS))
+      .catch(() => setUsers(MOCK_USERS))
+      .finally(() => setLoadingUsers(false));
+  }, []);
   const [activeTab, setActiveTab] = useState<'All' | UserRole>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -315,7 +324,9 @@ export default function UserManagement() {
             </tr>
           </thead>
           <tbody>
-            {filteredUsers.length === 0 ? (
+            {loadingUsers ? (
+              <tr><td colSpan={14} className="um-empty">Loading users...</td></tr>
+            ) : filteredUsers.length === 0 ? (
               <tr><td colSpan={14} className="um-empty">No users found</td></tr>
             ) : filteredUsers.map((user, i) => {
               const sc = STATUS_CONFIG[user.status];

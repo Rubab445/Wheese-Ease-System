@@ -1,6 +1,6 @@
 /* --- Base Styles --- */
 :root {
-  --primary-green: #4caf50; /* Adjust to match the exact shade in image_2a7842.jpg */
+  --primary-green: #4caf50;
   --dark-text: #1f2933;
   --bg-white: #ffffff;
   --btn-radius: 12px;
@@ -100,17 +100,6 @@
   line-height: 1.6;
 }
 
-.main-login-btn {
-  background-color: var(--primary-green);
-  color: white;
-  padding: 14px 45px;
-  border-radius: var(--btn-radius);
-  border: none;
-  font-weight: 600;
-  font-size: 1.3rem;
-  cursor: pointer;
-  box-shadow: 0 4px 10px rgba(76, 175, 80, 0.2);
-}
 .content-right {
   flex: 1;
   position: relative;
@@ -118,25 +107,12 @@
   justify-content: center;
   max-height: 400px;
 }
-.content-right img{
-    object-fit: contain;
+.content-right img {
+  object-fit: contain;
 }
 .hero-illustration {
   max-width: 100%;
   height: auto;
-}
-
-/* --- Footer --- */
-.footer-section {
-  padding: 40px 0;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.footer-section p {
-  font-weight: 700;
-  font-size: 1.1rem;
 }
 
 /* --- Responsiveness --- */
@@ -148,7 +124,7 @@
   }
 
   .content-right {
-    order: -1; /* Image appears above text on mobile */
+    order: -1;
   }
 
   .content-left {

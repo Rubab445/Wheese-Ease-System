@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import 'recommendation_detail_screen.dart';
 
 class TripRiskScreen extends StatefulWidget {
   const TripRiskScreen({super.key});
@@ -21,44 +22,19 @@ class _TripRiskScreenState extends State<TripRiskScreen> {
     'Bahawalpur', 'Abbottabad',
   ];
 
-  Future<void> _logTrip(String city) async {
+  void _logTrip(String city) {
     if (city.trim().isEmpty) return;
-
-    setState(() => _loading = true);
-
-    // Simulate logging delay
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    if (!mounted) return;
-
-    setState(() => _loading = false);
-
-    // Show success snackbar
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle_outline, color: Colors.white, size: 18),
-            const SizedBox(width: 10),
-            Text(
-              'Trip logged successfully',
-              style: GoogleFonts.nunito(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            ),
-          ],
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RecommendationDetailScreen(
+          entryType: 'trip',
+          entryData: {'destination': city.trim()},
+          entryDate: DateTime.now(),
+          saveToHistory: true,
         ),
-        backgroundColor: AppColors.green,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-        duration: const Duration(seconds: 2),
       ),
     );
-
-    Navigator.pop(context);
   }
 
   @override

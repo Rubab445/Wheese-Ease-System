@@ -1,46 +1,47 @@
-# Environment variables - DO NOT COMMIT
+# ── Secrets & credentials ──────────────────────────────────
 .env
 .env.local
 .env.*.local
+*.env
 
-# Build and tool artifacts at root level
-.dart_tool/
-.idea/
+# ── Claude Code project memory (local only) ────────────────
 .claude/
-build/
-.flutter-plugins
-.flutter-plugins-dependencies
-*.iml
 
-# Large model files - regenerate by running steps 1-6
-data/model_nn.h5
-data/model_rf.pkl
-data/model_lr.pkl
-data/processed_data.pkl
-data/scaler.pkl
-data/best_model_name.txt
-
-# Dataset files - too large for GitHub
-data/*.csv
-
-# Python artifacts
+# ── Python ─────────────────────────────────────────────────
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .Python
+venv/
+.venv/
+env/
 
-# TensorFlow/Keras cache
+# ── AI model artefacts (regenerate by running training) ────
 *.h5
 *.keras
-
-# Jupyter notebooks checkpoints
+*.pkl
+wheezeease-ai/data/*.csv
+wheezeease-ai/data/*.png
+wheezeease-ai/data/*.txt
 .ipynb_checkpoints/
 
-# PNG charts - regenerate by running steps
-data/*.png
+# ── Backend folder (unused, kept locally only) ──────────────
+backend/
 
+# ── Flutter / Dart ─────────────────────────────────────────
+.dart_tool/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.iml
+.idea/
+
+# ── Node / Web ─────────────────────────────────────────────
 node_modules/
 dist/
+dist-ssr/
+
+# ── OS artefacts ───────────────────────────────────────────
 .DS_Store
 *.log

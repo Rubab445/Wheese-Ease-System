@@ -2,18 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import '../services/api_service.dart';
+import '../services/activity_log_service.dart';
 import '../utils/patient_profile.dart';
 
 class RecommendationDetailScreen extends StatefulWidget {
   final String entryType;
   final Map<String, dynamic> entryData;
   final DateTime entryDate;
+  final bool saveToHistory;
 
   const RecommendationDetailScreen({
     super.key,
     required this.entryType,
     required this.entryData,
     required this.entryDate,
+    this.saveToHistory = false,
   });
 
   @override
@@ -60,28 +63,58 @@ class _RecommendationDetailScreenState extends State<RecommendationDetailScreen>
           break;
 
         case 'exercise':
+          final exSymptoms = List<String>.from(widget.entryData['symptoms_reported'] ?? []);
+          final exNotes = widget.entryData['symptom_notes'] as String?;
           result = await ApiService.logExercise(
             exerciseType: widget.entryData['exercise_type'] ?? 'walking',
-            duration: widget.entryData['duration'] ?? 30,
+            duration: (widget.entryData['duration'] as num?)?.toInt() ?? 30,
             intensity: widget.entryData['intensity'] ?? 'moderate',
             indoor: widget.entryData['indoor'] ?? false,
             usedInhaler: widget.entryData['used_inhaler'] ?? false,
+            symptomsReported: exSymptoms,
+            symptomNotes: exNotes,
           );
           if (result != null) {
             final aiRec = result['ai_recommendation'] as Map<String, dynamic>? ?? {};
             _recommendation = aiRec['data'] as Map<String, dynamic>? ?? _buildFromResult(result);
+            if (widget.saveToHistory) {
+              await ActivityLogService.saveExerciseLog(
+                exerciseType: widget.entryData['exercise_type'] ?? 'walking',
+                duration: (widget.entryData['duration'] as num?)?.toInt() ?? 30,
+                intensity: widget.entryData['intensity'] ?? 'moderate',
+                indoor: widget.entryData['indoor'] ?? false,
+                usedInhaler: widget.entryData['used_inhaler'] ?? false,
+                symptomsReported: exSymptoms,
+                symptomNotes: exNotes,
+                riskLevel: result['risk_level'] as String? ?? 'MEDIUM',
+              );
+            }
           }
           break;
 
         case 'household':
+          final hhSymptoms = List<String>.from(widget.entryData['symptoms_reported'] ?? []);
+          final hhNotes = widget.entryData['symptom_notes'] as String?;
           result = await ApiService.logHouseholdActivity(
             activityType: widget.entryData['activity_type'] ?? 'cleaning',
-            duration: widget.entryData['duration'] ?? 30,
+            duration: (widget.entryData['duration'] as num?)?.toInt() ?? 30,
             woreMask: widget.entryData['wore_mask'] ?? false,
+            symptomsReported: hhSymptoms,
+            symptomNotes: hhNotes,
           );
           if (result != null) {
             final aiRec = result['ai_recommendation'] as Map<String, dynamic>? ?? {};
             _recommendation = aiRec['data'] as Map<String, dynamic>? ?? _buildFromResult(result);
+            if (widget.saveToHistory) {
+              await ActivityLogService.saveHouseholdLog(
+                activityType: widget.entryData['activity_type'] ?? 'cleaning',
+                duration: (widget.entryData['duration'] as num?)?.toInt() ?? 30,
+                woreMask: widget.entryData['wore_mask'] ?? false,
+                symptomsReported: hhSymptoms,
+                symptomNotes: hhNotes,
+                riskLevel: result['risk_level'] as String? ?? 'MEDIUM',
+              );
+            }
           }
           break;
 
@@ -91,8 +124,19 @@ class _RecommendationDetailScreenState extends State<RecommendationDetailScreen>
             patientProfile: PatientProfile.clinicalProfile,
           );
           if (result != null) {
-            // Build recommendation from trip result
             _recommendation = _buildTripRecommendation(result);
+            if (widget.saveToHistory) {
+              final verdict = result['trip_verdict'] as String? ?? 'SAFE';
+              final tripRisk = verdict == 'NOT RECOMMENDED'
+                  ? 'HIGH'
+                  : verdict == 'CAUTION'
+                      ? 'MEDIUM'
+                      : 'LOW';
+              await ActivityLogService.saveTripLog(
+                destination: widget.entryData['destination'] ?? '',
+                riskLevel: tripRisk,
+              );
+            }
           }
           break;
       }

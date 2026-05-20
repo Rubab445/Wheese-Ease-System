@@ -1,3 +1,4 @@
+import React, { useEffect, useState } from 'react';
 import {
   LayoutDashboard, Users, Activity,
   Bell, MessageSquare,
@@ -5,6 +6,7 @@ import {
 } from 'lucide-react';
 import '../../../AdminDashboard/Admin.module.css/AdminSidebar.css';
 import logoImg from '../../../assets/logo.png';
+import { supabase } from '../../../lib/supabase';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -19,10 +21,22 @@ export default function Sidebar({
   activePage,
   onNavigate,
 }: SidebarProps) {
-  
-  // Use isOpen for the expanded state, but default to false when rendering
-  const isExpanded = isOpen; 
-  
+  const isExpanded = isOpen;
+
+  const [doctorName, setDoctorName] = useState('Doctor');
+  const [doctorSpecialty, setDoctorSpecialty] = useState('Pulmonologist');
+
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      const { data } = await supabase.from('doctors').select('full_name, specialty').eq('id', user.id).maybeSingle();
+      if (data) {
+        setDoctorName(data.full_name);
+        setDoctorSpecialty(data.specialty ?? 'Pulmonologist');
+      }
+    });
+  }, []);
+
   const mainNavigation = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'patients', label: 'Patient Directory', icon: Users },
@@ -151,13 +165,13 @@ export default function Sidebar({
       {/* ================= PROFILE & LOGOUT ================= */}
       <div className="admin-sidebar-footer">
         <div className="admin-profile-section">
-          <div className="admin-avatar">
-            <img src="https://ui-avatars.com/api/?name=Dr+Smith&background=EFF6FF&color=2563EB" alt="Avatar" />
+          <div className="admin-avatar" style={{ background: '#EFF6FF', color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 13 }}>
+            {doctorName.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()}
           </div>
           {isExpanded && (
             <div className="admin-profile-info">
-              <span className="admin-profile-name">Dr. Smith</span>
-              <span className="admin-profile-role">Pulmonologist</span>
+              <span className="admin-profile-name">{doctorName}</span>
+              <span className="admin-profile-role">{doctorSpecialty}</span>
             </div>
           )}
         </div>

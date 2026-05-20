@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import '../services/profile_service.dart';
 
 class MedicationsScreen extends StatefulWidget {
   const MedicationsScreen({super.key});
@@ -10,40 +11,84 @@ class MedicationsScreen extends StatefulWidget {
 }
 
 class _MedicationsScreenState extends State<MedicationsScreen> {
-  // Existing medications
-  final List<Map<String, dynamic>> _meds = [
-    {
-      'name': 'Salbutamol (Ventolin)',
-      'type': 'Rescue Inhaler · β₂ agonist',
-      'icon': Icons.air_rounded,
-      'badge': '100mcg/puff',
-      'time': 'As needed',
-      'note': 'Alert if used more than 3x/day',
-      'taken': false,
-      'toggle': true,
-    },
-    {
-      'name': 'Fluticasone (Flixotide)',
-      'type': 'Preventer Inhaler · Corticosteroid',
-      'icon': Icons.cyclone_outlined,
-      'badge': '250mcg/dose',
-      'time': '2:00 PM Daily',
-      'note': 'Daily reminder at 2:00 PM',
-      'taken': false,
-      'toggle': true,
-    },
-    {
-      'name': 'Cetirizine (Zyrtec)',
-      'type': 'Antihistamine · Allergy tablet',
-      'icon': Icons.medication_outlined,
-      'badge': '10mg',
-      'time': 'Every morning',
-      'note': 'Daily reminder at 8:00 AM',
-      'taken': true,
-      'takenTime': '8:00 AM',
-      'toggle': true,
-    },
-  ];
+  List<Map<String, dynamic>> _meds = [];
+  bool _medsLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMedications();
+  }
+
+  Future<void> _loadMedications() async {
+    final profile = await ProfileService.getProfile();
+    final medsStr = profile?['medications'] as String? ?? '';
+    final names = medsStr
+        .split(',')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+
+    final loaded = names.map((name) {
+      final lower = name.toLowerCase();
+      if (lower.contains('salbutamol') || lower.contains('ventolin')) {
+        return {
+          'name': name, 'type': 'Rescue Inhaler · β₂ agonist',
+          'icon': Icons.air_rounded, 'badge': '100mcg/puff',
+          'time': 'As needed', 'note': 'Alert if used more than 3x/day',
+          'taken': false, 'toggle': true,
+        };
+      } else if (lower.contains('fluticasone') || lower.contains('flixotide')) {
+        return {
+          'name': name, 'type': 'Preventer Inhaler · Corticosteroid',
+          'icon': Icons.cyclone_outlined, 'badge': '250mcg/dose',
+          'time': '2:00 PM Daily', 'note': 'Daily reminder at 2:00 PM',
+          'taken': false, 'toggle': true,
+        };
+      } else if (lower.contains('cetirizine') || lower.contains('zyrtec')) {
+        return {
+          'name': name, 'type': 'Antihistamine · Allergy tablet',
+          'icon': Icons.medication_outlined, 'badge': '10mg',
+          'time': 'Every morning', 'note': 'Daily reminder at 8:00 AM',
+          'taken': false, 'toggle': true,
+        };
+      } else if (lower.contains('montelukast')) {
+        return {
+          'name': name, 'type': 'Leukotriene modifier · Tablet',
+          'icon': Icons.medical_services_outlined, 'badge': '10mg',
+          'time': 'Every evening', 'note': 'Take with or without food',
+          'taken': false, 'toggle': true,
+        };
+      } else if (lower.contains('budesonide') || lower.contains('symbicort')) {
+        return {
+          'name': name, 'type': 'Combination Inhaler',
+          'icon': Icons.cyclone_outlined, 'badge': '200mcg/dose',
+          'time': 'Twice daily', 'note': 'Rinse mouth after use',
+          'taken': false, 'toggle': true,
+        };
+      } else {
+        return {
+          'name': name, 'type': 'Prescribed medication',
+          'icon': Icons.medication_outlined, 'badge': 'As prescribed',
+          'time': 'As directed', 'note': 'Follow doctor\'s instructions',
+          'taken': false, 'toggle': true,
+        };
+      }
+    }).toList();
+
+    if (!mounted) return;
+    setState(() {
+      _meds = loaded.isNotEmpty ? loaded : [
+        {
+          'name': 'Salbutamol (Ventolin)', 'type': 'Rescue Inhaler · β₂ agonist',
+          'icon': Icons.air_rounded, 'badge': '100mcg/puff',
+          'time': 'As needed', 'note': 'Alert if used more than 3x/day',
+          'taken': false, 'toggle': true,
+        },
+      ];
+      _medsLoading = false;
+    });
+  }
 
   // Inhaler usage form state
   String _inhalerType = 'Relief/Rescue inhaler';
@@ -206,7 +251,13 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
             padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
             child: Text('All Medications', style: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w800, color: text)),
           ),
-          ...List.generate(_meds.length, (i) => _buildMedCard(i, surface, text, textMuted, border, primary, isDark)),
+          if (_medsLoading)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(primary))),
+            )
+          else
+            ...List.generate(_meds.length, (i) => _buildMedCard(i, surface, text, textMuted, border, primary, isDark)),
 
           const SizedBox(height: 24),
 

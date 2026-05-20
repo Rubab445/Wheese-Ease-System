@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { fetchAlerts } from '../../lib/patientService';
 import {
     Search, X, Clock, Check, UserRoundSearch,
     ShieldAlert, Zap, Wind, Smartphone, Bell,
@@ -36,73 +37,15 @@ const AlertsHub: React.FC = () => {
     const [isPriorityOnly, setIsPriorityOnly] = useState(false);
     const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
 
-    // Mock alerts data
-    const [alerts, setAlerts] = useState<Alert[]>([
-        {
-            id: '1',
-            type: 'ai',
-            severity: 'critical',
-            title: 'Extreme Pollen Spike Predicted',
-            message: 'AI predicts 40% increase in pollen levels in Gujrat within 24 hours. 12 high-risk patients in this zone.',
-            timestamp: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
-            patientLocation: 'Gujrat',
-            actionRequired: true,
-            read: false,
-            aiNote: 'Correlation: Humidity > 70%',
-            triggerData: { pollen: 340, location: 'Gujrat', affectedPatients: 12 }
-        },
-        {
-            id: '2',
-            type: 'emergency',
-            severity: 'critical',
-            title: 'SOS Alert - Matt Smith',
-            message: 'Patient reported severe breathing difficulty. Immediate attention required.',
-            timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-            patientName: 'Matt Smith',
-            patientId: 'PAT-001',
-            patientLocation: 'Gujrat',
-            actionRequired: true,
-            read: false,
-            aiNote: 'Alert: 4th inhaler use'
-        },
-        {
-            id: '3',
-            type: 'warning',
-            severity: 'high',
-            title: 'High AQI Alert - Lahore',
-            message: 'Air Quality Index reached 158 (Unhealthy). 6 patients in this area showing increased symptoms.',
-            timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-            patientLocation: 'Lahore',
-            actionRequired: true,
-            read: false,
-            triggerData: { aqi: 158, location: 'Lahore', affectedPatients: 6 }
-        },
-        {
-            id: '4',
-            type: 'ai',
-            severity: 'medium',
-            title: 'Adherence Alert',
-            message: 'Anna Jonson\'s medication adherence dropped to 65%. Schedule a follow-up.',
-            timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-            patientName: 'Anna Jonson',
-            patientId: 'PAT-005',
-            actionRequired: true,
-            read: false,
-            aiNote: 'AI Note: 3 days since last sync'
-        },
-        {
-            id: '5',
-            type: 'system',
-            severity: 'medium',
-            title: 'Patient Inactivity Warning',
-            message: 'Michael Brown hasn\'t synced their device for 3 days. Check-in recommended.',
-            timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-            patientName: 'Michael Brown',
-            patientId: 'PAT-009',
-            actionRequired: false,
-            read: true
-        }
-    ]);
+    const [alerts, setAlerts] = useState<Alert[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        fetchAlerts().then(data => {
+            setAlerts(data as Alert[]);
+            setIsLoading(false);
+        });
+    }, []);
 
     const filteredAlerts = alerts.filter(alert => {
         const matchesSearch = searchTerm === '' ||
@@ -136,6 +79,16 @@ const AlertsHub: React.FC = () => {
     const handleBroadcast = (location: string) => {
         alert(`BROADCAST: Sending preventive protocols to all patients in ${location}.`);
     };
+
+    if (isLoading) {
+        return (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', flexDirection: 'column', gap: 12 }}>
+                <div style={{ width: 36, height: 36, border: '3px solid #2563EB', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                <p style={{ color: '#6B7280', fontSize: 14 }}>Loading alerts...</p>
+                <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            </div>
+        );
+    }
 
     return (
         <div className="alerts-page-wrapper">
