@@ -1,9 +1,10 @@
 import {
   LayoutDashboard, Users, Leaf, Cpu, 
-  BarChart3, MessageSquare, Settings, 
+  BarChart3, Settings, 
   Moon, LogOut, ChevronRight
 } from 'lucide-react';
 import '../Admin.module.css/AdminSidebar.css';
+import logoImg from '../../assets/logo.png';
 
 interface SidebarProps {
   activeModule: string;
@@ -42,8 +43,17 @@ export default function Sidebar({
       
       {/* ================= LOGO ================= */}
       <div className="admin-logo-section">
-        <div className="admin-logo-icon">
-          <Leaf size={24} fill="currentColor" />
+        <div className="admin-logo-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px' }}>
+          <img 
+            src={logoImg} 
+            alt="WheezeEase Logo" 
+            style={{ 
+              width: '100%', 
+              height: '100%', 
+              objectFit: 'contain', 
+              mixBlendMode: 'multiply' 
+            }} 
+          />
         </div>
         {isExpanded && <span className="admin-logo-text">WheezeEase</span>}
       </div>
@@ -132,4 +142,4 @@ export default function Sidebar({
       </div>
     </div>
   );
-}
+}

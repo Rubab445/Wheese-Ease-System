@@ -1,10 +1,10 @@
-import React from 'react';
 import {
   LayoutDashboard, Users, Activity,
-  ClipboardList, Bell, MessageSquare,
+  Bell, MessageSquare,
   Settings, Moon, LogOut, ChevronRight
 } from 'lucide-react';
 import '../../../AdminDashboard/Admin.module.css/AdminSidebar.css';
+import logoImg from '../../../assets/logo.png';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -70,8 +70,17 @@ export default function Sidebar({
 
       {/* ================= LOGO ================= */}
       <div className="admin-logo-section">
-        <div className="admin-logo-icon">
-          <Activity size={24} fill="currentColor" />
+        <div className="admin-logo-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px' }}>
+          <img 
+            src={logoImg} 
+            alt="WheezeEase Logo" 
+            style={{ 
+              width: '100%', 
+              height: '100%', 
+              objectFit: 'contain', 
+              mixBlendMode: 'multiply' 
+            }} 
+          />
         </div>
         {isExpanded && <span className="admin-logo-text">WheezeEase</span>}
       </div>

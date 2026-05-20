@@ -1,7 +1,7 @@
 import React from 'react';
-import { Stethoscope, Facebook } from 'lucide-react';
 import './LandingPage.css';
 import landingImage from '../assets/pms-landing-image.png';
+import logoImg from '../assets/logo.png';
 import { useNavigate } from "react-router-dom";
 
 export const LandingPage: React.FC = () => {
@@ -12,7 +12,15 @@ export const LandingPage: React.FC = () => {
       {/* Navigation Header */}
       <header className="navbar">
         <div className="logo-wrapper">
-          <Stethoscope size={48} strokeWidth={1.5} color="#1f2933" />
+          <img 
+            src={logoImg} 
+            alt="WheezeEase Logo" 
+            style={{ 
+              height: '100px', 
+              objectFit: 'contain', 
+              mixBlendMode: 'multiply' 
+            }} 
+          />
         </div>
         <div className="nav-links-landing">
           <button className="text-btn" onClick={() => navigate("/login")}>
