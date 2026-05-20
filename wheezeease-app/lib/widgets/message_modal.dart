@@ -113,7 +113,7 @@ class _MessageModalState extends State<MessageModal> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Message Dr. Rahman',
+                        'Message Dr. Ahmad Ali',
                         style: GoogleFonts.playfairDisplay(
                           fontSize: 17,
                           fontWeight: FontWeight.w800,

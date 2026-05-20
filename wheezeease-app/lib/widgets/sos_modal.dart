@@ -81,7 +81,7 @@ class SosModal extends StatelessWidget {
                   context,
                   Icons.call_outlined,
                   'Call My Doctor',
-                  () => _action(context, 'Calling Dr. Rahman...'),
+                  () => _action(context, 'Calling Dr. Ahmad Ali...'),
                 ),
                 const SizedBox(height: 12),
                 _sosBtn(

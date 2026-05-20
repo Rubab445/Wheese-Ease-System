@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
@@ -22,10 +23,10 @@ class HomeScreen extends StatefulWidget {
   });
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<HomeScreen> createState() => HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
+class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   double _riskVal = 0;
   late Timer _timer;
   late AnimationController _arcController;
@@ -91,6 +92,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       if (mounted) setState(() => _historyLoading = false);
     }
   }
+
+  void refresh() => _loadInitialData();
 
   @override
   void dispose() {
@@ -322,11 +325,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     physics: const NeverScrollableScrollPhysics(),
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
-                    childAspectRatio: 1.0,
+                    childAspectRatio: 1.15,
                     children: [
                       _envCard(
                         icon: Icons.thermostat_outlined,
-                        iconColor: AppColors.yellow,
+                        iconColor: const Color(0xFFFF6B35),
                         value:
                             '${_environment?['temperature']?.toStringAsFixed(0) ?? '34'}°C',
                         label: 'Temperature',
@@ -336,7 +339,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                       _envCard(
                         icon: Icons.water_drop_outlined,
-                        iconColor: AppColors.blue,
+                        iconColor: const Color(0xFF4A90D9),
                         value:
                             '${_environment?['humidity']?.toStringAsFixed(0) ?? '67'}%',
                         label: 'Humidity',
@@ -349,18 +352,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         iconColor: _environment?['aqi'] != null
                             ? ((_environment!['aqi'] as num) > 150
                                   ? AppColors.red
-                                  : AppColors.yellow)
+                                  : (_environment!['aqi'] as num) > 100
+                                      ? AppColors.yellow
+                                      : AppColors.green)
                             : AppColors.yellow,
                         value: '${_environment?['aqi'] ?? '158'}',
-                        label: ' AQI',
+                        label: 'AQI',
                         surface: surface,
                         border: border,
                         isDark: isDark,
                       ),
                       _envCard(
                         icon: Icons.local_florist_outlined,
-                        iconColor: primary,
-                        value: _environment?['pollen_level'] ?? 'High',
+                        iconColor: AppColors.green,
+                        value: '${_environment?['pollen_count'] ?? 30}',
                         label: 'Pollen',
                         surface: surface,
                         border: border,
@@ -458,10 +463,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 )
               : SizedBox(
-                  height: 222,
+                  height: 210,
                   child: ListView(
                     scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    padding: const EdgeInsets.symmetric(horizontal: 18),
                     children: [
                       _symptomGraph(
                         'Wheezing',
@@ -480,7 +485,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         isDark,
                       ),
                       _symptomGraph(
-                        'Chest',
+                        'Chest Tightness',
                         'chest_tightness',
                         AppColors.blue,
                         surface,
@@ -488,7 +493,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         isDark,
                       ),
                       _symptomGraph(
-                        'Breathing',
+                        'Breathing Difficulty',
                         'breathing_difficulty',
                         primary,
                         surface,
@@ -496,7 +501,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         isDark,
                       ),
                       _symptomGraph(
-                        'Inhaler Use',
+                        'Inhaler Usage',
                         'inhaler_usage',
                         AppColors.green,
                         surface,
@@ -780,17 +785,76 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     required bool isDark,
   }) {
     final text = isDark ? AppColors.textDark : AppColors.text;
+    final textMuted = isDark ? AppColors.textMutedDark : AppColors.textMuted;
+
+    // Compute progress & status from value and label
+    double progress = 0;
+    String status = '';
+    final numVal = double.tryParse(value.replaceAll(RegExp(r'[°C%]'), ''));
+
+    switch (label) {
+      case 'Temperature':
+        if (numVal != null) {
+          progress = (numVal / 50).clamp(0.0, 1.0);
+          status = numVal > 40 ? 'Hot' : numVal > 35 ? 'Warm' : numVal > 20 ? 'Mild' : 'Cool';
+        }
+        break;
+      case 'Humidity':
+        if (numVal != null) {
+          progress = (numVal / 100).clamp(0.0, 1.0);
+          status = numVal > 70 ? 'High' : numVal > 40 ? 'OK' : 'Low';
+        }
+        break;
+      case 'AQI':
+        if (numVal != null) {
+          progress = (numVal / 300).clamp(0.0, 1.0);
+          status = numVal > 200
+              ? 'Hazardous'
+              : numVal > 150
+                  ? 'Unhealthy'
+                  : numVal > 100
+                      ? 'Moderate'
+                      : numVal > 50
+                          ? 'Fair'
+                          : 'Good';
+        }
+        break;
+      case 'Pollen':
+        if (numVal != null) {
+          progress = (numVal / 200).clamp(0.0, 1.0);
+          status = numVal > 100 ? 'High' : numVal > 50 ? 'Moderate' : 'Low';
+        } else {
+          status = value;
+          progress = value == 'High' ? 0.8 : value == 'Moderate' ? 0.5 : 0.2;
+        }
+        break;
+    }
+
+    final statusColor = (status == 'Good' || status == 'OK' || status == 'Low' ||
+            status == 'Mild' || status == 'Cool' || status == 'Fair')
+        ? AppColors.green
+        : (status == 'Moderate' || status == 'Warm')
+            ? AppColors.yellow
+            : AppColors.red;
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: border, width: 0.5),
+        border: Border.all(color: iconColor.withOpacity(0.2), width: 1.5),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            surface,
+            iconColor.withOpacity(isDark ? 0.1 : 0.06),
+          ],
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.15 : 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: iconColor.withOpacity(isDark ? 0.1 : 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -798,14 +862,41 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: iconColor, size: 17),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      iconColor.withOpacity(0.22),
+                      iconColor.withOpacity(0.08),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Icon(icon, color: iconColor, size: 18),
+              ),
+              if (status.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: statusColor.withOpacity(0.3), width: 0.5),
+                  ),
+                  child: Text(
+                    status,
+                    style: GoogleFonts.nunito(
+                      fontSize: 8,
+                      fontWeight: FontWeight.w800,
+                      color: statusColor,
+                    ),
+                  ),
+                ),
+            ],
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -813,17 +904,30 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               Text(
                 value,
                 style: GoogleFonts.playfairDisplay(
-                  fontSize: 18,
+                  fontSize: 20,
                   fontWeight: FontWeight.w800,
                   color: text,
                 ),
               ),
+              const SizedBox(height: 1),
               Text(
                 label,
                 style: GoogleFonts.nunito(
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textMutedColor(context),
+                  color: textMuted,
+                ),
+              ),
+              const SizedBox(height: 6),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(3),
+                child: SizedBox(
+                  height: 4,
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    backgroundColor: iconColor.withOpacity(0.1),
+                    valueColor: AlwaysStoppedAnimation(iconColor),
+                  ),
                 ),
               ),
             ],
@@ -956,7 +1060,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // ── Symptom Graph Widget ──
+  // ── Symptom Graph Widget (fl_chart) ──
   Widget _symptomGraph(
     String label,
     String key,
@@ -969,13 +1073,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final textMuted = isDark ? AppColors.textMutedDark : AppColors.textMuted;
     final now = DateTime.now();
 
+    final isMonth = _graphPeriod == 'month';
+    final daysToLookBack = isMonth ? 29 : 6;
+    
+    // Group by days ago to get max severity per day
     final Map<int, double> dayMap = {};
     for (var e in _symptomHistory) {
       final dtStr = e['created_at'] as String?;
       final dt = dtStr != null ? DateTime.tryParse(dtStr)?.toLocal() : null;
       if (dt == null) continue;
-      final daysAgo = now.difference(dt).inDays;
-      if (daysAgo > 6) continue;
+      
+      final daysAgo = DateTime(now.year, now.month, now.day)
+          .difference(DateTime(dt.year, dt.month, dt.day)).inDays;
+      if (daysAgo > daysToLookBack || daysAgo < 0) continue;
+      
       final raw = e[key];
       double val = 0;
       if (raw is bool) {
@@ -987,145 +1098,196 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
 
     int detectionCount = 0;
-    const dayNames = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
-    final barData = <Map<String, dynamic>>[];
-
-    for (int i = 6; i >= 0; i--) {
-      final day = now.subtract(Duration(days: i));
+    final spots = <FlSpot>[];
+    
+    // x=0 is the oldest day, x=daysToLookBack is today.
+    for (int i = daysToLookBack; i >= 0; i--) {
       final val = dayMap[i] ?? 0;
       if (val > 0) detectionCount++;
-      barData.add({
-        'label': i == 0 ? 'T' : dayNames[day.weekday - 1],
-        'val': val,
-        'isToday': i == 0,
-      });
+      spots.add(FlSpot((daysToLookBack - i).toDouble(), val));
     }
 
-    const barMaxH = 76.0;
-    const barW = 14.0;
-
     return Container(
-      width: 162,
-      height: 210,
-      margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 6),
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+      width: MediaQuery.of(context).size.width * 0.82,
+      margin: const EdgeInsets.only(right: 16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
       decoration: BoxDecoration(
         color: surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border(
-          top: BorderSide(color: color, width: 3),
-          left: BorderSide(color: border, width: 0.5),
-          right: BorderSide(color: border, width: 0.5),
-          bottom: BorderSide(color: border, width: 0.5),
-        ),
+        border: Border.all(color: border, width: 0.5),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(isDark ? 0.15 : 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
         children: [
-          // ── header ──
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              Row(
+                children: [
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    label,
+                    style: GoogleFonts.nunito(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: text,
+                    ),
+                  ),
+                ],
+              ),
               Text(
-                label,
+                detectionCount > 0
+                    ? '$detectionCount ${isMonth ? 'days this month' : 'days this week'}'
+                    : 'No episodes',
                 style: GoogleFonts.nunito(
                   fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  color: text,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(detectionCount > 0 ? 0.15 : 0.07),
-                  borderRadius: BorderRadius.circular(7),
-                ),
-                child: Text(
-                  detectionCount > 0 ? '${detectionCount}x' : '—',
-                  style: GoogleFonts.nunito(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    color: detectionCount > 0 ? color : textMuted,
-                  ),
+                  fontWeight: FontWeight.w600,
+                  color: textMuted,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 2),
-          Text(
-            detectionCount > 0
-                ? '$detectionCount day${detectionCount != 1 ? 's' : ''} this week'
-                : 'No episodes',
-            style: GoogleFonts.nunito(
-              fontSize: 9,
-              fontWeight: FontWeight.w600,
-              color: textMuted,
-            ),
-          ),
-          const SizedBox(height: 10),
-          // ── bars ──
-          SizedBox(
-            height: barMaxH,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: barData.map((b) {
-                final val = b['val'] as double;
-                return Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Container(
-                      width: barW,
-                      height: val > 0 ? barMaxH : 14.0,
-                      decoration: BoxDecoration(
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(4),
-                        ),
-                        gradient: val > 0
-                            ? LinearGradient(
-                                colors: [color, color.withOpacity(0.5)],
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                              )
-                            : null,
-                        color: val > 0 ? null : color.withOpacity(0.35),
-                        border: val == 0
-                            ? Border.all(color: color.withOpacity(0.5), width: 1)
-                            : null,
-                      ),
+          const SizedBox(height: 24),
+          Expanded(
+            child: LineChart(
+              LineChartData(
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: 1,
+                  getDrawingHorizontalLine: (value) {
+                    return FlLine(
+                      color: border.withOpacity(0.5),
+                      strokeWidth: 1,
+                      dashArray: [4, 4],
+                    );
+                  },
+                ),
+                titlesData: FlTitlesData(
+                  show: true,
+                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      interval: 1,
+                      reservedSize: 24,
+                      getTitlesWidget: (value, meta) {
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          child: Text(
+                            value.toInt().toString(),
+                            style: GoogleFonts.nunito(
+                              fontSize: 10,
+                              color: textMuted,
+                            ),
+                            textAlign: TextAlign.right,
+                          ),
+                        );
+                      },
                     ),
-                  ],
-                );
-              }).toList(),
-            ),
-          ),
-          const SizedBox(height: 5),
-          // ── day labels ──
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: barData.map((b) {
-              final isToday = b['isToday'] as bool;
-              return SizedBox(
-                width: barW,
-                child: Text(
-                  b['label'] as String,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
-                    fontSize: 7,
-                    fontWeight: isToday ? FontWeight.w800 : FontWeight.w600,
-                    color: isToday ? color : textMuted,
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      interval: isMonth ? 7 : 1,
+                      getTitlesWidget: (value, meta) {
+                        final daysAgo = daysToLookBack - value.toInt();
+                        if (daysAgo < 0 || daysAgo > daysToLookBack) return const SizedBox();
+                        
+                        final date = now.subtract(Duration(days: daysAgo));
+                        String title;
+                        if (daysAgo == 0) {
+                          title = 'Today';
+                        } else if (isMonth) {
+                          title = '${date.day}/${date.month}';
+                        } else {
+                          const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                          title = dayNames[date.weekday - 1];
+                        }
+                        
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Text(
+                            title,
+                            style: GoogleFonts.nunito(
+                              fontSize: 10,
+                              color: textMuted,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
-              );
-            }).toList(),
+                borderData: FlBorderData(show: false),
+                minX: 0,
+                maxX: daysToLookBack.toDouble(),
+                minY: 0,
+                maxY: 5,
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: spots,
+                    isCurved: true,
+                    curveSmoothness: 0.3,
+                    color: color,
+                    barWidth: 3,
+                    isStrokeCapRound: true,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) {
+                        return FlDotCirclePainter(
+                          radius: 3,
+                          color: surface,
+                          strokeWidth: 2,
+                          strokeColor: color,
+                        );
+                      },
+                    ),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      gradient: LinearGradient(
+                        colors: [
+                          color.withOpacity(0.3),
+                          color.withOpacity(0.0),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                    ),
+                  ),
+                ],
+                lineTouchData: LineTouchData(
+                  touchTooltipData: LineTouchTooltipData(
+                    getTooltipColor: (touchedSpot) => text,
+                    getTooltipItems: (touchedSpots) {
+                      return touchedSpots.map((spot) {
+                        return LineTooltipItem(
+                          'Severity: ${spot.y.toInt()}',
+                          GoogleFonts.nunito(
+                            color: surface,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                          ),
+                        );
+                      }).toList();
+                    },
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),

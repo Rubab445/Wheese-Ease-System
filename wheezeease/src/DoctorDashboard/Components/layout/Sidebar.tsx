@@ -23,7 +23,7 @@ export default function Sidebar({
 }: SidebarProps) {
   const isExpanded = isOpen;
 
-  const [doctorName, setDoctorName] = useState('Doctor');
+  const [doctorName, setDoctorName] = useState('Dr. Ahmad Ali');
   const [doctorSpecialty, setDoctorSpecialty] = useState('Pulmonologist');
 
   useEffect(() => {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/app_colors.dart';
+import 'medications_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
   final VoidCallback? onCheckinTap;
@@ -125,7 +126,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       {
         'id': 5,
         'type': 'doctor',
-        'title': 'Message from Dr. Smith',
+        'title': 'Message from Dr. Ahmad Ali',
         'subtitle': 'Your prescription is ready',
         'message': 'Your new prescription for Fluticasone is ready to pick up.',
         'time': DateTime.now().subtract(const Duration(days: 2)),
@@ -258,10 +259,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           padding: const EdgeInsets.only(bottom: 12),
                           child: GestureDetector(
                             onTap: () {
-                              if (isActionable && notification['type'] == 'reminder') {
-                                if (widget.onCheckinTap != null) {
-                                  widget.onCheckinTap!();
-                                }
+                              final type = notification['type'] as String;
+                              if (type == 'reminder') {
+                                widget.onCheckinTap?.call();
+                              } else if (type == 'medication') {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const MedicationsScreen(),
+                                  ),
+                                );
                               }
                             },
                             child: Container(
@@ -346,10 +353,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                                 fontWeight: FontWeight.w500,
                                               ),
                                             ),
-                                            if (isActionable) ...[
+                                            if (notification['type'] == 'reminder' || notification['type'] == 'medication') ...[
                                               const SizedBox(width: 8),
                                               Text(
-                                                '· Tap to check in',
+                                                notification['type'] == 'medication'
+                                                    ? '· Tap to open'
+                                                    : '· Tap to check in',
                                                 style: GoogleFonts.nunito(
                                                   fontSize: 11,
                                                   color: color,

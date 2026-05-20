@@ -130,11 +130,35 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   AppFlow _flow = AppFlow.auth;
   int _currentTab = 0;
+  final GlobalKey<HomeScreenState> _homeKey = GlobalKey<HomeScreenState>();
+
   @override
   void initState() {
     super.initState();
-    loadUserName();
-}
+    _checkExistingSession();
+  }
+
+  Future<void> _checkExistingSession() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+    try {
+      final data = await Supabase.instance.client
+          .from('profiles')
+          .select('onboarding_completed, full_name')
+          .eq('id', user.id)
+          .maybeSingle();
+      if (!mounted) return;
+      if (data != null && data['onboarding_completed'] == true) {
+        setState(() {
+          _userName = data['full_name'] ?? 'User';
+          _flow = AppFlow.main;
+        });
+      } else {
+        await loadUserName();
+        setState(() => _flow = AppFlow.onboarding);
+      }
+    } catch (_) {}
+  }
 
   /// Called by notification tap handler to navigate to check-in screen
   void switchToCheckin() {
@@ -324,6 +348,7 @@ class _AppShellState extends State<AppShell> {
       index: _currentTab,
       children: [
         HomeScreen(
+          key: _homeKey,
           userName: _userName,
           patientData: _lastPatientData,
           onCheckinTap: () {
@@ -331,7 +356,10 @@ class _AppShellState extends State<AppShell> {
               context,
               MaterialPageRoute(
                 builder: (_) => CheckinScreen(
-                  onComplete: () => Navigator.pop(context),
+                  onComplete: () {
+                    Navigator.pop(context);
+                    _homeKey.currentState?.refresh();
+                  },
                   onPatientDataUpdate: (data) {
                     setState(() => _lastPatientData = data);
                   },
@@ -348,7 +376,10 @@ class _AppShellState extends State<AppShell> {
               context,
               MaterialPageRoute(
                 builder: (_) => CheckinScreen(
-                  onComplete: () => Navigator.pop(context),
+                  onComplete: () {
+                    Navigator.pop(context);
+                    _homeKey.currentState?.refresh();
+                  },
                   onPatientDataUpdate: (data) {
                     setState(() => _lastPatientData = data);
                   },

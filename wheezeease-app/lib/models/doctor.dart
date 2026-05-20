@@ -30,8 +30,8 @@ class Doctor {
   static List<Doctor> get sampleDoctors => [
     Doctor(
       id: 1,
-      name: 'Dr. A. Rahman',
-      initials: 'AR',
+      name: 'Dr. Ahmad Ali',
+      initials: 'AA',
       spec: 'Pulmonologist',
       hospital: 'Gujranwala General Hospital',
       distance: '1.2 km',

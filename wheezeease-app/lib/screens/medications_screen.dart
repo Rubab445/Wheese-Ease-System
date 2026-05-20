@@ -127,7 +127,7 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Medication logged! Dr. Rahman notified.'),
+        content: Text('Medication logged! Dr. Ahmad Ali notified.'),
         behavior: SnackBarBehavior.floating,
       ),
     );

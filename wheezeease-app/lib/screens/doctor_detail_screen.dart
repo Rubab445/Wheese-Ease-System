@@ -133,7 +133,7 @@ class DoctorDetailScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Dr. A. Rahman',
+                          'Dr. Ahmad Ali',
                           style: GoogleFonts.playfairDisplay(
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
@@ -219,7 +219,7 @@ class DoctorDetailScreen extends StatelessWidget {
                       'Call Now',
                       AppColors.redDim,
                       AppColors.red,
-                      () => _showToast(context, 'Calling Dr. Rahman...'),
+                      () => _showToast(context, 'Calling Dr. Ahmad Ali...'),
                     ),
                     _actionBtn(
                       context,
