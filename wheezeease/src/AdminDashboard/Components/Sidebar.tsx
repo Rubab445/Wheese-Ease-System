@@ -1,24 +1,39 @@
+import { useEffect, useState } from 'react';
 import {
-  LayoutDashboard, Users, Leaf, Cpu, 
-  BarChart3, Settings, 
+  LayoutDashboard, Users, Leaf, Cpu,
+  BarChart3, Settings,
   Moon, LogOut, ChevronRight
 } from 'lucide-react';
 import '../Admin.module.css/AdminSidebar.css';
 import logoImg from '../../assets/logo.png';
+import { supabase } from '../../lib/supabase';
 
 interface SidebarProps {
   activeModule: string;
   onModuleChange: (module: string) => void;
   isExpanded: boolean;
-  isMobile: boolean;
+  isMobile?: boolean;
 }
 
 export default function Sidebar({
   activeModule,
   onModuleChange,
   isExpanded,
-  isMobile,
 }: SidebarProps) {
+
+  const [adminName, setAdminName] = useState('Admin');
+
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('admins')
+        .select('full_name')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (data?.full_name) setAdminName(data.full_name);
+    });
+  }, []);
 
   const mainNavigation = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -32,27 +47,25 @@ export default function Sidebar({
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('userRole');
     window.location.href = '/login';
   };
 
+  const initials = adminName.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+
   return (
     <div className={`admin-sidebar ${!isExpanded ? 'collapsed' : ''}`}>
-      
+
       {/* ================= LOGO ================= */}
       <div className="admin-logo-section">
         <div className="admin-logo-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px' }}>
-          <img 
-            src={logoImg} 
-            alt="WheezeEase Logo" 
-            style={{ 
-              width: '100%', 
-              height: '100%', 
-              objectFit: 'contain', 
-              mixBlendMode: 'multiply' 
-            }} 
+          <img
+            src={logoImg}
+            alt="WheezeEase Logo"
+            style={{ width: '100%', height: '100%', objectFit: 'contain', mixBlendMode: 'multiply' }}
           />
         </div>
         {isExpanded && <span className="admin-logo-text">WheezeEase</span>}
@@ -66,7 +79,6 @@ export default function Sidebar({
             {mainNavigation.map((item) => {
               const isActive = activeModule === item.id;
               const Icon = item.icon;
-
               return (
                 <button
                   key={item.id}
@@ -90,7 +102,6 @@ export default function Sidebar({
             {systemNavigation.map((item) => {
               const isActive = activeModule === item.id;
               const Icon = item.icon;
-
               return (
                 <button
                   key={item.id}
@@ -104,7 +115,19 @@ export default function Sidebar({
               );
             })}
             
-           
+            {/* Dark Mode Toggle */}
+            <div className="admin-nav-item dark-mode-toggle">
+              <Moon size={20} className="admin-nav-icon" />
+              {isExpanded && (
+                <>
+                  <span className="admin-nav-label">Dark Mode</span>
+                  <label className="admin-switch">
+                    <input type="checkbox" />
+                    <span className="admin-slider round"></span>
+                  </label>
+                </>
+              )}
+            </div>
           </nav>
         </div>
       </div>
@@ -112,13 +135,13 @@ export default function Sidebar({
       {/* ================= PROFILE & LOGOUT ================= */}
       <div className="admin-sidebar-footer">
         <div className="admin-profile-section">
-          <div className="admin-avatar">
-            <img src="https://ui-avatars.com/api/?name=Admin+User&background=E8F5E9&color=2E7D32" alt="Avatar" />
+          <div className="admin-avatar" style={{ background: '#E8F5E9', color: '#2E7D32', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 13 }}>
+            {initials}
           </div>
           {isExpanded && (
             <div className="admin-profile-info">
-              <span className="admin-profile-name">Harper Nelson</span>
-              <span className="admin-profile-role">Admin Manager</span>
+              <span className="admin-profile-name">{adminName}</span>
+              <span className="admin-profile-role">Admin</span>
             </div>
           )}
         </div>

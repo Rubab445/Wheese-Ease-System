@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { X, CheckCircle2, ChevronRight, ChevronLeft, ShieldCheck, Pill, BrainCircuit, Activity } from 'lucide-react';
+import { X, CheckCircle2, ChevronRight, ChevronLeft, ShieldCheck, Pill, BrainCircuit } from 'lucide-react';
 import type { Patient } from '../../../types/patient.types';
+import { addPatient } from '../../../lib/crudService';
+import { supabase } from '../../../lib/supabase';
 
 interface AddPatientModalProps {
   isOpen: boolean;
@@ -8,26 +10,49 @@ interface AddPatientModalProps {
   onSave: () => void;
 }
 
-export const AddPatientModal: React.FC<AddPatientModalProps> = ({
-  isOpen,
-  onClose,
-  onSave,
-}) => {
+const EMPTY_FORM = {
+  full_name: '', phone: '', gender: 'Male', dob: '',
+  condition: 'Asthma', triggers: '', medications: '',
+};
+
+export const AddPatientModal: React.FC<AddPatientModalProps> = ({ isOpen, onClose, onSave }) => {
   const [step, setStep] = useState(1);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleNext = () => setStep(2);
-  const handleBack = () => setStep(1);
+  const set = (k: keyof typeof EMPTY_FORM, v: string) => setForm(p => ({ ...p, [k]: v }));
 
-  const handleSave = () => {
-    setShowSuccess(true);
-    setTimeout(() => {
-      setShowSuccess(false);
-      setStep(1);
-      onSave();
-    }, 2000);
+  const handleSave = async () => {
+    if (!form.full_name.trim()) { setError('Full name is required.'); return; }
+    setSaving(true);
+    setError('');
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      await addPatient({
+        full_name: form.full_name,
+        phone: form.phone,
+        gender: form.gender,
+        dob: form.dob || undefined,
+        condition: form.condition,
+        doctor_id: user?.id ?? undefined,
+        status: 'Active',
+      });
+      setShowSuccess(true);
+      setTimeout(() => {
+        setShowSuccess(false);
+        setStep(1);
+        setForm(EMPTY_FORM);
+        onSave();
+      }, 2000);
+    } catch (err: any) {
+      setError(err.message ?? 'Failed to register patient.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -35,11 +60,9 @@ export const AddPatientModal: React.FC<AddPatientModalProps> = ({
       <div className="p-modal">
         {showSuccess ? (
           <div className="success-check">
-            <div className="success-icon">
-              <CheckCircle2 size={48} />
-            </div>
-            <h2 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-main)' }}>Patient Added Successfully</h2>
-            <p style={{ color: 'var(--text-muted)', marginTop: '8px' }}>The patient can now log symptoms via the mobile app.</p>
+            <div className="success-icon"><CheckCircle2 size={48} /></div>
+            <h2 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-main)' }}>Patient Registered!</h2>
+            <p style={{ color: 'var(--text-muted)', marginTop: '8px' }}>The patient has been saved to Supabase.</p>
           </div>
         ) : (
           <>
@@ -58,17 +81,17 @@ export const AddPatientModal: React.FC<AddPatientModalProps> = ({
                 <div className="step-content animate-in">
                   <div style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text-dim)', marginBottom: '16px', textTransform: 'uppercase' }}>Step 1: Basic Information</div>
                   <div className="p-form-group">
-                    <label>Full Name</label>
-                    <input className="p-form-input" type="text" placeholder="e.g. Sara Ahmed" />
+                    <label>Full Name *</label>
+                    <input className="p-form-input" type="text" placeholder="e.g. Sara Ahmed" value={form.full_name} onChange={e => set('full_name', e.target.value)} />
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     <div className="p-form-group">
-                      <label>Age</label>
-                      <input className="p-form-input" type="number" placeholder="e.g. 34" />
+                      <label>Date of Birth</label>
+                      <input className="p-form-input" type="date" value={form.dob} onChange={e => set('dob', e.target.value)} />
                     </div>
                     <div className="p-form-group">
                       <label>Gender</label>
-                      <select className="p-form-input">
+                      <select className="p-form-input" value={form.gender} onChange={e => set('gender', e.target.value)}>
                         <option>Male</option>
                         <option>Female</option>
                         <option>Other</option>
@@ -76,13 +99,12 @@ export const AddPatientModal: React.FC<AddPatientModalProps> = ({
                     </div>
                   </div>
                   <div className="p-form-group">
-                    <label>Contact (Phone or Email)</label>
-                    <input className="p-form-input" type="text" placeholder="+92 300 1234567" />
+                    <label>Phone</label>
+                    <input className="p-form-input" type="text" placeholder="+92 300 1234567" value={form.phone} onChange={e => set('phone', e.target.value)} />
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px' }}>
-                    <button className="btn-primary" onClick={handleNext}>
-                      Next Step
-                      <ChevronRight size={16} />
+                    <button className="btn-primary" onClick={() => setStep(2)}>
+                      Next Step <ChevronRight size={16} />
                     </button>
                   </div>
                 </div>
@@ -91,7 +113,7 @@ export const AddPatientModal: React.FC<AddPatientModalProps> = ({
                   <div style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text-dim)', marginBottom: '16px', textTransform: 'uppercase' }}>Step 2: Medical Baseline</div>
                   <div className="p-form-group">
                     <label>Primary Condition</label>
-                    <select className="p-form-input">
+                    <select className="p-form-input" value={form.condition} onChange={e => set('condition', e.target.value)}>
                       <option>Asthma</option>
                       <option>COPD</option>
                       <option>Seasonal Allergy</option>
@@ -99,20 +121,19 @@ export const AddPatientModal: React.FC<AddPatientModalProps> = ({
                   </div>
                   <div className="p-form-group">
                     <label>Known Triggers</label>
-                    <input className="p-form-input" type="text" placeholder="e.g. Pollen, Dust, Smoke" />
+                    <input className="p-form-input" type="text" placeholder="e.g. Pollen, Dust, Smoke" value={form.triggers} onChange={e => set('triggers', e.target.value)} />
                   </div>
                   <div className="p-form-group">
                     <label>Current Primary Medication</label>
-                    <input className="p-form-input" type="text" placeholder="e.g. Ventolin Inhaler" />
+                    <input className="p-form-input" type="text" placeholder="e.g. Ventolin Inhaler" value={form.medications} onChange={e => set('medications', e.target.value)} />
                   </div>
+                  {error && <div style={{ color: '#DC2626', fontSize: 13, marginTop: 8 }}>⚠ {error}</div>}
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '24px' }}>
-                    <button className="btn-icon" style={{ padding: '0 16px', gap: '8px' }} onClick={handleBack}>
-                      <ChevronLeft size={16} />
-                      Back
+                    <button className="btn-icon" style={{ padding: '0 16px', gap: '8px' }} onClick={() => setStep(1)} disabled={saving}>
+                      <ChevronLeft size={16} /> Back
                     </button>
-                    <button className="btn-primary" onClick={handleSave} style={{ background: 'var(--green)' }}>
-                      Complete Registration
-                      <ShieldCheck size={16} />
+                    <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ background: 'var(--green)' }}>
+                      {saving ? 'Saving…' : 'Complete Registration'} <ShieldCheck size={16} />
                     </button>
                   </div>
                 </div>

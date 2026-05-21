@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, RefreshCw } from 'lucide-react';
 import type { AppUser, UserStatus } from '../Pages/UserManagement';
 import '../Admin.module.css/AddEditUserModal.css';
+import { updateDoctor, updatePatient, updateAdmin } from '../../lib/crudService';
 
 interface Props {
   user: AppUser;
@@ -28,9 +29,47 @@ export default function EditUserModal({ user, onClose, onSave }: Props) {
     set('permissions', current.includes(p) ? current.filter((x: string) => x !== p) : [...current, p]);
   };
 
-  const handleSubmit = () => {
-    onSave(form);
-    onClose();
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+
+  const handleSubmit = async () => {
+    setSaving(true);
+    setSaveError('');
+    try {
+      if (user.role === 'Doctor') {
+        await updateDoctor(user.id, {
+          full_name: form.name,
+          specialty: form.specialization,
+          phone: form.phone,
+          hospital: form.hospital,
+          experience: form.experience,
+          qualifications: form.qualifications,
+          pmdc: form.pmdc,
+          status: form.status,
+        });
+      } else if (user.role === 'Patient') {
+        await updatePatient(user.id, {
+          full_name: form.name,
+          phone: form.phone,
+          dob: form.dob,
+          gender: form.gender,
+          city: form.city,
+          condition: form.condition,
+          severity: form.severity,
+          emergency_contact: form.emergencyContact,
+          emergency_phone: form.emergencyPhone,
+          status: form.status,
+        });
+      } else if (user.role === 'Admin') {
+        await updateAdmin(user.id, { full_name: form.name, email: form.email });
+      }
+      onSave(form);
+      onClose();
+    } catch (err: any) {
+      setSaveError(err.message ?? 'Failed to save. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -209,9 +248,12 @@ export default function EditUserModal({ user, onClose, onSave }: Props) {
             </button>
           </div>
 
+          {saveError && <div className="onco-auth-alert" style={{ marginBottom: 8 }}>⚠ {saveError}</div>}
           <div className="modal-footer">
-            <button className="um-btn-secondary" onClick={onClose}>Cancel</button>
-            <button className="um-btn-primary" onClick={handleSubmit}>Save Changes</button>
+            <button className="um-btn-secondary" onClick={onClose} disabled={saving}>Cancel</button>
+            <button className="um-btn-primary" onClick={handleSubmit} disabled={saving}>
+              {saving ? 'Saving…' : 'Save Changes'}
+            </button>
           </div>
         </div>
       </div>

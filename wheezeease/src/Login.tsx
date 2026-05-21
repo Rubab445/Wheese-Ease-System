@@ -33,17 +33,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
         setIsLoading(true);
 
-        // Admin: hardcoded
-        if (username === 'admin@onco.com' && password === 'admin123') {
-            localStorage.setItem('isAuthenticated', 'true');
-            localStorage.setItem('userRole', 'admin');
-            setIsLoading(false);
-            setShowSuccess(true);
-            setTimeout(() => { setShowSuccess(false); onLogin('admin'); }, 2000);
-            return;
-        }
-
-        // Doctor: Supabase auth
+        // Sign in via Supabase for everyone
         const { data, error } = await supabase.auth.signInWithPassword({
             email: username,
             password,
@@ -55,31 +45,50 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             return;
         }
 
-        // Verify this user is registered as a doctor
-        const { data: doctor } = await supabase
-            .from('doctors')
+        const userId = data.user.id;
+
+        // Check admin table first
+        const { data: adminRow } = await supabase
+            .from('admins')
             .select('id')
-            .eq('id', data.user.id)
+            .eq('id', userId)
             .maybeSingle();
 
-        if (!doctor) {
-            await supabase.auth.signOut();
+        if (adminRow) {
+            localStorage.setItem('isAuthenticated', 'true');
+            localStorage.setItem('userRole', 'admin');
             setIsLoading(false);
-            setErrors({ ...newErrors, auth: 'Access denied. This account is not registered as a doctor.' });
+            setShowSuccess(true);
+            setTimeout(() => { setShowSuccess(false); onLogin('admin'); }, 2000);
             return;
         }
 
-        localStorage.setItem('isAuthenticated', 'true');
-        localStorage.setItem('userRole', 'doctor');
+        // Check doctors table
+        const { data: doctorRow } = await supabase
+            .from('doctors')
+            .select('id')
+            .eq('id', userId)
+            .maybeSingle();
+
+        if (doctorRow) {
+            localStorage.setItem('isAuthenticated', 'true');
+            localStorage.setItem('userRole', 'doctor');
+            setIsLoading(false);
+            setShowSuccess(true);
+            setTimeout(() => { setShowSuccess(false); onLogin('doctor'); }, 2000);
+            return;
+        }
+
+        // Valid Supabase user but no role assigned
+        await supabase.auth.signOut();
         setIsLoading(false);
-        setShowSuccess(true);
-        setTimeout(() => { setShowSuccess(false); onLogin('doctor'); }, 2000);
+        setErrors({ ...newErrors, auth: 'Access denied. Your account is not registered as a doctor or admin.' });
     };
 
     return (
         <div className="onco-app-viewport">
             <div className="onco-main-structure">
-                {/* 1. Form Section */}
+                {/* Form Section */}
                 <div className="onco-form-section">
                     <div className="onco-form-container">
                         <div className="onco-header-block">
@@ -100,9 +109,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                                         <path d="M18 0H2C0.9 0 0.01 0.9 0.01 2L0 14C0 15.1 0.9 16 2 16H18C19.1 16 20 15.1 20 14V2C20 0.9 19.1 0 18 0ZM18 14H2V4L10 9L18 4V14ZM10 7L2 2H18L10 7Z" fill="#5F6368"/>
                                     </svg>
                                 </div>
-                                <input 
-                                    type="text" 
-                                    placeholder="Email Address" 
+                                <input
+                                    type="text"
+                                    placeholder="Email Address"
                                     value={username}
                                     className="onco-text-input"
                                     onChange={(e) => {
@@ -119,9 +128,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                                         <path d="M12.91 1.75C10.74 1.75 8.91 3.25 8.41 5.25H1V10.25H3.5V12.75H6V15.25H8.5V17.75H13.5V13.29C15.96 12.83 17.83 10.66 17.83 8.08C17.83 4.58 15.63 1.75 12.91 1.75ZM13.5 9C12.95 9 12.5 8.55 12.5 8C12.5 7.45 12.95 7 13.5 7C14.05 7 14.5 7.45 14.5 8C14.5 8.55 14.5 9 13.5 9Z" fill="#5F6368"/>
                                     </svg>
                                 </div>
-                                <input 
-                                    type="password" 
-                                    placeholder="Password" 
+                                <input
+                                    type="password"
+                                    placeholder="Password"
                                     value={password}
                                     className="onco-text-input"
                                     onChange={(e) => {
@@ -143,13 +152,13 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     </div>
                 </div>
 
-                {/* 2. Visual Section (Rounded Oval Container) */}
+                {/* Visual Section */}
                 <div className="onco-visual-section">
                     <div className="onco-visual-canvas">
-                        <img 
+                        <img
                             src={LoginImage}
-                            alt="Medical Staff Illustration" 
-                            className="onco-main-illustration" 
+                            alt="Medical Staff Illustration"
+                            className="onco-main-illustration"
                         />
                     </div>
                 </div>
