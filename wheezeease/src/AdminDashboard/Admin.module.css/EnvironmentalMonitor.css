@@ -1,6 +1,6 @@
 /* ===================== ENVIRONMENTAL MONITORING ===================== */
 .env-module {
-  padding: 16px 24px;
+  padding: 48px 24px 24px;
   background: #F8FAFC;
   min-height: 100vh;
   font-family: 'Inter', -apple-system, sans-serif;
@@ -17,7 +17,9 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
 .env-title {
@@ -132,7 +134,7 @@
 /* 1. KPI Grid */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 16px;
 }
 
@@ -265,7 +267,7 @@
 /* 2. AQI Panel */
 .aqi-panel-grid {
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 24px;
   align-items: flex-start;
   flex: 1;
@@ -387,14 +389,14 @@
 /* Grids for Panels */
 .grid-2-col {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
   gap: 24px;
 }
 
 /* 3. Forecast Panel */
 .forecast-strip {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: 12px;
   margin-bottom: 24px;
 }
@@ -662,7 +664,7 @@
 /* 6. API Status Panel */
 .api-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 16px;
 }
 
@@ -787,50 +789,6 @@
 }
 
 /* Responsive */
-@media (max-width: 1200px) {
-  .kpi-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  .grid-2-col {
-    grid-template-columns: 1fr;
-  }
-
-  .aqi-panel-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .forecast-strip {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  .api-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 768px) {
-  .kpi-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .pollutants-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .forecast-strip {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .env-header {
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .env-header-right {
-    align-items: flex-start;
-  }
-}
 
 .api-tag {
   display: inline-flex;

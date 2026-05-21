@@ -29,7 +29,7 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ activeSection, onSect
     <aside className="st-sidebar">
       <div className="st-sidebar-header">
         <h2 className="st-sidebar-title">WheezeEase Settings</h2>
-        <div className="st-sidebar-subtitle">System Configuration Center</div>
+        
       </div>
       <nav className="st-nav">
         {navItems.map(item => (
