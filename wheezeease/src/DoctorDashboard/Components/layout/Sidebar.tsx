@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   LayoutDashboard, Users, Activity,
   Bell, MessageSquare,
@@ -49,7 +49,8 @@ export default function Sidebar({
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('userRole');
     window.location.href = '/login';

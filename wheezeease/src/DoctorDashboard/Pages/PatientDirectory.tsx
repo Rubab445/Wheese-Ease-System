@@ -142,7 +142,10 @@ const PatientsPage: React.FC = () => {
       <AddPatientModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        onSave={() => setIsAddModalOpen(false)}
+        onSave={() => {
+          setIsAddModalOpen(false);
+          fetchPatients().then(data => setAllPatients(data));
+        }}
       />
 
       <PrescriptionModal

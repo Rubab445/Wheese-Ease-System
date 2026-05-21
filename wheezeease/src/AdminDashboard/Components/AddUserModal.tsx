@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, Stethoscope, UserRound, ShieldCheck, ChevronRight } from 'lucide-react';
 import type { AppUser, UserRole, UserStatus } from '../Pages/UserManagement';
 import '../Admin.module.css/AddEditUserModal.css';
+import { addDoctor, addPatient } from '../../lib/crudService';
 
 interface Props {
   onClose: () => void;
@@ -31,19 +32,59 @@ export default function AddUserModal({ onClose, onAdd }: Props) {
   const toggleTrigger = (t: string) => setForm(prev => ({ ...prev, triggers: prev.triggers.includes(t) ? prev.triggers.filter(x => x !== t) : [...prev.triggers, t] }));
   const togglePerm = (p: string) => setForm(prev => ({ ...prev, permissions: prev.permissions.includes(p) ? prev.permissions.filter(x => x !== p) : [...prev.permissions, p] }));
 
-  const handleSubmit = () => {
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+
+  const handleSubmit = async () => {
     if (!role || !form.name || !form.email) return;
-    const newUser: AppUser = {
-      id: 'USR-' + Date.now().toString().slice(-4),
-      name: form.name, email: form.email, phone: form.phone, role,
-      status: form.status, dateJoined: new Date().toISOString().slice(0, 10),
-      lastLogin: 'Never', avatar: form.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(),
-      ...(role === 'Doctor' && { specialization: form.specialization, pmdc: form.pmdc, experience: form.experience, qualifications: form.qualifications, hospital: form.hospital, patientsAssigned: 0, verified: false }),
-      ...(role === 'Patient' && { condition: form.condition as AppUser['condition'], severity: form.severity as AppUser['severity'], assignedDoctor: form.assignedDoctor, riskLevel: 'Low' as AppUser['riskLevel'], triggers: form.triggers, dob: form.dob, gender: form.gender, city: form.city, emergencyContact: form.emergencyContact, emergencyPhone: form.emergencyPhone }),
-      ...(role === 'Admin' && { adminRole: form.adminRole, permissions: form.permissions }),
-    };
-    onAdd(newUser);
-    onClose();
+    setSaving(true);
+    setSaveError('');
+    try {
+      let newId = 'USR-' + Date.now().toString().slice(-4);
+
+      if (role === 'Doctor') {
+        newId = await addDoctor({
+          full_name: form.name,
+          specialty: form.specialization,
+          phone: form.phone,
+          hospital: form.hospital,
+          experience: form.experience,
+          qualifications: form.qualifications,
+          pmdc: form.pmdc,
+          status: form.status,
+        });
+      } else if (role === 'Patient') {
+        newId = await addPatient({
+          full_name: form.name,
+          email: form.email,
+          phone: form.phone,
+          dob: form.dob,
+          gender: form.gender,
+          city: form.city,
+          condition: form.condition,
+          severity: form.severity,
+          emergency_contact: form.emergencyContact,
+          emergency_phone: form.emergencyPhone,
+          status: form.status,
+        });
+      }
+
+      const newUser: AppUser = {
+        id: newId,
+        name: form.name, email: form.email, phone: form.phone, role,
+        status: form.status, dateJoined: new Date().toISOString().slice(0, 10),
+        lastLogin: 'Never', avatar: form.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(),
+        ...(role === 'Doctor' && { specialization: form.specialization, pmdc: form.pmdc, experience: form.experience, qualifications: form.qualifications, hospital: form.hospital, patientsAssigned: 0, verified: false }),
+        ...(role === 'Patient' && { condition: form.condition as AppUser['condition'], severity: form.severity as AppUser['severity'], assignedDoctor: form.assignedDoctor, riskLevel: 'Low' as AppUser['riskLevel'], triggers: form.triggers, dob: form.dob, gender: form.gender, city: form.city, emergencyContact: form.emergencyContact, emergencyPhone: form.emergencyPhone }),
+        ...(role === 'Admin' && { adminRole: form.adminRole, permissions: form.permissions }),
+      };
+      onAdd(newUser);
+      onClose();
+    } catch (err: any) {
+      setSaveError(err.message ?? 'Failed to save. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -168,9 +209,12 @@ export default function AddUserModal({ onClose, onAdd }: Props) {
               </>
             )}
 
+            {saveError && <div className="onco-auth-alert" style={{ marginBottom: 8 }}>⚠ {saveError}</div>}
             <div className="modal-footer">
-              <button className="um-btn-secondary" onClick={() => setStep(1)}>Back</button>
-              <button className="um-btn-primary" onClick={handleSubmit} disabled={!form.name || !form.email}>Create User</button>
+              <button className="um-btn-secondary" onClick={() => setStep(1)} disabled={saving}>Back</button>
+              <button className="um-btn-primary" onClick={handleSubmit} disabled={!form.name || !form.email || saving}>
+                {saving ? 'Saving…' : 'Create User'}
+              </button>
             </div>
           </div>
         )}

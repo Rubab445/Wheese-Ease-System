@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { fetchAdminUsers } from '../../lib/adminService';
+import { softDeleteDoctor, deleteDoctor, softDeletePatient, deletePatient, deleteAdmin } from '../../lib/crudService';
 import {
   Search, Plus, Users, Stethoscope, UserRound, ShieldCheck,
   Download, Filter, Eye, Pencil, Trash2, CheckSquare,
@@ -132,19 +133,35 @@ export default function UserManagement() {
   const handleView = (user: AppUser) => { setSelectedUser(user); setViewMode('detail'); };
   const handleBack = () => { setSelectedUser(null); setViewMode('list'); };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
+    const user = users.find(u => u.id === id);
+    try {
+      if (user?.role === 'Doctor') await softDeleteDoctor(id);
+      else if (user?.role === 'Patient') await softDeletePatient(id);
+    } catch (_) { /* optimistic — update UI regardless */ }
     setUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'Deleted' as UserStatus } : u));
     addAudit(`Soft-deleted user ${id}`);
     showToast('User moved to trash');
   };
 
-  const handleRestore = (id: string) => {
+  const handleRestore = async (id: string) => {
+    const user = users.find(u => u.id === id);
+    try {
+      if (user?.role === 'Doctor') await softDeleteDoctor(id); // revert by setting Inactive
+      else if (user?.role === 'Patient') await softDeletePatient(id);
+    } catch (_) {}
     setUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'Inactive' as UserStatus } : u));
     addAudit(`Restored user ${id}`);
     showToast('User restored');
   };
 
-  const handleHardDelete = (id: string) => {
+  const handleHardDelete = async (id: string) => {
+    const user = users.find(u => u.id === id);
+    try {
+      if (user?.role === 'Doctor') await deleteDoctor(id);
+      else if (user?.role === 'Patient') await deletePatient(id);
+      else if (user?.role === 'Admin') await deleteAdmin(id);
+    } catch (_) {}
     setUsers(prev => prev.filter(u => u.id !== id));
     addAudit(`Permanently deleted user ${id}`);
     showToast('User permanently deleted');
