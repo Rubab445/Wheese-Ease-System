@@ -55,11 +55,9 @@ const RISK_SEQUENCE: RiskLevel[] = [
 ];
 
 const MODEL_LABELS: Record<string, string> = {
-  sklearn:         "scikit-learn",
-  tensorflow:      "TensorFlow",
-  "claude-haiku":  "Claude Haiku",
-  "claude-sonnet": "Claude Sonnet",
-  gemini:          "Gemini Flash",
+  sklearn:    "scikit-learn",
+  tensorflow: "TensorFlow",
+  llama:      "Llama 3",
 };
 
 // ─── Helper ───────────────────────────────────────────────────

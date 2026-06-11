@@ -11,9 +11,7 @@ import '../../Admin.module.css/AIMonitoring.css'
 export type ModelId =
   | "sklearn"
   | "tensorflow"
-  | "claude-haiku"
-  | "claude-sonnet"
-  | "gemini";
+  | "llama";
 
 interface AIModel {
   id: ModelId;
@@ -61,46 +59,16 @@ const MODELS: AIModel[] = [
     color: "#ff6b6b",
   },
   {
-    id: "claude-haiku",
-    name: "Claude Haiku 4.5",
-    version: "claude-haiku-4-5",
-    type: "LLM API",
-    speed: "Very Fast",
-    accuracy: 88,
-    trainedOn: "Anthropic pre-trained (no fine-tune)",
-    lastTrained: "N/A — API model",
-    features: ["Symptom text", "Patient context", "Environmental data", "History"],
-    color: "#845ef7",
-  },
-  {
-    id: "claude-sonnet",
-    name: "Claude Sonnet 4.6",
-    version: "claude-sonnet-4-6",
-    type: "LLM API",
-    speed: "Balanced",
-    accuracy: 94,
-    trainedOn: "Anthropic pre-trained (no fine-tune)",
-    lastTrained: "N/A — API model",
-    features: [
-      "Symptom text",
-      "Patient context",
-      "Environmental data",
-      "History",
-      "Complex reasoning",
-    ],
-    color: "#339af0",
-  },
-  {
-    id: "gemini",
-    name: "Gemini 1.5 Flash",
-    version: "gemini-1.5-flash",
+    id: "llama",
+    name: "Llama 3 (8B Instruct)",
+    version: "llama-3-8b",
     type: "LLM API",
     speed: "Fast",
-    accuracy: 87,
-    trainedOn: "Google pre-trained (no fine-tune)",
-    lastTrained: "N/A — API model",
-    features: ["Symptom text", "Patient context", "Environmental data"],
-    color: "#fcc419",
+    accuracy: 92,
+    trainedOn: "Fine-tuned on Medical & Env Data",
+    lastTrained: "May 10, 2025",
+    features: ["Symptom text", "Patient context", "Environmental data", "History"],
+    color: "#845ef7",
   },
 ];
 

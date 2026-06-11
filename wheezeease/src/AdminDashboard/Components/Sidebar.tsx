@@ -114,7 +114,7 @@ export default function Sidebar({
                 </button>
               );
             })}
-
+            
             {/* Dark Mode Toggle */}
             <div className="admin-nav-item dark-mode-toggle">
               <Moon size={20} className="admin-nav-icon" />
