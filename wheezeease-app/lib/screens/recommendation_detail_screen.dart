@@ -124,17 +124,22 @@ class _RecommendationDetailScreenState extends State<RecommendationDetailScreen>
             patientProfile: PatientProfile.clinicalProfile,
           );
           if (result != null) {
-            _recommendation = _buildTripRecommendation(result);
+            // Extract AI recommendation (Gemini-powered), same as exercise/household
+            final aiRec = result['ai_recommendation'] as Map<String, dynamic>? ?? {};
+            final aiData = aiRec['data'] as Map<String, dynamic>?;
+            if (aiData != null &&
+                aiData['condition_summary'] != null &&
+                aiData['immediate_actions'] != null) {
+              _recommendation = aiData;
+            } else {
+              // Fallback to building from ML result if AI recommendation is missing
+              _recommendation = _buildTripRecommendation(result);
+            }
             if (widget.saveToHistory) {
-              final verdict = result['trip_verdict'] as String? ?? 'SAFE';
-              final tripRisk = verdict == 'NOT RECOMMENDED'
-                  ? 'HIGH'
-                  : verdict == 'CAUTION'
-                      ? 'MEDIUM'
-                      : 'LOW';
+              final riskLevel = result['risk_level'] as String? ?? 'LOW';
               await ActivityLogService.saveTripLog(
                 destination: widget.entryData['destination'] ?? '',
-                riskLevel: tripRisk,
+                riskLevel: riskLevel,
               );
             }
           }
