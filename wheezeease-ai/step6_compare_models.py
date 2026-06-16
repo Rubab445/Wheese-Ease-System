@@ -7,18 +7,14 @@ from sklearn.metrics import accuracy_score, roc_auc_score, recall_score, classif
 import tensorflow as tf
 import sys
 
-print("=" * 50)
 print("STEP 6: MODEL COMPARISON")
-print("=" * 50)
 
-# 6.1 LOAD DATA
 with open('data/processed_data.pkl', 'rb') as f:
     data = pickle.load(f)
 
 X_test  = data['X_test']
 y_test  = data['y_test'].values
 
-# 6.2 LOAD ALL 3 MODELS
 try:
     with open('data/model_lr.pkl', 'rb') as f:
         model_lr = pickle.load(f)
@@ -41,7 +37,7 @@ except Exception:
 
 print(" All 3 models loaded")
 
-# 6.3 PREDICT WITH EACH MODEL
+
 results = {}
 
 # Logistic Regression
@@ -92,10 +88,9 @@ results['Neural Network'] = {
     'auc':      roc_auc_score(y_test, nn_proba, multi_class='ovr')
 }
 
-# 6.4 PRINT COMPARISON TABLE
-print("\n" + "=" * 55)
+
 print(f"{'Model':<22} {'Accuracy':>10} {'ROC-AUC':>10}")
-print("-" * 55)
+
 
 best_model_name = None
 best_score = 0
@@ -111,7 +106,7 @@ for name, res in results.items():
         best_score = composite
         best_model_name = name
 
-print("=" * 55)
+
 print(f"\n Best Model (by composite score): {best_model_name}")
 
 print("\nHigh Risk Recall per Model:")
@@ -125,7 +120,6 @@ for name, res in results.items():
     high_prec   = report['High']['precision']
     print(f"  {name:<22} Recall: {high_recall:.2%}  Precision: {high_prec:.2%}")
 
-# 6.5 COMPARISON BAR CHART
 model_names = list(results.keys())
 accuracies  = [results[m]['accuracy'] * 100 for m in model_names]
 aucs        = [results[m]['auc'] for m in model_names]
@@ -148,12 +142,12 @@ ax1.set_xticklabels(model_names)
 ax1.set_ylim(0, 110)
 ax2.set_ylim(0.5, 1.05)
 
-# Add legends for both axes
+
 lines, labels = ax1.get_legend_handles_labels()
 lines2, labels2 = ax2.get_legend_handles_labels()
 ax2.legend(lines + lines2, labels + labels2, loc='upper right')
 
-# Add value labels on bars
+
 for bar in bars1:
     ax1.text(bar.get_x() + bar.get_width()/2,
             bar.get_height() + 0.5,
@@ -170,7 +164,7 @@ plt.tight_layout()
 plt.savefig('data/model_comparison.png', dpi=150)
 print("\n Saved: data/model_comparison.png")
 
-# 6.6 SAVE BEST MODEL NAME
+
 with open('data/best_model_name.txt', 'w') as f:
     f.write(best_model_name)
 

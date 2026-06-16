@@ -10,11 +10,9 @@ from sklearn.metrics import (
     confusion_matrix, roc_auc_score
 )
 
-print("=" * 50)
 print("STEP 4: RANDOM FOREST")
-print("=" * 50)
 
-# 4.1 LOAD DATA
+# LOAD DATA
 with open('data/processed_data.pkl', 'rb') as f:
     data = pickle.load(f)
 
@@ -25,37 +23,35 @@ y_test           = data['y_test']
 feature_columns  = data['feature_columns']
 print(f"\n Data loaded: {len(X_train)} train, {len(X_test)} test samples")
 
-# 4.2 CREATE & TRAIN MODEL
+# CREATE & TRAIN MODEL
 print("\n--- Training Random Forest (500 trees) ---")
 
 model = RandomForestClassifier(
     n_estimators=500,
-    max_depth=20,              # reasonable limit
-    min_samples_split=5,       # need 5 samples to split
-    min_samples_leaf=2,        # leaves need at least 2 samples
+    max_depth=20,              
+    min_samples_split=5,       
+    min_samples_leaf=2,        
     random_state=42,
     n_jobs=-1
 )
 
 model.fit(X_train, y_train)
 
-# Adjust threshold to catch more High risk cases
 y_pred_proba = model.predict_proba(X_test)
 
-# Lower the threshold for High risk (class 2) from 0.5 to 0.25
 y_pred_adjusted = []
 for proba in y_pred_proba:
-    if proba[2] >= 0.25 and proba[2] > proba[0]:  # High AND it's not outweighed by Low
+    if proba[2] >= 0.25 and proba[2] > proba[0]: 
         y_pred_adjusted.append(2)
-    elif proba[0] >= 0.45:    # if Low risk probability >= 45%, flag as Low
+    elif proba[0] >= 0.45:    
         y_pred_adjusted.append(0)
     else:
-        y_pred_adjusted.append(1)  # otherwise Medium
+        y_pred_adjusted.append(1)  
 
 y_pred = np.array(y_pred_adjusted)
 
-# 4.4 EVALUATE
-print("\n--- 4.4 Model Evaluation ---")
+# EVALUATE
+print("\n---  Model Evaluation ---")
 
 accuracy = accuracy_score(y_test, y_pred)
 print(f"\n Test Accuracy: {accuracy:.2%}")
@@ -70,8 +66,8 @@ print(classification_report(
 auc = roc_auc_score(y_test, y_pred_proba, multi_class='ovr')
 print(f" ROC-AUC Score: {auc:.4f}")
 
-# 4.5 FEATURE IMPORTANCE
-print("\n--- 4.5 Feature Importance ---")
+#  FEATURE IMPORTANCE
+print("\n---  Feature Importance ---")
 
 importances = model.feature_importances_
 indices     = np.argsort(importances)[::-1]
@@ -94,7 +90,7 @@ plt.tight_layout()
 plt.savefig('data/rf_feature_importance.png', dpi=150)
 print("\n Saved: data/rf_feature_importance.png")
 
-# 4.6 CONFUSION MATRIX
+# CONFUSION MATRIX
 cm = confusion_matrix(y_test, y_pred)
 
 plt.figure(figsize=(7, 5))
@@ -108,7 +104,6 @@ plt.tight_layout()
 plt.savefig('data/rf_confusion_matrix.png', dpi=150)
 print(" Saved: data/rf_confusion_matrix.png")
 
-# 4.7 SHOW EXAMPLE DECISION LOGIC (one tree)
 print("\n--- 4.7 Example Single Tree Logic ---")
 print("One tree out of 500 might reason like this:")
 print("""
@@ -124,7 +119,6 @@ IF AQI < 80
 """)
 print("All 500 trees vote, and the majority wins.")
 
-# 4.8 SAVE MODEL
 with open('data/model_rf.pkl', 'wb') as f:
     pickle.dump(model, f)
 

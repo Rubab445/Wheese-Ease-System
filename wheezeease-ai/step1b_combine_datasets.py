@@ -46,7 +46,7 @@ mapped_df['breathing_difficulty'] = pd.cut(
     bins=[-1, 0, 1, 3], labels=[1, 2, 3]
 ).astype(int)
 
-# Clinical features — from real data directly (these are real measurements, no randomness)
+# Clinical features 
 mapped_df['lung_function_fev1']    = real_df['LungFunctionFEV1'].round(3)
 mapped_df['lung_function_fvc']     = real_df['LungFunctionFVC'].round(3)
 mapped_df['bmi']                   = real_df['BMI'].round(2)
@@ -73,7 +73,7 @@ symptom_score = (
 mapped_df['risk_score'] = symptom_score
 mapped_df['risk_label'] = symptom_score.apply(score_to_label)
 
-# Clinical overrides — same conditions as step1 and step1c
+# Clinical overrides 
 high_risk_mask = (
     ((real_df['Wheezing'] == 1) &
      (real_df['ShortnessOfBreath'] == 1) &

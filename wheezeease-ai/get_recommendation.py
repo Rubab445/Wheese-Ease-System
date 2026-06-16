@@ -39,8 +39,7 @@ load_dotenv()
 
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-# ── SYSTEM PROMPTS ──────────────────────────────────────────────────
-
+#  SYSTEM PROMPTS 
 SYSTEM_PROMPT = """
 You are a clinical decision support assistant embedded in WheezeEase, 
 an AI-powered asthma risk management application used by registered 
@@ -133,7 +132,7 @@ YOUR TONE:
 - Never alarming without cause, never dismissive of real risks
 """
 
-# ── GENERATION CONFIG & MODELS ──────────────────────────────────────
+#  GENERATION CONFIG & MODELS 
 
 generation_config = genai.GenerationConfig(
     temperature=0.2,
@@ -158,7 +157,7 @@ model_trip = genai.GenerativeModel(
     generation_config=generation_config
 )
 
-# ── CACHE ───────────────────────────────────────────────────────────
+#  CACHE 
 
 @functools.lru_cache(maxsize=100)
 def get_cached_gemini_response(prompt: str, model_type: str) -> str:
@@ -171,7 +170,7 @@ def get_cached_gemini_response(prompt: str, model_type: str) -> str:
     return ""
 
 
-# ── FALLBACK: GENERAL RECOMMENDATION ───────────────────────────────
+#  FALLBACK: GENERAL RECOMMENDATION 
 
 def get_hardcoded_recommendation(risk_level: str):
     recommendations = {
@@ -222,7 +221,7 @@ def get_hardcoded_recommendation(risk_level: str):
     return recommendations.get(risk_level, recommendations["MEDIUM"])
 
 
-# ── GENERAL RECOMMENDATION ENDPOINT ────────────────────────────────
+#  GENERAL RECOMMENDATION ENDPOINT 
 
 @router.post("/get-recommendation")
 async def get_recommendation(request: RecommendationRequest):
@@ -332,7 +331,7 @@ async def get_recommendation(request: RecommendationRequest):
         }
 
 
-# ── FALLBACK: ACTIVITY RECOMMENDATION ──────────────────────────────
+#  FALLBACK: ACTIVITY RECOMMENDATION 
 
 def get_hardcoded_activity_recommendation(risk_level: str, activity_type: str, is_exercise: bool = True):
     risk_level = str(risk_level).upper() if risk_level else "MEDIUM"
@@ -431,7 +430,7 @@ def get_hardcoded_activity_recommendation(risk_level: str, activity_type: str, i
     return recommendations.get(risk_level, recommendations["MEDIUM"])
 
 
-# ── ACTIVITY RECOMMENDATION ─────────────────────────────────────────
+#  ACTIVITY RECOMMENDATION 
 
 async def get_activity_recommendation(
     activity_type: str,
@@ -575,7 +574,7 @@ async def get_activity_recommendation(
         }
 
 
-# ── FALLBACK: TRIP RECOMMENDATION ──────────────────────────────────
+#  FALLBACK: TRIP RECOMMENDATION 
 
 def get_hardcoded_trip_recommendation(risk_level: str):
     recommendations = {
@@ -626,7 +625,7 @@ def get_hardcoded_trip_recommendation(risk_level: str):
     return recommendations.get(risk_level, recommendations["MEDIUM"])
 
 
-# ── TRIP RISK RECOMMENDATION ────────────────────────────────────────
+#  TRIP RISK RECOMMENDATION 
 
 async def get_trip_risk_recommendation(
     destination: str,
@@ -656,7 +655,7 @@ async def get_trip_risk_recommendation(
         if details:
             patient_info = f"Patient with {', '.join(details)}"
 
-    # AQI interpretation helper — gives Gemini context to reason properly
+    # AQI interpretation helper 
     aqi_value = environment.get('aqi', None)
     if aqi_value is not None:
         try:

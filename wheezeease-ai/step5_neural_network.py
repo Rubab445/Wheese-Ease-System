@@ -11,12 +11,11 @@ from sklearn.metrics import (
     accuracy_score, classification_report, confusion_matrix
 )
 
-print("=" * 50)
+
 print("STEP 5: NEURAL NETWORK (TensorFlow)")
-print("=" * 50)
 print(f"TensorFlow version: {tf.__version__}")
 
-# 5.1 LOAD DATA
+
 with open('data/processed_data.pkl', 'rb') as f:
     data = pickle.load(f)
 
@@ -27,8 +26,8 @@ y_test  = data['y_test'].values
 print(f"\n Data loaded: {len(X_train)} train, {len(X_test)} test samples")
 print(f"   Input features: {X_train.shape[1]}")
 
-# 5.2 BUILD NEURAL NETWORK
-print("\n--- 5.2 Building Neural Network Architecture ---")
+# BUILD NEURAL NETWORK
+print("\n--- Building Neural Network Architecture ---")
 
 model = keras.Sequential([
     # Input layer (shape = number of features)
@@ -59,13 +58,13 @@ model.compile(
 
 model.summary()
 
-# 5.3 TRAIN MODEL
-print("\n--- 5.3 Training Neural Network ---")
 
-# Stop early if validation loss stops improving
+print("\n--- Training Neural Network ---")
+
+
 early_stop = keras.callbacks.EarlyStopping(
     monitor='val_loss',
-    patience=10,           # wait 10 epochs before stopping
+    patience=10,           
     restore_best_weights=True
 )
 
@@ -73,15 +72,14 @@ history = model.fit(
     X_train, y_train,
     epochs=100,
     batch_size=32,
-    validation_split=0.1,  # 10% of train used for validation
+    validation_split=0.1,  
     callbacks=[early_stop],
     verbose=1
 )
 
 print("\n Training complete!")
 
-# 5.4 EVALUATE
-print("\n--- 5.4 Model Evaluation ---")
+print("\n---  Model Evaluation ---")
 
 loss, accuracy = model.evaluate(X_test, y_test, verbose=0)
 train_loss, train_accuracy = model.evaluate(X_train, y_train, verbose=0)
@@ -91,15 +89,14 @@ print(f" Train Accuracy: {train_accuracy:.2%}")
 
 y_pred_proba = model.predict(X_test)
 
-# Apply custom threshold: lower bar for High Risk, but ensure it's not outweighed by Low
 y_pred_adjusted = []
 for proba in y_pred_proba:
-    if proba[2] >= 0.25 and proba[2] > proba[0]:  # High AND it's not outweighed by Low
+    if proba[2] >= 0.25 and proba[2] > proba[0]:  
         y_pred_adjusted.append(2)
-    elif proba[0] >= 0.45:    # if Low risk probability >= 45%, flag as Low
+    elif proba[0] >= 0.45:    
         y_pred_adjusted.append(0)
     else:
-        y_pred_adjusted.append(1)  # otherwise Medium
+        y_pred_adjusted.append(1)  
 
 y_pred = np.array(y_pred_adjusted)
 
@@ -109,7 +106,7 @@ print(classification_report(
     target_names=['Low Risk', 'Medium Risk', 'High Risk']
 ))
 
-# 5.5 PLOT TRAINING HISTORY
+
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
 
 # Accuracy over epochs
@@ -134,7 +131,6 @@ plt.tight_layout()
 plt.savefig('data/nn_training_history.png', dpi=150)
 print("\n Saved: data/nn_training_history.png")
 
-# 5.6 CONFUSION MATRIX
 
 cm = confusion_matrix(y_test, y_pred)
 plt.figure(figsize=(7, 5))
@@ -148,7 +144,6 @@ plt.tight_layout()
 plt.savefig('data/nn_confusion_matrix.png', dpi=150)
 print(" Saved: data/nn_confusion_matrix.png")
 
-# 5.7 SAVE MODEL
 model.save('data/model_nn.h5')
 print(" Saved model: data/model_nn.h5")
 print(f"\n Neural Network Accuracy: {accuracy:.2%}")

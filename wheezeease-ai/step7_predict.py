@@ -289,14 +289,13 @@ def predict_risk(patient_data: dict) -> dict:
     else:                      prediction = 1
 
     
-    rf_proba    = rf_model.predict_proba(features_scaled)[0]   # shape: [p_low, p_med, p_high]
+    rf_proba    = rf_model.predict_proba(features_scaled)[0]   
     rf_override = False
     if rf_proba[2] >= 0.25 and prediction != 2:
         prediction  = 2
         rf_override = True
 
     label_map = {0: 'LOW',   1: 'MEDIUM',  2: 'HIGH'}
-    icon_map  = {0: '✅',    1: '⚠️',      2: '🚨'}
     color_map = {0: 'green', 1: 'orange',  2: 'red'}
 
     main_message_map = {
@@ -314,7 +313,6 @@ def predict_risk(patient_data: dict) -> dict:
 
     return {
         'risk_level':    risk_level,
-        'icon':          icon_map[prediction],
         'color':         color_map[prediction],
         'main_message':  main_message,
         'confidence':    round(confidence, 3),
@@ -332,7 +330,7 @@ def predict_risk(patient_data: dict) -> dict:
     }
 
 
-# DEMO
+
 if __name__ == '__main__':
     print("=" * 60)
     print("STEP 7: PLAIN ENGLISH PREDICTION DEMO")
@@ -367,9 +365,6 @@ if __name__ == '__main__':
     for name, patient in [('Patient A (High Risk)', patient_A),
                            ('Patient B (Low Risk)',  patient_B)]:
         result = predict_risk(patient)
-        print(f"\n{'─' * 55}")
-        print(f"  {result['icon']}  {name}")
-        print(f"{'─' * 55}")
         print(f"  Risk Level   : {result['risk_level']}")
         print(f"  Message      : {result['main_message']}")
         print(f"  Confidence   : {result['confidence']:.1%}")
