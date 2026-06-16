@@ -119,6 +119,7 @@ export async function fetchPatients(): Promise<Patient[]> {
 
     return {
       id: p.id.slice(0, 8).toUpperCase(),
+      supabaseId: p.id,
       name: p.full_name ?? 'Unknown',
       age: p.age ?? 0,
       gender: p.gender === 'male' ? 'Male' : p.gender === 'female' ? 'Female' : p.gender ?? '—',
@@ -153,6 +154,63 @@ export async function fetchPatients(): Promise<Patient[]> {
       history: [],
     } satisfies Patient;
   });
+}
+
+export interface ActivityLogItem {
+  type: string;
+  risk_level: string;
+  data: Record<string, unknown>;
+  created_at: string;
+}
+
+function formatActivityLog(log: ActivityLogItem): { text: string; note?: string; time: string } {
+  const d = log.data;
+  const time = timeAgo(log.created_at);
+
+  switch (log.type) {
+    case 'checkin': {
+      const symptoms = (d.symptoms as string[] | null)?.join(', ') || 'No symptoms';
+      const severity = (d.severity as string) || '';
+      const note = (d.notes as string) || undefined;
+      const moodLabels = ['Great', 'Good', 'Okay', 'Poor', 'Bad'];
+      const mood = typeof d.mood === 'number' ? moodLabels[d.mood] ?? '' : '';
+      const text = `Check-in: ${symptoms}${severity && severity !== 'None' ? ` (${severity})` : ''}${mood ? ` · Mood: ${mood}` : ''}`;
+      return { text, note, time };
+    }
+    case 'exercise': {
+      const type = (d.exercise_type as string) ?? 'Exercise';
+      const duration = d.duration ? `${d.duration}min` : '';
+      const intensity = (d.intensity as string) ?? '';
+      const location = d.indoor ? 'Indoor' : 'Outdoor';
+      const note = (d.symptom_notes as string) || undefined;
+      return { text: `Exercise: ${type} · ${duration} · ${intensity} (${location})`, note, time };
+    }
+    case 'household': {
+      const type = (d.activity_type as string) ?? 'Activity';
+      const duration = d.duration ? `${d.duration}min` : '';
+      const mask = d.wore_mask ? 'Mask worn' : 'No mask';
+      const note = (d.symptom_notes as string) || undefined;
+      return { text: `Household: ${type} · ${duration} · ${mask}`, note, time };
+    }
+    case 'trip': {
+      const dest = (d.destination as string) ?? 'Unknown';
+      return { text: `Trip Risk Check: ${dest} (${log.risk_level})`, time };
+    }
+    default:
+      return { text: `Activity logged`, time };
+  }
+}
+
+export async function fetchActivityLogs(supabaseId: string): Promise<ReturnType<typeof formatActivityLog>[]> {
+  const { data, error } = await supabase
+    .from('activity_logs')
+    .select('type, risk_level, data, created_at')
+    .eq('user_id', supabaseId)
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  if (error || !data) return [];
+  return (data as ActivityLogItem[]).map(formatActivityLog);
 }
 
 export async function fetchDashboardStats() {

@@ -25,7 +25,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const newErrors = { email: '', password: '', auth: '' };
-
         const emailError = validateEmail(username);
         if (emailError) { setErrors({ ...newErrors, email: emailError }); return; }
         if (!password) { setErrors({ ...newErrors, password: 'Password is required' }); return; }
@@ -47,42 +46,65 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
         const userId = data.user.id;
 
-        // Check admin table first
-        const { data: adminRow } = await supabase
-            .from('admins')
-            .select('id')
+        // Check users table first
+        const { data: userRow } = await supabase
+            .from('users')
+            .select('role')
             .eq('id', userId)
             .maybeSingle();
 
-        if (adminRow) {
-            localStorage.setItem('isAuthenticated', 'true');
-            localStorage.setItem('userRole', 'admin');
+        let role: string | null = null;
+
+        if (userRow && userRow.role && userRow.role !== 'patient') {
+            role = userRow.role;
+        } else {
+            // Fallback 1: check admins table
+            const { data: adminRow } = await supabase
+                .from('admins')
+                .select('id')
+                .eq('id', userId)
+                .maybeSingle();
+
+            if (adminRow) {
+                role = 'admin';
+                await supabase.from('users').upsert({
+                    id: userId,
+                    full_name: data.user.email,
+                    email: data.user.email,
+                    role: 'admin',
+                });
+            } else {
+                // Fallback 2: check doctors table
+                const { data: doctorRow } = await supabase
+                    .from('doctors')
+                    .select('id')
+                    .eq('id', userId)
+                    .maybeSingle();
+
+                if (doctorRow) {
+                    role = 'doctor';
+                    await supabase.from('users').upsert({
+                        id: userId,
+                        full_name: data.user.email,
+                        email: data.user.email,
+                        role: 'doctor',
+                    });
+                }
+            }
+        }
+
+        if (!role) {
+            await supabase.auth.signOut();
             setIsLoading(false);
-            setShowSuccess(true);
-            setTimeout(() => { setShowSuccess(false); onLogin('admin'); }, 2000);
+            setErrors({ ...newErrors, auth: 'Access denied. Your account is not registered as a doctor or admin.' });
             return;
         }
 
-        // Check doctors table
-        const { data: doctorRow } = await supabase
-            .from('doctors')
-            .select('id')
-            .eq('id', userId)
-            .maybeSingle();
-
-        if (doctorRow) {
-            localStorage.setItem('isAuthenticated', 'true');
-            localStorage.setItem('userRole', 'doctor');
-            setIsLoading(false);
-            setShowSuccess(true);
-            setTimeout(() => { setShowSuccess(false); onLogin('doctor'); }, 2000);
-            return;
-        }
-
-        // Valid Supabase user but no role assigned
-        await supabase.auth.signOut();
+        localStorage.setItem('isAuthenticated', 'true');
+        localStorage.setItem('userRole', role);
         setIsLoading(false);
-        setErrors({ ...newErrors, auth: 'Access denied. Your account is not registered as a doctor or admin.' });
+        setShowSuccess(true);
+        setTimeout(() => { setShowSuccess(false); onLogin(role!); }, 2000);
     };
 
     return (

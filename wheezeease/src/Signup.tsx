@@ -48,6 +48,12 @@ const SignUp: React.FC = () => {
         full_name: fullName.trim(),
         specialty: 'Pulmonology',
       });
+      await supabase.from('users').insert({
+        id: data.user.id,
+        full_name: fullName.trim(),
+        email: email,
+        role: 'doctor',
+      });
       localStorage.removeItem('pendingDoctorName');
       setTimeout(() => navigate('/login'), 2500);
     }

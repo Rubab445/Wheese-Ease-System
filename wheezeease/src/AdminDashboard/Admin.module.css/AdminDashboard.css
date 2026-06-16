@@ -1,6 +1,6 @@
 /* ===================== ADMIN DASHBOARD OVERVIEW ===================== */
 .admin-dashboard {
-  padding: 16px 24px;
+  padding: 48px 24px 16px;
   background: #F8FAFC;
   min-height: 100vh;
   font-family: 'Inter', -apple-system, sans-serif;
@@ -11,7 +11,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
 }
 
 .admin-header-left {

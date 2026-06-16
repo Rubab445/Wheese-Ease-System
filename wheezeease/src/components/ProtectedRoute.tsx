@@ -24,49 +24,45 @@ export default function ProtectedRoute({ children, requiredRole }: Props) {
 
       const userId = session.user.id;
 
-      if (requiredRole === 'admin') {
-        const { data } = await supabase
+      // Check users table
+      const { data: userRow } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', userId)
+        .maybeSingle();
+
+      let role: string | null = userRow?.role ?? null;
+
+      // Fallback: check admins then doctors tables directly
+      if (!role || role === 'patient') {
+        const { data: adminRow } = await supabase
           .from('admins')
           .select('id')
           .eq('id', userId)
           .maybeSingle();
-
-        if (!data) {
-          await supabase.auth.signOut();
-          localStorage.removeItem('isAuthenticated');
-          localStorage.removeItem('userRole');
-          setStatus('denied');
-          return;
+        if (adminRow) {
+          role = 'admin';
+        } else {
+          const { data: doctorRow } = await supabase
+            .from('doctors')
+            .select('id')
+            .eq('id', userId)
+            .maybeSingle();
+          if (doctorRow) role = 'doctor';
         }
+      }
 
-        localStorage.setItem('isAuthenticated', 'true');
-        localStorage.setItem('userRole', 'admin');
-        setStatus('allowed');
+      if (!role || role !== requiredRole) {
+        await supabase.auth.signOut();
+        localStorage.removeItem('isAuthenticated');
+        localStorage.removeItem('userRole');
+        setStatus('denied');
         return;
       }
 
-      if (requiredRole === 'doctor') {
-        const { data } = await supabase
-          .from('doctors')
-          .select('id')
-          .eq('id', userId)
-          .maybeSingle();
-
-        if (!data) {
-          await supabase.auth.signOut();
-          localStorage.removeItem('isAuthenticated');
-          localStorage.removeItem('userRole');
-          setStatus('denied');
-          return;
-        }
-
-        localStorage.setItem('isAuthenticated', 'true');
-        localStorage.setItem('userRole', 'doctor');
-        setStatus('allowed');
-        return;
-      }
-
-      setStatus('denied');
+      localStorage.setItem('isAuthenticated', 'true');
+      localStorage.setItem('userRole', role);
+      setStatus('allowed');
     };
 
     check();

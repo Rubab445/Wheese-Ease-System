@@ -1,6 +1,13 @@
-import React from 'react';
-import { X, Activity, ShieldAlert, AlertTriangle, Wind, Bell, UserRoundSearch, History, LineChart } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { X, Activity, ShieldAlert, AlertTriangle, Wind, Bell, History, LineChart } from 'lucide-react';
 import type { Patient } from '../../../types/patient.types';
+import { fetchActivityLogs } from '../../../lib/patientService';
+
+interface ActivityEntry {
+  text: string;
+  note?: string;
+  time: string;
+}
 
 interface PatientInsightsDrawerProps {
   isOpen: boolean;
@@ -15,7 +22,18 @@ const PatientInsightsDrawer: React.FC<PatientInsightsDrawerProps> = ({
   onClose,
   onSendUrgentAlert,
 }) => {
-  // We keep the drawer in the DOM even if no patient is selected to allow for smooth CSS transitions
+  const [activityLogs, setActivityLogs] = useState<ActivityEntry[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!patient?.supabaseId) return;
+    setLogsLoading(true);
+    fetchActivityLogs(patient.supabaseId).then(logs => {
+      setActivityLogs(logs);
+      setLogsLoading(false);
+    });
+  }, [patient?.supabaseId]);
+
   const riskClass = patient?.status === 'critical' ? 'critical' : patient?.status === 'watch' ? 'watch' : 'stable';
   const riskScore = patient?.status === 'critical' ? 78 : patient?.status === 'watch' ? 47 : 12;
 
@@ -88,21 +106,26 @@ const PatientInsightsDrawer: React.FC<PatientInsightsDrawerProps> = ({
                   Recent Activity Log
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {[
-                    { text: 'Inhaler dose taken (2 puffs)', time: '2h ago' },
-                    { text: 'Symptom Logged: Chest tightness (Mod)', time: '5h ago' },
-                    { text: 'Daily check-in completed', time: 'Yesterday' },
-                    { text: 'Environmental Trigger: High Pollen', time: 'Feb 18' },
-                    { text: 'Inhaler dose taken (1 puff)', time: 'Feb 18' },
-                  ].map((item, i) => (
-                    <div key={i} className="p-activity-item">
-                      <div className="p-activity-dot" />
-                      <div className="p-activity-info">
-                        <div className="p-activity-text">{item.text}</div>
-                        <div className="p-activity-time">{item.time}</div>
+                  {logsLoading ? (
+                    <div style={{ fontSize: '12px', color: 'var(--text-dim)', padding: '8px 0' }}>Loading logs...</div>
+                  ) : activityLogs.length === 0 ? (
+                    <div style={{ fontSize: '12px', color: 'var(--text-dim)', padding: '8px 0' }}>No activity logged yet.</div>
+                  ) : (
+                    activityLogs.map((item, i) => (
+                      <div key={i} className="p-activity-item">
+                        <div className="p-activity-dot" />
+                        <div className="p-activity-info">
+                          <div className="p-activity-text">{item.text}</div>
+                          {item.note && (
+                            <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '2px', fontStyle: 'italic' }}>
+                              "{item.note}"
+                            </div>
+                          )}
+                          <div className="p-activity-time">{item.time}</div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </section>
             </div>

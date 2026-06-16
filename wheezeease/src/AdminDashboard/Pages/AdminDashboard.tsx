@@ -262,16 +262,7 @@ const Overview: React.FC = () => {
         <div className="admin-header-left">
           <h1 className="admin-header-title">Dashboard</h1>
         </div>
-        <div className="admin-header-right">
-          <div className="admin-search-bar">
-            <Search size={16} className="admin-search-icon" />
-            <input type="text" placeholder="Search patients, reports..." />
-          </div>
-          <button className="admin-icon-button" onClick={() => setNotifications(!notifications)}>
-            <Bell size={18} />
-            {notifications && <span className="admin-notification-dot" />}
-          </button>
-        </div>
+        
       </header>
 
       <main className="admin-main-content">

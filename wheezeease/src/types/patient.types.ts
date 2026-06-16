@@ -40,6 +40,7 @@ export interface Risk {
 
 export interface Patient {
   id: string;
+  supabaseId: string;
   name: string;
   age: number;
   gender: string;

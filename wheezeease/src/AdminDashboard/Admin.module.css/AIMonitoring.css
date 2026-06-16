@@ -3,7 +3,7 @@
 /* Rebuilt to match the clean, professional Environmental Module aesthetic */
 
 .aim-page {
-  padding: 16px 24px;
+  padding: 48px 24px 24px;
   background: #F8FAFC;
   min-height: 100vh;
   font-family: 'Inter', -apple-system, sans-serif;
@@ -199,20 +199,18 @@
   font-weight: 600;
 }
 
-/* Main Grid */
 .aim-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 24px;
-  margin-bottom: 32px;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
-/* Cards */
 .aim-card {
   background: #ffffff;
   border: 1px solid #E2E8F0;
   border-radius: 12px;
-  padding: 16px;
+  padding: 14px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
@@ -568,7 +566,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
+  padding: 8px 14px;
   background: #F8FAFC;
   border: 1px solid #E2E8F0;
   border-left: 4px solid transparent;

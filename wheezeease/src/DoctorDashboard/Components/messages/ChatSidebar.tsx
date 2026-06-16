@@ -31,7 +31,6 @@ export default function ChatSidebar({ chats, activeChatId, onSelectChat, searchQ
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
           />
-          <Filter size={14} color="var(--medical-text-muted)" />
         </div>
       </div>
 

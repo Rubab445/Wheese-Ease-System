@@ -19,7 +19,6 @@ export default function AuthCallback() {
         .maybeSingle();
 
       if (!existing) {
-        // Use stored name from signup, or fall back to Google display name / email
         const storedName = localStorage.getItem('pendingDoctorName');
         const fullName = storedName
           || user.user_metadata?.full_name
@@ -30,6 +29,13 @@ export default function AuthCallback() {
           id: user.id,
           full_name: fullName,
           specialty: 'Pulmonology',
+        });
+
+        await supabase.from('users').insert({
+          id: user.id,
+          full_name: fullName,
+          email: user.email,
+          role: 'doctor',
         });
 
         localStorage.removeItem('pendingDoctorName');

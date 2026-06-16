@@ -146,19 +146,7 @@ export default function Sidebar({
               );
             })}
             
-            {/* Dark Mode Toggle */}
-            <div className="admin-nav-item dark-mode-toggle" title="Dark Mode">
-              <Moon size={20} className="admin-nav-icon" />
-              {isExpanded && (
-                <>
-                  <span className="admin-nav-label">Dark Mode</span>
-                  <label className="admin-switch">
-                    <input type="checkbox" />
-                    <span className="admin-slider round"></span>
-                  </label>
-                </>
-              )}
-            </div>
+           
           </nav>
         </div>
       </div>

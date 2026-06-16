@@ -27,7 +27,7 @@ export default function Sidebar({
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
       const { data } = await supabase
-        .from('admins')
+        .from('users')
         .select('full_name')
         .eq('id', user.id)
         .maybeSingle();
@@ -114,7 +114,7 @@ export default function Sidebar({
                 </button>
               );
             })}
-
+            
             {/* Dark Mode Toggle */}
             <div className="admin-nav-item dark-mode-toggle">
               <Moon size={20} className="admin-nav-icon" />

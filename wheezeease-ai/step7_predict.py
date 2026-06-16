@@ -12,12 +12,12 @@ from model_loader import nn_model, rf_model, scaler, feature_columns
 
 # FEATURE ENGINEERING
 def engineer_features(data: dict) -> np.ndarray:
-    # compute engineered features first
+    
     data['env_risk_index'] = (
         (data['AQI'] / 400)          * 0.40 +
         (data['pollen_count'] / 200) * 0.30 +
         (data['humidity'] / 100)     * 0.20 +
-        ((data['temperature'] - 5) / 40) * 0.10
+        (data['temperature'] / 45)   * 0.10   
     )
     data['symptom_severity'] = (
         data['wheezing'] +
@@ -28,17 +28,13 @@ def engineer_features(data: dict) -> np.ndarray:
     data['pollution_combo'] = data['PM2_5'] * 0.6 + data['NO2'] * 0.4
     data['inhaler_overuse'] = 1 if data['inhaler_usage'] >= 3 else 0
 
-    # build array in exact training order
     row = [data[col] for col in feature_columns]
     return np.array([row])
 
+
 # PLAIN ENGLISH REASONS
 def get_plain_reasons(data: dict) -> list:
-    """
-    Returns reasons in plain language that any patient can understand.
-    No medical jargon — FEV1, PM2.5, NO2 all explained simply.
-    """
-    importances = rf_model.feature_importances_  # Note: Reflects default RF threshold importance
+    importances = rf_model.feature_importances_
     reasons = []
 
     checks = [
@@ -146,10 +142,6 @@ def get_plain_reasons(data: dict) -> list:
 
 # PERSONALIZED RECOMMENDATIONS
 def get_personalized_advice(data: dict, risk_level: str) -> dict:
-    """
-    Generates specific, actionable advice based on what
-    actually caused the risk — not generic instructions.
-    """
     hour = datetime.now().hour
     time_of_day = (
         "morning"   if 5  <= hour < 12 else
@@ -170,15 +162,12 @@ def get_personalized_advice(data: dict, risk_level: str) -> dict:
     smoking      = data.get('smoking', 0)
     dust         = data.get('dust_exposure', 0)
 
-    # Determine what is driving the risk
     env_driven     = aqi > 100 or pm25 > 55 or pollen > 100
     symptom_driven = wheezing == 1 or chest == 1 or breathing >= 2
     both_driven    = env_driven and symptom_driven
 
-    # Build specific recommendations
     recommendations = []
 
-    # ── Medication ──
     if medication == 0:
         recommendations.append(
             f"Take your preventer inhaler right now — skipping it today has left your airways unprotected"
@@ -189,7 +178,6 @@ def get_personalized_advice(data: dict, risk_level: str) -> dict:
             f"You have used your rescue inhaler {inhaler} times today — contact {doctor_name} as this suggests your condition needs review"
         )
 
-    # ── Active symptoms ──
     if breathing == 3 or (wheezing == 1 and chest == 1):
         recommendations.append(
             "Use your rescue inhaler (blue one) immediately — take 2 puffs now and sit upright to help your breathing"
@@ -199,7 +187,6 @@ def get_personalized_advice(data: dict, risk_level: str) -> dict:
             "Keep your rescue inhaler within reach — use it if your breathing gets worse in the next hour"
         )
 
-    # ── Environmental advice ──
     if both_driven:
         recommendations.append(
             f"Stay indoors completely today — you have active symptoms AND the air quality is poor. This is a dangerous combination"
@@ -218,74 +205,58 @@ def get_personalized_advice(data: dict, risk_level: str) -> dict:
                 f"Air pollution is elevated this {time_of_day} — avoid going outside and keep your home well ventilated"
             )
 
-    # ── Pollen specific ──
     if pollen > 100:
         recommendations.append(
             "Pollen count is high today — keep windows and doors closed, shower after any outdoor exposure, and wear sunglasses outside"
         )
 
-    # ── Humidity specific ──
     if humidity > 80:
         recommendations.append(
             "High humidity is making the air heavier and harder to breathe — use an air conditioner or dehumidifier if you have one"
         )
 
-    # ── Dust specific ──
     if dust > 7:
         recommendations.append(
             "You have been exposed to significant dust today — wear an N95 mask if you need to go outside, and rinse your nose with saline"
         )
 
-    # ── Smoking ──
     if smoking == 1:
         recommendations.append(
             "Do not smoke today — with your current risk level, smoking will make your airways significantly worse within minutes"
         )
 
-    # ── Night time specific ──
     if time_of_day == "night" and risk_level in ["HIGH", "MEDIUM"]:
         recommendations.append(
             "Keep your inhaler on your bedside table tonight — asthma symptoms often worsen between midnight and 4am"
         )
 
-    # ── High risk emergency ──
     if risk_level == "HIGH":
         recommendations.append(
             "If your breathing gets significantly worse or you cannot speak in full sentences — go to the emergency room immediately or call for help"
         )
 
-    # Limit to 4 most relevant
     return recommendations[:4]
 
 
 # PLAIN ENGLISH ALERTS
 def get_plain_alerts(data: dict) -> list:
-    """Environmental alerts in plain language."""
     alerts = []
-
     if data.get('AQI', 0) > 150:
         alerts.append(f"Air outside is unhealthy right now — pollution at dangerous levels")
     elif data.get('AQI', 0) > 100:
         alerts.append(f"Air quality is poor today — avoid unnecessary outdoor exposure")
-
     if data.get('pollen_count', 0) > 100:
         alerts.append(f"High pollen in the air today — keep windows closed")
-
     if data.get('humidity', 0) > 80:
         alerts.append(f"Air is very humid — this makes breathing harder for asthma patients")
-
     if data.get('PM2_5', 0) > 55:
         alerts.append(f"Invisible harmful particles in the air today — wear a mask outdoors")
-
     if data.get('dust_exposure', 0) > 7:
         alerts.append(f"High dust levels detected — a major trigger for asthma attacks")
-
     if data.get('inhaler_usage', 0) >= 3:
         alerts.append(f"You have used your inhaler {data.get('inhaler_usage')} times today — this is more than normal")
-
     if data.get('medication_adherence', 1) == 0:
         alerts.append("Medication not taken today — your airways are currently unprotected")
-
     return alerts
 
 
@@ -305,34 +276,29 @@ def validate_input(data: dict):
 
 # MAIN PREDICTION FUNCTION
 def predict_risk(patient_data: dict) -> dict:
-    """
-    Main prediction function.
-    Returns plain English results that any patient can understand.
-    """
     validate_input(patient_data)
-    
+
     features_raw    = engineer_features(patient_data)
     features_scaled = scaler.transform(features_raw)
 
-    # Neural Network — primary
+    # Neural Network — primary predictor
     nn_proba = nn_model.predict(features_scaled, verbose=0)[0]
 
     if nn_proba[2] >= 0.25:   prediction = 2
     elif nn_proba[0] >= 0.45: prediction = 0
     else:                      prediction = 1
 
-    # Random Forest safety check
-    rf_pred = rf_model.predict(features_scaled)[0]
+    
+    rf_proba    = rf_model.predict_proba(features_scaled)[0]   # shape: [p_low, p_med, p_high]
     rf_override = False
-    if rf_pred == 2 and prediction != 2:
-        prediction = 2
+    if rf_proba[2] >= 0.25 and prediction != 2:
+        prediction  = 2
         rf_override = True
 
-    label_map = {0: 'LOW',    1: 'MEDIUM',   2: 'HIGH'}
-    icon_map  = {0: '✅',     1: '⚠️',       2: '🚨'}
-    color_map = {0: 'green',  1: 'orange',   2: 'red'}
+    label_map = {0: 'LOW',   1: 'MEDIUM',  2: 'HIGH'}
+    icon_map  = {0: '✅',    1: '⚠️',      2: '🚨'}
+    color_map = {0: 'green', 1: 'orange',  2: 'red'}
 
-    # Plain English main message
     main_message_map = {
         0: "You are safe right now. Your breathing conditions look good today.",
         1: "Your risk is moderate. Take some precautions to stay safe.",
@@ -353,6 +319,7 @@ def predict_risk(patient_data: dict) -> dict:
         'main_message':  main_message,
         'confidence':    round(confidence, 3),
         'rf_override':   rf_override,
+        'rf_high_prob':  round(float(rf_proba[2]), 3),   # added for transparency
         'probabilities': {
             'low':    round(float(nn_proba[0]), 3),
             'medium': round(float(nn_proba[1]), 3),
@@ -361,7 +328,7 @@ def predict_risk(patient_data: dict) -> dict:
         'reasons':       reasons,
         'advice':        advice,
         'alerts':        alerts,
-        'models_used':   'Neural Network (primary) + Random Forest (safety + explanation)'
+        'models_used':   'Neural Network (primary) + Random Forest (safety veto @ 0.25 threshold)'
     }
 
 
@@ -400,15 +367,15 @@ if __name__ == '__main__':
     for name, patient in [('Patient A (High Risk)', patient_A),
                            ('Patient B (Low Risk)',  patient_B)]:
         result = predict_risk(patient)
-
         print(f"\n{'─' * 55}")
         print(f"  {result['icon']}  {name}")
         print(f"{'─' * 55}")
         print(f"  Risk Level   : {result['risk_level']}")
         print(f"  Message      : {result['main_message']}")
         print(f"  Confidence   : {result['confidence']:.1%}")
+        print(f"  RF High Prob : {result['rf_high_prob']:.3f}  (threshold: 0.25)")
         if result.get('rf_override'):
-            print(f"  RF Override  : True (High Risk Safety Net Triggered)")
+            print(f"  RF Override  : True (Safety Net Triggered)")
 
         print(f"\n  Why is your risk {result['risk_level']}?")
         for i, reason in enumerate(result['reasons'], 1):
@@ -423,4 +390,4 @@ if __name__ == '__main__':
             for alert in result['alerts']:
                 print(f"    • {alert}")
 
-    print("\n Plain English prediction engine working!")
+    
