@@ -1,129 +1,174 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import '../Components/messages/MessagesHub.css';
 import type { ChatSession, Message } from '../Components/messages/types';
 import ChatSidebar from '../Components/messages/ChatSidebar';
 import ChatArea from '../Components/messages/ChatArea';
-
-const initialChats: ChatSession[] = [
-  {
-    id: 'PT-8492',
-    patientName: 'Marcus Chen',
-    avatar: 'https://ui-avatars.com/api/?name=Marcus+Chen&background=random',
-    online: true,
-    unreadCount: 2,
-    messages: [
-      { id: 'm1', senderId: 'me', text: 'Hi Marcus, how is your breathing today?', timestamp: '09:00 AM', status: 'read' },
-      { id: 'm2', senderId: 'PT-8492', text: 'A bit tight this morning. I had to use my inhaler twice.', timestamp: '09:15 AM', status: 'read' },
-      { id: 'm3', senderId: 'me', text: 'Have you checked your peak flow meter?', timestamp: '09:16 AM', status: 'read' },
-      { id: 'm4', senderId: 'PT-8492', text: 'Yes, it was around 310.', timestamp: '09:20 AM', status: 'read' },
-      { id: 'm5', senderId: 'PT-8492', text: 'Should I take my prescribed steroids?', timestamp: '09:21 AM', status: 'read' },
-    ]
-  },
-  {
-    id: 'PT-2231',
-    patientName: 'Elena Rodriguez',
-    avatar: null,
-    online: false,
-    lastSeen: 'today at 10:30 AM',
-    unreadCount: 0,
-    messages: [
-      { id: 'm6', senderId: 'PT-2231', text: 'Thank you for the prescription refill Dr!', timestamp: 'Yesterday', status: 'read' },
-      { id: 'm7', senderId: 'me', text: 'You are welcome. Make sure to avoid oak pollen areas this week.', timestamp: 'Yesterday', status: 'read' }
-    ]
-  },
-  {
-    id: 'PT-9901',
-    patientName: 'David Kim',
-    avatar: 'https://ui-avatars.com/api/?name=David+Kim&background=random',
-    online: false,
-    lastSeen: 'yesterday',
-    unreadCount: 0,
-    messages: [
-      { id: 'm8', senderId: 'PT-9901', text: 'Is it safe to run in the cold today?', timestamp: 'Yesterday', status: 'read' },
-      { id: 'm9', senderId: 'me', text: 'I would advise against it given the sudden temp drop. If you must, wear a scarf.', timestamp: 'Yesterday', status: 'read' },
-      { id: 'm10', senderId: 'PT-9901', text: 'Got it, thanks!', timestamp: 'Yesterday', status: 'read' }
-    ]
-  }
-];
+import { supabase } from '../../lib/supabase';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 
 export default function Messages() {
-  const [chats, setChats] = useState<ChatSession[]>(initialChats);
+  const [doctorId, setDoctorId] = useState<string | null>(null);
+  const [chats, setChats] = useState<ChatSession[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+  const channelRef = useRef<RealtimeChannel | null>(null);
+  const activeChatRef = useRef<string | null>(null);
 
-  const activeChat = chats.find(c => c.id === activeChatId) || null;
+  // keep ref in sync so real-time callback can read current value
+  useEffect(() => { activeChatRef.current = activeChatId; }, [activeChatId]);
 
-  const handleSelectChat = (id: string) => {
-    setActiveChatId(id);
-    // Mark as read
-    setChats(prev => prev.map(c => {
-      if (c.id === id) {
-        return { ...c, unreadCount: 0 };
-      }
-      return c;
-    }));
-  };
+  // Load doctor + patients + messages on mount
+  useEffect(() => {
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { setLoading(false); return; }
+      const docId = session.user.id;
+      setDoctorId(docId);
 
-  const handleSendMessage = (text: string) => {
-    if (!activeChatId) return;
+      const { data: patients } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .eq('doctor_id', docId)
+        .eq('onboarding_completed', true);
 
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      senderId: 'me',
-      text,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      status: 'sent'
+      if (!patients?.length) { setLoading(false); return; }
+
+      const sessions: ChatSession[] = await Promise.all(
+        patients.map(async (p) => {
+          const { data: msgs } = await supabase
+            .from('messages')
+            .select('*')
+            .or(
+              `and(sender_id.eq.${docId},receiver_id.eq.${p.id}),` +
+              `and(sender_id.eq.${p.id},receiver_id.eq.${docId})`
+            )
+            .order('created_at', { ascending: true });
+
+          const unread = (msgs ?? []).filter(
+            m => m.sender_id === p.id && !m.read_at
+          ).length;
+
+          return {
+            id: p.id,
+            patientName: p.full_name ?? 'Patient',
+            avatar: null,
+            online: false,
+            unreadCount: unread,
+            messages: (msgs ?? []).map(m => toMessage(m, docId)),
+          };
+        })
+      );
+
+      setChats(sessions);
+      setLoading(false);
     };
 
-    setChats(prev => prev.map(c => {
-      if (c.id === activeChatId) {
-        return {
-          ...c,
-          messages: [...c.messages, newMessage]
-        };
-      }
-      return c;
-    }));
+    init();
+  }, []);
 
-    // Simulate "delivered" and "read"
-    setTimeout(() => {
-      setChats(prev => prev.map(c => {
-        if (c.id === activeChatId) {
-          return {
-            ...c,
-            messages: c.messages.map(m => m.id === newMessage.id ? { ...m, status: 'delivered' } : m)
-          };
-        }
-        return c;
-      }));
-    }, 1000);
+  // Real-time subscription — listen for incoming messages to doctor
+  useEffect(() => {
+    if (!doctorId) return;
 
-    setTimeout(() => {
-      setChats(prev => prev.map(c => {
-        if (c.id === activeChatId) {
-          return {
-            ...c,
-            messages: c.messages.map(m => m.id === newMessage.id ? { ...m, status: 'read' } : m)
-          };
+    channelRef.current = supabase
+      .channel(`doctor-messages-${doctorId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `receiver_id=eq.${doctorId}` },
+        (payload) => {
+          const msg = payload.new as DbMessage;
+          const newMsg: Message = toMessage(msg, doctorId);
+          setChats(prev => prev.map(c => {
+            if (c.id !== msg.sender_id) return c;
+            const isActive = activeChatRef.current === c.id;
+            return {
+              ...c,
+              messages: [...c.messages, newMsg],
+              unreadCount: isActive ? 0 : c.unreadCount + 1,
+            };
+          }));
         }
-        return c;
-      }));
-    }, 2500);
+      )
+      .subscribe();
+
+    return () => { channelRef.current?.unsubscribe(); };
+  }, [doctorId]);
+
+  const handleSelectChat = async (id: string) => {
+    setActiveChatId(id);
+    if (doctorId) {
+      await supabase
+        .from('messages')
+        .update({ read_at: new Date().toISOString() })
+        .eq('sender_id', id)
+        .eq('receiver_id', doctorId)
+        .is('read_at', null);
+    }
+    setChats(prev => prev.map(c => c.id === id ? { ...c, unreadCount: 0 } : c));
   };
+
+  const handleSendMessage = async (text: string) => {
+    if (!activeChatId || !doctorId) return;
+
+    const { data, error } = await supabase
+      .from('messages')
+      .insert({ sender_id: doctorId, receiver_id: activeChatId, text })
+      .select()
+      .single();
+
+    if (!error && data) {
+      setChats(prev => prev.map(c => {
+        if (c.id !== activeChatId) return c;
+        return { ...c, messages: [...c.messages, toMessage(data, doctorId)] };
+      }));
+    }
+  };
+
+  const activeChat = chats.find(c => c.id === activeChatId) ?? null;
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', color: '#6B7280', fontSize: 14 }}>
+        Loading conversations...
+      </div>
+    );
+  }
 
   return (
     <div className="messages-hub">
-      <ChatSidebar 
+      <ChatSidebar
         chats={chats}
         activeChatId={activeChatId}
         onSelectChat={handleSelectChat}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
       />
-      <ChatArea 
-        chat={activeChat} 
-        onSendMessage={handleSendMessage} 
+      <ChatArea
+        chat={activeChat}
+        onSendMessage={handleSendMessage}
       />
     </div>
   );
+}
+
+// ── helpers ──────────────────────────────────────────────────
+
+interface DbMessage {
+  id: string;
+  sender_id: string;
+  receiver_id: string;
+  text: string;
+  created_at: string;
+  read_at: string | null;
+}
+
+function toMessage(m: DbMessage, myId: string): Message {
+  return {
+    id: m.id,
+    senderId: m.sender_id === myId ? 'me' : m.sender_id,
+    text: m.text,
+    timestamp: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    status: m.read_at ? 'read' : 'delivered',
+  };
 }

@@ -81,8 +81,6 @@ const PatientRiskFeed: React.FC<PatientRiskFeedProps> = ({ patients, onPatientCl
               <div className="feed-info">
                 <div className="feed-name">{p.name}</div>
                 <div className="feed-sub">
-                  <span>{p.id}</span>
-                  <span>•</span>
                   <span>{p.cond}</span>
                   <span>•</span>
                   <span>{p.age}y</span>
