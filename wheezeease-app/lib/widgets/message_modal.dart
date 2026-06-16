@@ -93,33 +93,48 @@ class _MessageModalState extends State<MessageModal> {
   Future<void> _loadMessages() async {
     if (_patientId == null || _doctorId == null) return;
 
-    final data = await _supabase
-        .from('messages')
-        .select('sender_id, text, created_at')
-        .or(
-          'and(sender_id.eq.$_patientId,receiver_id.eq.$_doctorId),'
-          'and(sender_id.eq.$_doctorId,receiver_id.eq.$_patientId)',
-        )
-        .order('created_at', ascending: true);
+    try {
+      // Fetch sent (patient→doctor)
+      final sent = await _supabase
+          .from('messages')
+          .select('sender_id, text, created_at')
+          .eq('sender_id', _patientId!)
+          .eq('receiver_id', _doctorId!)
+          .order('created_at', ascending: true);
 
-    if (mounted) {
-      setState(() {
-        _messages = (data as List)
-            .map((m) => {
-                  'type': m['sender_id'] == _patientId ? 'out' : 'in',
-                  'text': m['text'] as String,
-                })
-            .toList();
-      });
+      // Fetch received (doctor→patient)
+      final received = await _supabase
+          .from('messages')
+          .select('sender_id, text, created_at')
+          .eq('sender_id', _doctorId!)
+          .eq('receiver_id', _patientId!)
+          .order('created_at', ascending: true);
+
+      // Merge and sort by created_at
+      final all = [...(sent as List), ...(received as List)];
+      all.sort((a, b) => (a['created_at'] as String).compareTo(b['created_at'] as String));
+
+      if (mounted) {
+        setState(() {
+          _messages = all
+              .map((m) => {
+                    'type': m['sender_id'] == _patientId ? 'out' : 'in',
+                    'text': m['text'] as String,
+                  })
+              .toList();
+        });
+      }
+
+      // Mark doctor's messages as read
+      await _supabase
+          .from('messages')
+          .update({'read_at': DateTime.now().toIso8601String()})
+          .eq('sender_id', _doctorId!)
+          .eq('receiver_id', _patientId!)
+          .isFilter('read_at', null);
+    } catch (e) {
+      // Table may not exist yet — ignore silently
     }
-
-    // Mark doctor's messages as read
-    await _supabase
-        .from('messages')
-        .update({'read_at': DateTime.now().toIso8601String()})
-        .eq('sender_id', _doctorId!)
-        .eq('receiver_id', _patientId!)
-        .isFilter('read_at', null);
   }
 
   Future<void> _send() async {
@@ -127,14 +142,22 @@ class _MessageModalState extends State<MessageModal> {
     if (text.isEmpty || _patientId == null || _doctorId == null) return;
 
     _controller.clear();
-    setState(() => _messages.add({'type': 'out', 'text': text}));
-    _scrollToBottom();
 
-    await _supabase.from('messages').insert({
-      'sender_id': _patientId,
-      'receiver_id': _doctorId,
-      'text': text,
-    });
+    try {
+      await _supabase.from('messages').insert({
+        'sender_id': _patientId,
+        'receiver_id': _doctorId,
+        'text': text,
+      });
+      // Only show locally after successful DB insert
+      if (mounted) {
+        setState(() => _messages.add({'type': 'out', 'text': text}));
+        _scrollToBottom();
+      }
+    } catch (e) {
+      // Restore text so user can retry
+      if (mounted) _controller.text = text;
+    }
   }
 
   void _scrollToBottom() {

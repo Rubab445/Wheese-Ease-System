@@ -36,14 +36,17 @@ export default function Messages() {
 
       const sessions: ChatSession[] = await Promise.all(
         patients.map(async (p) => {
-          const { data: msgs } = await supabase
-            .from('messages')
-            .select('*')
-            .or(
-              `and(sender_id.eq.${docId},receiver_id.eq.${p.id}),` +
-              `and(sender_id.eq.${p.id},receiver_id.eq.${docId})`
-            )
-            .order('created_at', { ascending: true });
+          const [{ data: sent }, { data: recv }] = await Promise.all([
+            supabase.from('messages').select('*')
+              .eq('sender_id', docId).eq('receiver_id', p.id)
+              .order('created_at', { ascending: true }),
+            supabase.from('messages').select('*')
+              .eq('sender_id', p.id).eq('receiver_id', docId)
+              .order('created_at', { ascending: true }),
+          ]);
+          const msgs = [...(sent ?? []), ...(recv ?? [])].sort(
+            (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
 
           const unread = (msgs ?? []).filter(
             m => m.sender_id === p.id && !m.read_at
