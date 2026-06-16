@@ -26,6 +26,7 @@ class RecommendationDetailScreen extends StatefulWidget {
 class _RecommendationDetailScreenState extends State<RecommendationDetailScreen> {
   bool _loading = true;
   Map<String, dynamic>? _recommendation;
+  Map<String, dynamic>? _destinationEnv;
   String? _error;
 
   @override
@@ -124,6 +125,9 @@ class _RecommendationDetailScreenState extends State<RecommendationDetailScreen>
             patientProfile: PatientProfile.clinicalProfile,
           );
           if (result != null) {
+            // Capture destination environment data from the API response
+            _destinationEnv = result['destination_environment'] as Map<String, dynamic>?;
+
             // Extract AI recommendation (Gemini-powered), same as exercise/household
             final aiRec = result['ai_recommendation'] as Map<String, dynamic>? ?? {};
             final aiData = aiRec['data'] as Map<String, dynamic>?;
@@ -300,6 +304,78 @@ class _RecommendationDetailScreenState extends State<RecommendationDetailScreen>
                     ),
                     const SizedBox(height: 20),
 
+                    // Destination Environment Data (trip only)
+                    if (widget.entryType == 'trip' && _destinationEnv != null) ...[
+                      Row(children: [
+                        Container(
+                          width: 28, height: 28,
+                          decoration: BoxDecoration(
+                            color: AppColors.blue.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.cloud_outlined, color: AppColors.blue, size: 14),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'DESTINATION ENVIRONMENT',
+                          style: GoogleFonts.nunito(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: textMuted,
+                            letterSpacing: 0.7,
+                          ),
+                        ),
+                      ]),
+                      const SizedBox(height: 12),
+                      GridView.count(
+                        crossAxisCount: 2,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: 1.15,
+                        children: [
+                          _buildEnvCard(
+                            icon: Icons.thermostat_outlined,
+                            iconColor: const Color(0xFFFF6B35),
+                            value: '${(_destinationEnv!['temperature'] as num?)?.toStringAsFixed(0) ?? '--'}°C',
+                            label: 'Temperature',
+                            surface: surface,
+                            border: border,
+                            isDark: isDark,
+                          ),
+                          _buildEnvCard(
+                            icon: Icons.water_drop_outlined,
+                            iconColor: const Color(0xFF4A90D9),
+                            value: '${(_destinationEnv!['humidity'] as num?)?.toStringAsFixed(0) ?? '--'}%',
+                            label: 'Humidity',
+                            surface: surface,
+                            border: border,
+                            isDark: isDark,
+                          ),
+                          _buildEnvCard(
+                            icon: Icons.air_rounded,
+                            iconColor: _getAqiColor(_destinationEnv!['AQI']),
+                            value: '${_destinationEnv!['AQI'] ?? '--'}',
+                            label: 'AQI',
+                            surface: surface,
+                            border: border,
+                            isDark: isDark,
+                          ),
+                          _buildEnvCard(
+                            icon: Icons.local_florist_outlined,
+                            iconColor: AppColors.green,
+                            value: '${_destinationEnv!['pollen'] ?? '--'}',
+                            label: 'Pollen',
+                            surface: surface,
+                            border: border,
+                            isDark: isDark,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+
                     // Condition summary
                     if (_recommendation!['condition_summary'] != null) ...[
                       Container(
@@ -375,6 +451,178 @@ class _RecommendationDetailScreenState extends State<RecommendationDetailScreen>
             ]),
           )),
         ]),
+      ),
+    );
+  }
+
+  // ── AQI Color Helper ──
+  Color _getAqiColor(dynamic aqi) {
+    if (aqi == null) return AppColors.yellow;
+    final val = (aqi as num).toDouble();
+    if (val > 150) return AppColors.red;
+    if (val > 100) return AppColors.yellow;
+    return AppColors.green;
+  }
+
+  // ── Environment Card (matches home screen style) ──
+  Widget _buildEnvCard({
+    required IconData icon,
+    required Color iconColor,
+    required String value,
+    required String label,
+    required Color surface,
+    required Color border,
+    required bool isDark,
+  }) {
+    final text = isDark ? AppColors.textDark : AppColors.text;
+    final textMuted = isDark ? AppColors.textMutedDark : AppColors.textMuted;
+
+    // Compute progress & status from value and label
+    double progress = 0;
+    String status = '';
+    final numVal = double.tryParse(value.replaceAll(RegExp(r'[°C%]'), ''));
+
+    switch (label) {
+      case 'Temperature':
+        if (numVal != null) {
+          progress = (numVal / 50).clamp(0.0, 1.0);
+          status = numVal > 40 ? 'Hot' : numVal > 35 ? 'Warm' : numVal > 20 ? 'Mild' : 'Cool';
+        }
+        break;
+      case 'Humidity':
+        if (numVal != null) {
+          progress = (numVal / 100).clamp(0.0, 1.0);
+          status = numVal > 70 ? 'High' : numVal > 40 ? 'OK' : 'Low';
+        }
+        break;
+      case 'AQI':
+        if (numVal != null) {
+          progress = (numVal / 300).clamp(0.0, 1.0);
+          status = numVal > 200
+              ? 'Hazardous'
+              : numVal > 150
+                  ? 'Unhealthy'
+                  : numVal > 100
+                      ? 'Moderate'
+                      : numVal > 50
+                          ? 'Fair'
+                          : 'Good';
+        }
+        break;
+      case 'Pollen':
+        if (numVal != null) {
+          progress = (numVal / 200).clamp(0.0, 1.0);
+          status = numVal > 100 ? 'High' : numVal > 50 ? 'Moderate' : 'Low';
+        } else {
+          status = value;
+          progress = value == 'High' ? 0.8 : value == 'Moderate' ? 0.5 : 0.2;
+        }
+        break;
+    }
+
+    final statusColor = (status == 'Good' || status == 'OK' || status == 'Low' ||
+            status == 'Mild' || status == 'Cool' || status == 'Fair')
+        ? AppColors.green
+        : (status == 'Moderate' || status == 'Warm')
+            ? AppColors.yellow
+            : AppColors.red;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: iconColor.withOpacity(0.2), width: 1.5),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            surface,
+            iconColor.withOpacity(isDark ? 0.1 : 0.06),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: iconColor.withOpacity(isDark ? 0.1 : 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      iconColor.withOpacity(0.22),
+                      iconColor.withOpacity(0.08),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Icon(icon, color: iconColor, size: 18),
+              ),
+              if (status.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: statusColor.withOpacity(0.3), width: 0.5),
+                  ),
+                  child: Text(
+                    status,
+                    style: GoogleFonts.nunito(
+                      fontSize: 8,
+                      fontWeight: FontWeight.w800,
+                      color: statusColor,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: text,
+                ),
+              ),
+              const SizedBox(height: 1),
+              Text(
+                label,
+                style: GoogleFonts.nunito(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: textMuted,
+                ),
+              ),
+              const SizedBox(height: 6),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(3),
+                child: SizedBox(
+                  height: 4,
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    backgroundColor: iconColor.withOpacity(0.1),
+                    valueColor: AlwaysStoppedAnimation(iconColor),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
