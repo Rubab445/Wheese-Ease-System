@@ -39,7 +39,7 @@ df['env_risk_index'] = (
     (df['AQI'] / 400)           * 0.40 +
     (df['pollen_count'] / 200)  * 0.30 +
     (df['humidity'] / 100)      * 0.20 +
-    (df['temperature'] / 45)    * 0.10          # <-- LOCKED: do not change
+    (df['temperature'] / 45)    * 0.10          
 )
 print(" Created: env_risk_index  [temperature/45 normalization]")
 
