@@ -123,9 +123,6 @@ def _fetch_aqi(city: str) -> dict:
             components = data["list"][0]["components"]
             aqi_index  = data["list"][0]["main"]["aqi"]
 
-            # The OWM API only provides a categorical AQI scale, not exact numerical values.
-            # We map each category to its midpoint as a reasonable approximation.
-            # For production, an API returning precise AQI (like AirVisual) should be used.
             aqi_map = {1: 25, 2: 75, 3: 125, 4: 200, 5: 350}
             aqi     = aqi_map.get(aqi_index, 50)
 
@@ -133,9 +130,6 @@ def _fetch_aqi(city: str) -> dict:
             no2  = round(float(components.get("no2",   25)), 2)
             pm10 = round(float(components.get("pm10",  20)), 2)
 
-            # OpenWeatherMap doesn't provide pollen data in its free tier.
-            # We use PM10 as a rough proxy since both are airborne particulates.
-            # A production system would integrate a dedicated pollen API like Breezometer.
             pollen_estimate = min(int(pm10 * 1.5), 200)
 
             result = {
@@ -168,7 +162,7 @@ def _fetch_aqi(city: str) -> dict:
 
 # GET COMBINED ENVIRONMENT DATA
 def get_environment(weather_city: str, aqi_city: str = None) -> dict:
-    print(f"\n🌍 Fetching live environmental data...")
+    print(f"\n Fetching live environmental data...")
     print(f"   Weather city : {weather_city}")
     print(f"   AQI city     : {aqi_city or weather_city}")
     print("─" * 40)
@@ -517,7 +511,6 @@ def predict_with_live_data(weather_city: str,
           prediction = 2
 
     label_map = {0: "LOW",   1: "MEDIUM",  2: "HIGH"}
-    icon_map  = {0: "✅",    1: "⚠️",      2: "🚨"}
     color_map = {0: "green", 1: "orange",  2: "red"}
 
     main_message_map = {
@@ -537,7 +530,6 @@ def predict_with_live_data(weather_city: str,
         "city":          weather_city,
         "risk_level":    risk_level,
         "main_message":  main_message,
-        "icon":          icon_map[prediction],
         "color":         color_map[prediction],
         "confidence":    round(confidence, 3),
         "probabilities": {
@@ -555,9 +547,7 @@ def predict_with_live_data(weather_city: str,
 
 # DEMO
 if __name__ == "__main__":
-    print("=" * 55)
     print("STEP 8: LIVE API PREDICTION DEMO")
-    print("=" * 55)
 
     patient = {
         "wheezing":              1,
@@ -582,7 +572,7 @@ if __name__ == "__main__":
     result = predict_with_live_data("Gujrat", patient)
 
     print(f"\n{'=' * 55}")
-    print(f"  {result['icon']}  RISK ASSESSMENT — {result['city'].upper()}")
+    print(f"  RISK ASSESSMENT — {result['city'].upper()}")
     print(f"{'=' * 55}")
     print(f"  {result['main_message']}")
     print(f"\n  Risk Level : {result['risk_level']}")

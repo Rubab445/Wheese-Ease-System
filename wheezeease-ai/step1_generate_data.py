@@ -16,25 +16,20 @@ temperature   = np.random.randint(5, 45, n).astype(float)
 PM2_5         = np.round(np.random.uniform(5, 150, n), 2)
 NO2           = np.round(np.random.uniform(10, 200, n), 2)
 
-# Pollution pressure (0-1 scale) — drives respiratory symptoms
 pollution_pressure = (AQI / 400) * 0.6 + (PM2_5 / 150) * 0.4
 
-# Wheezing: base 30% chance, goes up to ~75% at max pollution
 wheeze_prob = np.clip(0.30 + pollution_pressure * 0.45, 0, 1)
 wheezing    = (np.random.uniform(0, 1, n) < wheeze_prob).astype(int)
 
-# Chest tightness: correlated with wheezing (if wheezing, 65% chance of tightness)
 tight_prob      = np.where(wheezing == 1,
                             np.clip(0.45 + pollution_pressure * 0.20, 0, 1),
                             np.clip(0.10 + pollution_pressure * 0.15, 0, 1))
 chest_tightness = (np.random.uniform(0, 1, n) < tight_prob).astype(int)
 
-# Coughing: correlated with both pollution and wheezing
 cough_prob = np.clip(0.25 + pollution_pressure * 0.30 + wheezing * 0.20, 0, 1)
 coughing   = (np.random.uniform(0, 1, n) < cough_prob).astype(int)
 
-# Breathing difficulty: 1=mild, 2=moderate, 3=severe
-# Driven by wheezing + chest tightness combo
+
 severity_score = wheezing * 0.5 + chest_tightness * 0.3 + pollution_pressure * 0.2
 bd_probs = np.column_stack([
     np.clip(1 - severity_score * 1.2, 0.1, 1),   # P(mild)
@@ -46,51 +41,41 @@ breathing_difficulty = np.array([
     np.random.choice([1, 2, 3], p=bd_probs[i]) for i in range(n)
 ])
 
-# Inhaler usage: high when symptomatic — FEV1 low patients use more
-# (FEV1 generated below, so proxy here: severe breathing → more inhaler use)
 inhaler_base = np.where(breathing_difficulty == 3, 3,
                np.where(breathing_difficulty == 2, 1, 0))
 inhaler_noise   = np.random.randint(0, 3, n)
 inhaler_usage   = np.clip(inhaler_base + inhaler_noise, 0, 5)
 
-# Medication adherence: slightly inversely correlated with severity
-# (sicker patients sometimes miss medication)
 med_prob           = np.clip(0.75 - severity_score * 0.30, 0.3, 0.9)
 medication_adherence = (np.random.uniform(0, 1, n) < med_prob).astype(int)
 
-# Past attacks: correlated with chronic severity
 past_attacks = np.clip(
     (breathing_difficulty - 1) * 2 + wheezing * 2 + np.random.randint(0, 4, n),
     0, 9
 )
 
-# FEV1: lower when more symptomatic (high wheeze/severity → lower lung function)
 fev1_base = np.clip(3.5 - severity_score * 2.0, 1.0, 4.0)
 lung_function_fev1 = np.round(
     np.clip(fev1_base + np.random.normal(0, 0.3, n), 0.8, 4.2), 3
 )
 
-# FVC: loosely follows FEV1 (FVC always >= FEV1 clinically)
 lung_function_fvc = np.round(
     np.clip(lung_function_fev1 + np.random.uniform(0.3, 1.8, n), 1.5, 6.0), 3
 )
 
-# BMI: mild correlation with breathing difficulty
+
 bmi = np.round(np.clip(
     22 + (breathing_difficulty - 1) * 3 + np.random.normal(0, 4, n),
     15, 45
 ), 2)
 
-# Smoking: independent but increases pollution pressure effect
 smoking = np.random.randint(0, 2, n)
 
-# Physical activity: inversely correlated with severity
 activity_base = np.clip(8 - severity_score * 6, 1, 10)
 physical_activity = np.round(
     np.clip(activity_base + np.random.normal(0, 1.5, n), 0, 10), 2
 )
 
-# Binary risk factors: independent (no strong correlation needed)
 family_history_asthma = np.random.randint(0, 2, n)
 history_of_allergies  = np.random.randint(0, 2, n)
 dust_exposure         = np.round(np.random.uniform(0, 10, n), 2)
@@ -114,7 +99,6 @@ def score_to_label(score):
 
 risk_label = pd.Series(risk_score).apply(score_to_label)
 
-# Clinical overrides — same logic that step1b/1c use, consistent
 high_mask = (
     (wheezing == 1) &
     (breathing_difficulty == 3) &
@@ -129,9 +113,6 @@ low_mask = (
 risk_label[high_mask] = 'high'
 risk_label[low_mask]  = 'low'
 
-# ─────────────────────────────────────────────
-# BUILD DATAFRAME
-# ─────────────────────────────────────────────
 df = pd.DataFrame({
     'AQI':                  AQI,
     'pollen_count':         pollen_count,

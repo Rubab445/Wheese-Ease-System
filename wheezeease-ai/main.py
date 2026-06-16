@@ -77,53 +77,29 @@ class PredictionResponse(BaseModel):
     environment:   dict
     models_used:   str
 
-# ── UPDATED: symptoms_reported replaces had_symptoms ──
+
 class ExerciseLogRequest(BaseModel):
-    exercise_type:     str            # walking, running, cycling, swimming
-    duration:          int            # minutes
-    intensity:         str            # mild, moderate, intense
-    indoor:            bool           # True = indoor, False = outdoor
-    used_inhaler:      bool           # used inhaler before exercise
-    # Structured symptom fields (replaces had_symptoms: bool)
-    symptoms_reported: List[str]  = []    # e.g. ["Wheezing", "Coughing"]
-    symptom_severity:  Optional[str] = None  # "Mild" / "Moderate" / "Severe"
-    symptom_notes:     Optional[str] = None  # free-text from patient
+    exercise_type:     str            
+    duration:          int            
+    intensity:         str            
+    indoor:            bool           
+    used_inhaler:      bool           
+    symptoms_reported: List[str]  = []    
+    symptom_severity:  Optional[str] = None  
+    symptom_notes:     Optional[str] = None  
     city:              str        = "Gujrat"
 
 class HouseholdActivityRequest(BaseModel):
-    activity_type:     str            # cleaning, cooking, painting, gardening
-    duration:          int            # minutes
-    wore_mask:         bool
-    # Structured symptom fields (replaces had_symptoms: bool)
+    activity_type:     str            
+    duration:          int            
     symptoms_reported: List[str]  = []
     symptom_severity:  Optional[str] = None
     symptom_notes:     Optional[str] = None
     city:              str        = "Gujrat"
 
 
-# DEMO DOCTOR ACCOUNTS
-DOCTORS = {
-    "doctor@wheezeease.com": {
-        "password": "doctor123",
-        "name":     "Dr. A. Rahman",
-        "id":       1,
-        "role":     "Pulmonologist"
-    },
-    "admin@wheezeease.com": {
-        "password": "admin123",
-        "name":     "Dr. Sara Ali",
-        "id":       2,
-        "role":     "General Physician"
-    },
-    "test@test.com": {
-        "password": "test123",
-        "name":     "Dr. Test User",
-        "id":       3,
-        "role":     "Pulmonologist"
-    }
-}
 
-# Trigger mapping for household activities
+
 HOUSEHOLD_TRIGGERS = {
     "cleaning":  {"trigger": "Dust & Allergens",      "description": "Cleaning stirs up dust mites, pet dander, and mold spores — all major asthma triggers."},
     "cooking":   {"trigger": "Smoke & Fumes",          "description": "Cooking produces smoke, steam, and strong odors (especially frying/grilling) that can irritate airways."},

@@ -10,11 +10,7 @@ matplotlib.use('Agg')  # non-interactive backend
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-print("=" * 50)
 print("STEP 3: LOGISTIC REGRESSION")
-print("=" * 50)
-
-# 3.1 LOAD PREPROCESSED DATA
 
 with open('data/processed_data.pkl', 'rb') as f:
     data = pickle.load(f)
@@ -25,7 +21,7 @@ y_train = data['y_train']
 y_test  = data['y_test']
 print(f"\n Data loaded: {len(X_train)} train, {len(X_test)} test samples")
 
-# 3.2 CREATE & TRAIN MODEL
+# CREATE & TRAIN MODEL
 print("\n--- Training Logistic Regression ---")
 
 model = LogisticRegression(
@@ -38,11 +34,11 @@ model = LogisticRegression(
 model.fit(X_train, y_train)
 print(" Training complete!")
 
-# 3.3 MAKE PREDICTIONS
+# MAKE PREDICTIONS
 y_pred        = model.predict(X_test)
 y_pred_proba  = model.predict_proba(X_test)  # gives [low%, medium%, high%]
 
-# 3.4 EVALUATE MODEL
+# EVALUATE MODEL
 print("\n--- 3.4 Model Evaluation ---")
 
 accuracy = accuracy_score(y_test, y_pred)
@@ -58,7 +54,6 @@ print(classification_report(
 auc = roc_auc_score(y_test, y_pred_proba, multi_class='ovr')
 print(f" ROC-AUC Score: {auc:.4f}")
 
-# 3.5 SHOW EXAMPLE PREDICTIONS
 print("\n--- 3.5 Sample Predictions ---")
 label_names = {0: 'LOW', 1: 'MEDIUM', 2: 'HIGH'}
 
@@ -69,7 +64,7 @@ for i in range(5):
     print(f"Sample {i+1}: Actual={actual:6} | Predicted={predicted:6} | "
           f"Proba: Low={proba[0]:.2f} Med={proba[1]:.2f} High={proba[2]:.2f}")
 
-# 3.6 CONFUSION MATRIX PLOT
+# CONFUSION MATRIX PLOT
 cm = confusion_matrix(y_test, y_pred)
 
 plt.figure(figsize=(7, 5))
@@ -83,7 +78,6 @@ plt.tight_layout()
 plt.savefig('data/lr_confusion_matrix.png', dpi=150)
 print("\n Saved confusion matrix: data/lr_confusion_matrix.png")
 
-# 3.7 SAVE MODEL
 with open('data/model_lr.pkl', 'wb') as f:
     pickle.dump(model, f)
 

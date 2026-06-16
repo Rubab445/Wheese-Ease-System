@@ -9,7 +9,7 @@ def score_to_label(score):
     elif score < 0.55: return 'medium'
     else:              return 'high'
 
-# 1. LOAD DATASETS
+# LOAD DATASETS
 try:
     patient_df = pd.read_csv('data/asthma_dataset.csv')
     print(f"\n Patient dataset loaded    : {len(patient_df)} rows")
@@ -28,7 +28,7 @@ except FileNotFoundError:
         print(" Environmental dataset not found!")
         exit()
 
-# 2. CLEAN ENVIRONMENTAL DATASET
+# CLEAN ENVIRONMENTAL DATASET
 print("\n--- Cleaning environmental dataset ---")
 env_df = env_df.rename(columns={
     'AQI Value':       'AQI',
@@ -52,7 +52,6 @@ env_clean['PM2_5'] = env_clean['PM2_5'].round(1)
 env_clean['NO2']   = env_clean['NO2'].round(1)
 print(f" Unique cities available: {len(env_clean)}")
 
-# Pakistan cities (informational)
 pakistan = env_clean[env_clean['country'].str.contains('Pakistan', case=False, na=False)]
 print(f"\n Pakistan cities: {len(pakistan)}")
 if len(pakistan) > 0:
@@ -88,7 +87,7 @@ patient_df['risk_score'] = (
 
 patient_df['risk_label'] = patient_df['risk_score'].apply(score_to_label)
 
-# Clinical overrides — same as step1 and step1b
+# Clinical overrides 
 high_mask = (
     (
         (patient_df['wheezing'] == 1) &
@@ -113,7 +112,7 @@ patient_df.loc[low_mask,  'risk_label'] = 'low'
 
 print(f" Clinical overrides: {high_mask.sum()} forced HIGH, {low_mask.sum()} forced LOW")
 
-# 4. FINAL STATS
+
 print(f"\n Final Dataset Summary:")
 print(f"   Total records : {len(patient_df)}")
 
@@ -124,6 +123,5 @@ for label, count in dist.items():
     bar = "█" * int(count / total * 40)
     print(f"   {label:6} : {count:4} ({count/total:.1%})  {bar}")
 
-# 5. SAVE
 patient_df.to_csv('data/asthma_dataset.csv', index=False)
 print(f"\n Saved: data/asthma_dataset.csv")
