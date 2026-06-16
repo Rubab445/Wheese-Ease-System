@@ -234,7 +234,7 @@ const AlertsHub: React.FC = () => {
                                             <button
                                                 className="action-icon-btn btn-emergency"
                                                 title="Message Patient"
-                                                onClick={() => alert(`OPENING RESPONSE TEMPLATE FOR ${alertItem.patientName}`)}
+                                                onClick={() => navigate('/messages')}
                                             >
                                                 <MessageSquare size={14} />
                                             </button>

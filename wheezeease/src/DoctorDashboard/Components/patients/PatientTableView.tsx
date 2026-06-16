@@ -1,5 +1,5 @@
 import React from 'react';
-import { MessageSquare, FileEdit, Send, Activity, ShieldAlert, AlertTriangle } from 'lucide-react';
+import { MessageSquare, FileEdit, Activity, ShieldAlert, AlertTriangle } from 'lucide-react';
 import type { Patient } from '../../../types/patient.types';
 
 interface PatientListViewProps {
@@ -27,20 +27,31 @@ const getRiskPill = (status: string, score: number) => {
   );
 };
 
-// Demo triggers - in real app would come from patient data
-const getTriggers = (patientId: string) => {
-  const triggers: Record<string, string[]> = {
-    'P-041': ['High Pollen', 'AQI Spike', 'Inhaler Overuse'],
-    'P-012': ['Humidity Shift', 'Medication Gap'],
-    'P-025': ['Dust Exposure', 'AQI Moderate'],
-    'P-027': ['Seasonal Flare', 'Pollen Alert'],
-    'P-033': ['Stable', 'Good Control'],
-    'P-061': ['Mild Humidity'],
-    'P-038': ['Pet Dander', 'Dust'],
-    'P-008': ['Cold Air', 'Exercise'],
-    'P-015': ['Pollen', 'Stable'],
-  };
-  return triggers[patientId] || ['No active triggers'];
+const getTriggers = (patient: Patient): string[] => {
+  const triggers: string[] = [];
+  const condition = (patient.condition || '').toLowerCase();
+  const allergies = (patient.allergies || []).join(' ').toLowerCase();
+
+  if (patient.status === 'critical') {
+    if (allergies.includes('dust') || condition.includes('dust')) triggers.push('Dust Exposure');
+    if (allergies.includes('pollen')) triggers.push('High Pollen');
+    if (condition.includes('copd')) triggers.push('COPD Flare');
+    if (allergies.includes('cold air') || allergies.includes('cold')) triggers.push('Cold Air');
+    triggers.push('Inhaler Overuse');
+    if (triggers.length < 2) triggers.push('AQI Spike');
+  } else if (patient.status === 'watch') {
+    if (allergies.includes('exercise')) triggers.push('Exercise Trigger');
+    if (allergies.includes('smoke')) triggers.push('Smoke Exposure');
+    if (allergies.includes('pollen')) triggers.push('Pollen Alert');
+    if (allergies.includes('cold air')) triggers.push('Cold Air');
+    if (condition.includes('rhinitis')) triggers.push('Seasonal Flare');
+    if (triggers.length < 1) triggers.push('Humidity Shift');
+  } else {
+    if (allergies.includes('pollen')) triggers.push('Low Pollen');
+    triggers.push('Stable Control');
+  }
+
+  return triggers.slice(0, 3);
 };
 
 const PatientListView: React.FC<PatientListViewProps> = ({
@@ -65,7 +76,7 @@ const PatientListView: React.FC<PatientListViewProps> = ({
         <tbody>
           {patients.map((patient) => (
             <tr key={patient.id} onClick={() => onPatientClick(patient)}>
-              {/* Column 1: Identity */}
+              {/* Column 1: Identity — name only, no ID */}
               <td>
                 <div className="p-id-cell">
                   <div
@@ -79,7 +90,6 @@ const PatientListView: React.FC<PatientListViewProps> = ({
                   </div>
                   <div>
                     <div className="p-name">{patient.name}</div>
-                    <div className="p-tag-id">{patient.id}</div>
                   </div>
                 </div>
               </td>
@@ -92,14 +102,13 @@ const PatientListView: React.FC<PatientListViewProps> = ({
 
               {/* Column 3: AI Risk Level */}
               <td>
-                {/* Score mapping for demo: critical=70-95, watch=35-65, stable=5-30 */}
                 {getRiskPill(patient.status, patient.status === 'critical' ? 78 : patient.status === 'watch' ? 47 : 12)}
               </td>
 
-              {/* Column 4: AI Triggers */}
+              {/* Column 4: AI Triggers — derived from patient data */}
               <td>
                 <div className="p-trigger-list">
-                  {getTriggers(patient.id).map((t) => (
+                  {getTriggers(patient).map((t) => (
                     <span key={t} className="p-trigger-tag">{t}</span>
                   ))}
                 </div>
@@ -110,7 +119,7 @@ const PatientListView: React.FC<PatientListViewProps> = ({
                 <div className="p-activity">{patient.lastActive}</div>
               </td>
 
-              {/* Column 6: Actions */}
+              {/* Column 6: Actions — message + prescription only */}
               <td onClick={(e) => e.stopPropagation()}>
                 <div className="p-actions">
                   <button className="btn-icon" onClick={() => onMessageClick(patient)} title="Message Patient" style={{ background: '#EEF2FF', color: '#4F46E5', border: '1px solid #E0E7FF' }}>
@@ -118,10 +127,6 @@ const PatientListView: React.FC<PatientListViewProps> = ({
                   </button>
                   <button className="btn-icon" onClick={() => onPrescriptionClick(patient)} title="Update Prescription" style={{ background: '#F0FDF4', color: '#16A34A', border: '1px solid #DCFCE7' }}>
                     <FileEdit size={14} />
-                  </button>
-                  <button className="btn-table-primary" onClick={() => alert(`Sending AI advice to ${patient.name}...`)}>
-                    <Send size={11} style={{ marginRight: '4px' }} />
-                    SEND AI ADVICE
                   </button>
                 </div>
               </td>

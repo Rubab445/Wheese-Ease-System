@@ -7,7 +7,6 @@ import PatientFilters from '../Components/patients/PatientsFilter';
 import PatientListView from '../Components/patients/PatientTableView';
 import PatientInsightsDrawer from '../Components/patients/PatientInsightsDrawer';
 import { AddPatientModal, PrescriptionModal } from '../Components/patients/PatientModals';
-import { PlusCircle } from 'lucide-react';
 import '../../styles/patients.css';
 
 /**
@@ -72,7 +71,7 @@ const PatientsPage: React.FC = () => {
       highRisk: highRiskCount,
       moderate: moderateCount,
     };
-  }, []);
+  }, [allPatients]);
 
   const handlePatientClick = (patient: Patient) => {
     console.log("Opening drawer for:", patient.name);
@@ -97,10 +96,6 @@ const PatientsPage: React.FC = () => {
           <h1>Patient Directory</h1>
           <p>AI-Powered Clinical Oversight · {filteredPatients.length} Patients Total</p>
         </div>
-        <button className="btn-primary" style={{ backgroundColor: '#DBEAFE', color: '#2563EB', borderColor: '#BFDBFE' }} onClick={() => setIsAddModalOpen(true)}>
-          <PlusCircle size={18} />
-          Register New Patient
-        </button>
       </div>
 
       <PatientStats
