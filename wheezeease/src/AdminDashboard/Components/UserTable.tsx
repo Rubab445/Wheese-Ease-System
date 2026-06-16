@@ -67,7 +67,6 @@ export default function UserTable({ users, onUserClick }: UserTableProps) {
                       <Mail size={14} />
                       {user.email}
                     </span>
-                    <span className="user-id">{user.id}</span>
                   </div>
                 </div>
               </td>
